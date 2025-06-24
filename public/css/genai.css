@@ -185,6 +185,7 @@ body {
   top: 0;
   left: -100%;
   width: 100%;
+  z-index: -1;
   height: 100%;
   background: linear-gradient(
     90deg,
@@ -205,6 +206,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
+  z-index: -1;
   height: 100%;
   background: radial-gradient(
     circle at center,
@@ -217,6 +219,10 @@ body {
 
 .course-card:hover::after {
   opacity: 1;
+}
+
+.course-card a{
+  text-decoration: none;
 }
 
 .course-icon {

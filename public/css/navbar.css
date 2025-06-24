@@ -137,6 +137,12 @@
   border: 1px solid rgba(124, 58, 237, 0.1);
   z-index: 1000;
 }
+@media (max-width:768px){
+  .sub-dropdown{
+    top: 50%;
+    left: 50%;
+  }
+}
 
 .has-sub-dropdown:hover > .sub-dropdown,
 .has-sub-dropdown:hover > .sub-dropdown-toggle {
@@ -337,7 +343,11 @@
   }
 
   .has-sub-dropdown.active > .sub-dropdown {
-    display: block;
+    display: none;
+  }
+
+  .sub-dropdown-toggle{
+    display: none;
   }
 
   .dropdown-item,
@@ -366,6 +376,9 @@
   .profile-img {
     width: 35px;
     height: 35px;
+  }
+  .profile-container{
+    flex-direction: column;
   }
 }
 
