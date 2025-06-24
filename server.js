@@ -22,7 +22,7 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(cors({ origin: "http://localhost:5000", credentials: true }));
+app.use(cors({ origin: "https://skill-shastra.vercel.app", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -319,7 +319,7 @@ const getOtpEmailTemplate = (otp, type = "verify") =>
   <p>This OTP is valid for 10 minutes. Please use it to complete your ${
     type === "verify" ? "verification" : "password reset"
   }.</p>
-  <a href="http://localhost:5000/${
+  <a href="https://skill-shastra.vercel.app/${
     type === "verify" ? "signup" : "forgot-password"
   }" class="cta-button">${
     type === "verify" ? "Verify Now" : "Reset Password"
@@ -443,7 +443,7 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
       ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
       : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
   }
-  <a href="http://localhost:5000/dashboard" class="cta-button">View Dashboard</a>
+  <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
   <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
 `);
 
