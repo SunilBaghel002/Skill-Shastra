@@ -22,7 +22,7 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(cors({ origin: "https://skill-shastra.vercel.app", credentials: true }));
+app.use(cors({ origin: "https://skill-shastra.vercel.app/", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -291,7 +291,7 @@ const getBaseEmailTemplate = (content) => `
         </div>
         <div class="footer">
           <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
-          <p><a href="mailto:support@skillshastra.com">support@skillshastra.com</a> | <a href="https://skillshastra.com">skillshastra.com</a></p>
+          <p><a href="mailto:support@skillshastra.com">support@skillshastra.com</a> | <a href="https://skill-shastra.vercel.app/">skillshastra.com</a></p>
           <p>
             <a href="https://facebook.com/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/facebook.png" alt="Facebook" style="width: 24px; height: 24px;" /></a>
             <a href="https://linkedin.com/company/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/linkedin.png" alt="LinkedIn" style="width: 24px; height: 24px;" /></a>
@@ -378,7 +378,7 @@ const getWelcomeEmailTemplate = (name) =>
                         <!-- Call to Action -->
                         <tr>
                             <td style="padding: 0 20px 20px; text-align: center;">
-                                <a href="https://www.skillshastra.com/dashboard/courses" style="display: inline-block; padding: 12px 24px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px;">Start Learning Now</a>
+                                <a href="https://skill-shastra.vercel.app/dashboard/courses" style="display: inline-block; padding: 12px 24px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px;">Start Learning Now</a>
                             </td>
                         </tr>
                         <!-- Support Info -->
