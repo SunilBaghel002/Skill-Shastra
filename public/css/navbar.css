@@ -329,6 +329,9 @@
   .profile-container.active .profile-dropdown {
     display: block;
   }
+  .has-sub-dropdown{
+    flex-direction: column;
+  }
 
   .sub-dropdown {
     position: static;
@@ -343,12 +346,15 @@
   }
 
   .has-sub-dropdown.active > .sub-dropdown {
-    display: none;
+    display: block;
   }
+  /* .has-sub-dropdown.active{
+    background-color: #d7cbeb67;
+  } */
 
-  .sub-dropdown-toggle{
+  /* .sub-dropdown-toggle{
     display: none;
-  }
+  } */
 
   .dropdown-item,
   .sub-dropdown-item,
