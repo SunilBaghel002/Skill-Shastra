@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Materials - Skillshastra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/codingChallenge.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <%- include('../partials/navbar') %>
+
+    <!-- Study Materials Hero Section -->
+    <section class="study-hero">
+        <div class="study-hero-container">
+            <h1><span class="gradient-text">Coding</span>Challenges</h1>
+            <p>Access a wide range of Challenges to enhance your learning journey with Skillshastra.</p>
+        </div>
+    </section>
+
+    <!-- Study Materials Section -->
+    <section class="study-materials-section">
+        <div class="study-materials-container">
+            <div class="section-header">
+                <span class="section-tag">Resources</span>
+                <h2 class="section-title">Coding Challenges</h2>
+                <p class="section-description">content is going to update soon</p>
+            </div>
+    </section>
+
+    <!-- Footer -->
+    <%- include('../partials/footer') %>
+
+    <script>
+        // Study Materials Data
+        const studyMaterials = [
+            {
+                title: "Java Programming Guide",
+                category: "Programming",
+                description: "A comprehensive guide to mastering Java, covering basics to advanced topics like multithreading and Spring Boot.",
+                tags: ["Java", "OOP", "Spring Boot"],
+                image: "images/java-guide.png",
+                downloadLink: "files/java-guide.pdf"
+            },
+            {
+                title: "React.js Cheat Sheet",
+                category: "Web Development",
+                description: "Quick reference for React.js components, hooks, and best practices for building modern web apps.",
+                tags: ["React", "JavaScript", "Frontend"],
+                image: "images/react-cheatsheet.png",
+                downloadLink: "files/react-cheatsheet.pdf"
+            },
+            {
+                title: "SEO Fundamentals",
+                category: "Digital Marketing",
+                description: "Learn the essentials of SEO to optimize websites and boost search engine rankings.",
+                tags: ["SEO", "Marketing", "Analytics"],
+                image: "images/seo-guide.png",
+                downloadLink: "files/seo-fundamentals.pdf"
+            },
+            {
+                title: "Introduction to Generative AI",
+                category: "Generative AI",
+                description: "Explore the basics of Generative AI, including neural networks and practical applications.",
+                tags: ["AI", "Machine Learning", "Neural Networks"],
+                image: "images/genai-intro.png",
+                downloadLink: "files/genai-intro.pdf"
+            },
+            {
+                title: "Data Structures in Python",
+                category: "Programming",
+                description: "In-depth guide to implementing data structures like lists, stacks, and queues in Python.",
+                tags: ["Python", "Data Structures", "Algorithms"],
+                image: "images/python-ds.png",
+                downloadLink: "files/python-ds.pdf"
+            },
+            {
+                title: "Node.js Tutorial",
+                category: "Web Development",
+                description: "Step-by-step tutorial for building scalable backend applications using Node.js and Express.",
+                tags: ["Node.js", "Backend", "Express"],
+                image: "images/nodejs-tutorial.png",
+                downloadLink: "files/nodejs-tutorial.pdf"
+            }
+        ];
+
+        // Render Study Materials
+        function renderStudyMaterials(materials) {
+            const grid = document.getElementById('study-materials-grid');
+            grid.innerHTML = '';
+
+            materials.forEach(material => {
+                const card = document.createElement('div');
+                card.className = 'study-material-card';
+                card.setAttribute('data-category', material.category);
+
+                card.innerHTML = `
+                    <div class="material-image">
+                        <img src="${material.image}" alt="${material.title}">
+                    </div>
+                    <h3 class="material-title">${material.title}</h3>
+                    <p class="material-category">${material.category}</p>
+                    <p class="material-description">${material.description}</p>
+                    <div class="material-tags">
+                        ${material.tags.map(tag => `<span class="material-tag">${tag}</span>`).join('')}
+                    </div>
+                    <a href="${material.downloadLink}" class="material-download" download>
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            // Animate cards
+            const cards = document.querySelectorAll('.study-material-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                    card.style.transition = 'all 0.6s ease';
+                }, index * 100);
+            });
+        }
+
+        // Filter Study Materials
+        function filterStudyMaterials(category) {
+            const filteredMaterials = category === 'all'
+                ? studyMaterials
+                : studyMaterials.filter(material => material.category === category);
+            renderStudyMaterials(filteredMaterials);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderStudyMaterials(studyMaterials);
+
+            // Filter Button Event Listeners
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    const filter = button.getAttribute('data-filter');
+                    filterStudyMaterials(filter);
+                });
+            });
+        });
+
+        // Smooth Scroll for Buttons and Links
+        document.querySelectorAll('.footer-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const targetElement = document.querySelector(href);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                        const ripple = document.createElement('span');
+                        ripple.style.position = 'absolute';
+                        ripple.style.borderRadius = '50%';
+                        ripple.style.background = 'rgba(255, 255, 255, 0.6)';
+                        ripple.style.transform = 'scale(0)';
+                        ripple.style.animation = 'ripple 0.6s linear';
+                        const rect = link.getBoundingClientRect();
+                        ripple.style.left = `${e.clientX - rect.left}px`;
+                        ripple.style.top = `${e.clientY - rect.top}px`;
+                        link.appendChild(ripple);
+                        setTimeout(() => ripple.remove(), 600);
+                    }
+                }
+            });
+        });
+
+        // Footer Newsletter Form Submission
+        const newsletterForm = document.querySelector('.newsletter-form');
+        if (newsletterForm) {
+            newsletterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const emailInput = newsletterForm.querySelector('.newsletter-input');
+                const email = emailInput.value.trim();
+                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    alert('Thank you for subscribing to Skillshastra!');
+                    emailInput.value = '';
+                } else {
+                    alert('Please enter a valid email address.');
+                }
+            });
+        }
+
+        // Footer Social and Link Hover Animation
+        document.querySelectorAll('.footer-link, .social-icon').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                link.style.transition = 'all 0.3s ease';
+            });
+            link.addEventListener('mouseleave', () => {
+                link.style.transform = '';
+            });
+        });
+
+        // Ripple Animation Styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+    <script src="/js/navbar.js"></script>
+</body>
+
+</html>

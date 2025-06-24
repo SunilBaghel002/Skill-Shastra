@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: white;
+      }
+
+      .hero-section {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
+
+      .hover-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, 40px);
+        grid-template-rows: repeat(auto-fill, 40px);
+        width: 100%;
+        height: 100%;
+        perspective: 800px;
+        transform-style: preserve-3d;
+      }
+
+      .grid-square {
+        width: 40px;
+        height: 40px;
+        border: 2px solid transparent;
+        transition: transform 0.3s ease, border-color 1.5s ease,
+          box-shadow 0.3s ease;
+        box-sizing: border-box;
+        will-change: transform;
+        animation: waveBorder 6s ease-in-out infinite;
+      }
+
+      @keyframes waveBorder {
+        0%,
+        100% {
+          border-color: #a64ca6;
+        }
+        25% {
+          border-color: #c080d3;
+        }
+        50% {
+          border-color: #b266ff;
+        }
+        75% {
+          border-color: #e0ccff;
+        }
+      }
+
+      .cursor-circle {
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        pointer-events: none;
+        border: 2px dashed rgba(128, 0, 128, 0.3);
+        background: radial-gradient(
+          circle,
+          rgba(204, 153, 255, 0.15) 30%,
+          transparent 60%
+        );
+        transform: translate(-50%, -50%);
+        transition: transform 0.05s linear;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hero-section">
+      <div class="hover-grid" id="hoverGrid"></div>
+      <div class="cursor-circle" id="cursorCircle"></div>
+    </div>
+
+    <script>
+      const grid = document.getElementById("hoverGrid");
+      const cursorCircle = document.getElementById("cursorCircle");
+      const squareSize = 40;
+      const cols = Math.ceil(window.innerWidth / squareSize);
+      const rows = Math.ceil(window.innerHeight / squareSize);
+      const squares = [];
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const square = document.createElement("div");
+          square.className = "grid-square";
+          square.dataset.x = c;
+          square.dataset.y = r;
+          grid.appendChild(square);
+          squares.push(square);
+        }
+      }
+
+      let mouseX = 0;
+      let mouseY = 0;
+      let animationFrame;
+
+      document.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+
+        // Move the visual tracking circle
+        cursorCircle.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+
+        // Throttle to 1 frame using requestAnimationFrame
+        if (!animationFrame) {
+          animationFrame = requestAnimationFrame(() => {
+            updateSquares(mouseX, mouseY);
+            animationFrame = null;
+          });
+        }
+      });
+
+      function updateSquares(x, y) {
+        squares.forEach((square) => {
+          const rect = square.getBoundingClientRect();
+          const dx = rect.left + rect.width / 2 - x;
+          const dy = rect.top + rect.height / 2 - y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 100) {
+            const depth = (1 - distance / 100) * 15;
+            const scale = 1 - (1 - distance / 100) * 0.1;
+            const glow = (1 - distance / 100) * 0.6;
+            square.style.transform = `translate3d(0, 0, -${depth}px) scale(${scale})`;
+            square.style.boxShadow = `0 0 8px rgba(162, 155, 254, ${glow})`;
+          } else {
+            square.style.transform = "translate3d(0, 0, 0) scale(1)";
+            square.style.boxShadow = "none";
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

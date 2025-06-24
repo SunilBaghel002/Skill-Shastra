@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enroll in Course - Skill Shastra</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <!-- Flatpickr CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        color: #1f2937;
+      }
+
+      .enroll-section {
+        padding: 4rem 2rem;
+        max-width: 1200px;
+        margin: 5rem auto 0;
+      }
+
+      .enroll-container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .enroll-container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(
+          circle at 10% 10%,
+          rgba(124, 58, 237, 0.05) 0%,
+          transparent 50%
+        );
+        pointer-events: none;
+      }
+
+      .steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2.5rem;
+        position: relative;
+      }
+
+      .steps::before {
+        content: "";
+        position: absolute;
+        top: 30%;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(
+          to right,
+          #10b981 0%,
+          #10b981 var(--progress),
+          #e5e7eb var(--progress),
+          #e5e7eb 100%
+        );
+        z-index: 1;
+        transition: all 0.3s ease;
+      }
+
+      .step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      .step-circle {
+        width: 48px;
+        height: 48px;
+        background: #e5e7eb;
+        color: #6b7280;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .step.active .step-circle {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+      }
+
+      .step.completed .step-circle {
+        background: #10b981;
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+
+      .step-title {
+        font-size: 1rem;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .step.active .step-title,
+      .step.completed .step-title {
+        color: #1f2937;
+        font-weight: 600;
+      }
+
+      .step-content {
+        display: none;
+        animation: fadeIn 0.5s ease forwards;
+      }
+
+      .step-content.active {
+        display: block;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      h2 {
+        font-size: 1.8rem;
+        color: #7c3aed;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        position: relative;
+      }
+
+      h2::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, #7c3aed, #a855f7);
+        border-radius: 2px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      label {
+        display: block;
+        font-size: 0.95rem;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 0.85rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        color: #1f2937;
+        transition: all 0.3s ease;
+        background: #f8f9ff;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        background: white;
+      }
+
+      .phone-group {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .phone-group select {
+        flex: 0 0 120px;
+      }
+
+      .phone-group input {
+        flex: 1;
+      }
+
+      .qr-code {
+        max-width: 220px;
+        margin: 2rem auto;
+        display: block;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .fee-popup {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem auto 2rem;
+        max-width: 400px;
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: 600;
+        box-shadow: 0 6px 15px rgba(124, 58, 237, 0.3);
+        animation: slideIn 0.5s ease forwards;
+        position: relative;
+      }
+
+      .fee-popup::before {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-bottom-color: #7c3aed;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .file-upload {
+        border: 2px dashed #d1d5db;
+        padding: 2rem;
+        text-align: center;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8f9ff;
+      }
+
+      .file-upload:hover {
+        border-color: #7c3aed;
+        background: rgba(124, 58, 237, 0.05);
+      }
+
+      .file-upload p {
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
+
+      .btn {
+        padding: 1.1rem 2.5rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+      }
+
+      .btn-primary::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: all 0.4s ease;
+      }
+
+      .btn-primary:hover::after {
+        left: 100%;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+      }
+
+      .btn-primary:disabled {
+        background: #a3a3a3;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .btn-secondary {
+        background: #f3f4f6;
+        color: #1f2937;
+        border: 1px solid #d1d5db;
+      }
+
+      .btn-secondary:hover {
+        background: #e5e7eb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+      }
+
+      .error {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        display: none;
+      }
+
+      .confirmation-details {
+        background: #f8f9ff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .confirmation-details p {
+        font-size: 0.95rem;
+        color: #1f2937;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .confirmation-details p strong {
+        color: #7c3aed;
+        width: 180px;
+      }
+
+      /* Loading Spinner */
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .spinner {
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #7c3aed;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .enroll-container {
+          padding: 2rem;
+        }
+
+        .steps {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        .steps::before {
+          width: 4px;
+          height: calc(100% - 30px);
+          top: 15px;
+          left: 15px;
+          background: linear-gradient(
+            to bottom,
+            #10b981 0%,
+            #10b981 var(--progress),
+            #e5e7eb var(--progress),
+            #e5e7eb 100%
+          );
+        }
+
+        .step {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          text-align: left;
+        }
+
+        .step-circle {
+          margin: 0;
+        }
+
+        .button-group {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+          justify-content: center;
+          padding: 1rem;
+        }
+
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .fee-popup {
+          max-width: 90%;
+          font-size: 1rem;
+        }
+
+        h2 {
+          font-size: 1.5rem;
+        }
+
+        .phone-group {
+          flex-direction: column;
+        }
+
+        .phone-group select {
+          flex: unset;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .enroll-section {
+          padding: 3rem 1rem;
+          margin-top: 4rem;
+        }
+
+        .step-title {
+          font-size: 0.9rem;
+        }
+
+        .step-circle {
+          width: 40px;
+          height: 40px;
+          font-size: 1rem;
+        }
+
+        .fee-popup {
+          font-size: 0.95rem;
+          padding: 0.75rem 1rem;
+        }
+      }
+
+      /* Flatpickr Customization */
+      .flatpickr-calendar {
+        font-family: "Poppins", sans-serif;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .flatpickr-day.selected {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: white;
+      }
+
+      .flatpickr-day:hover {
+        background: #e8f0ff;
+        border-color: #7c3aed;
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('../partials/navbar') %>
+    <section class="enroll-section">
+      <div class="enroll-container">
+        <% if (user && user.name) { %>
+        <h2>Welcome, <%= user.name %></h2>
+        <div class="steps">
+          <div class="step active">
+            <div class="step-circle">1</div>
+            <div class="step-title">Student Details</div>
+          </div>
+          <div class="step">
+            <div class="step-circle">2</div>
+            <div class="step-title">Confirmation</div>
+          </div>
+          <div class="step">
+            <div class="step-circle">3</div>
+            <div class="step-title">Payment</div>
+          </div>
+        </div>
+        <div class="step-content active" id="step-1">
+          <h2>Enter Your Details</h2>
+          <form id="student-details-form">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="course">Course to Join</label>
+                <select id="course" name="course" required>
+                  <option value="">Select Course</option>
+                  <option value="JavaScript Programming">
+                    JavaScript Programming
+                  </option>
+                  <option value="Full Stack Development">
+                    Full Stack Development
+                  </option>
+                  <option value="Java Programming">Java Programming</option>
+                  <option value="Python Programming">Python Programming</option>
+                  <option value="C++ Programming">C++ Programming</option>
+                  <option value="Programming Fundamentals">
+                    Programming Fundamentals
+                  </option>
+                  <option value="Gen AI">Gen AI</option>
+                </select>
+                <div class="error" id="course-error">
+                  Please select a course.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="full-name">Full Name</label>
+                <input
+                  type="text"
+                  id="full-name"
+                  name="fullName"
+                  value="<%= user && user.name ? user.name : '' %>"
+                  required
+                />
+                <div class="error" id="full-name-error">
+                  Please enter your full name.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value="<%= user && user.email ? user.email : '' %>"
+                  readonly
+                  required
+                />
+                <div class="error" id="email-error">
+                  Please enter a valid email address.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <div class="phone-group">
+                  <select id="isd-code" name="isdCode" required>
+                    <option value="">ISD</option>
+                    <option value="+91">+91 (India)</option>
+                    <option value="+1">+1 (USA/Canada)</option>
+                    <option value="+44">+44 (UK)</option>
+                    <option value="+61">+61 (Australia)</option>
+                    <option value="+81">+81 (Japan)</option>
+                    <option value="+86">+86 (China)</option>
+                    <option value="+33">+33 (France)</option>
+                    <option value="+49">+49 (Germany)</option>
+                  </select>
+                  <input type="tel" id="phone" name="phone" required />
+                </div>
+                <div class="error" id="isd-code-error">
+                  Please select an ISD code.
+                </div>
+                <div class="error" id="phone-error">
+                  Please enter a valid phone number.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="age">Age</label>
+                <input
+                  type="number"
+                  id="age"
+                  name="age"
+                  min="15"
+                  max="100"
+                  required
+                />
+                <div class="error" id="age-error">
+                  Please enter a valid age (15-100).
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div class="error" id="gender-error">
+                  Please select a gender.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="education">Current Education</label>
+                <input
+                  type="text"
+                  id="education"
+                  name="education"
+                  placeholder="e.g., B.Tech 2nd Year"
+                  required
+                />
+                <div class="error" id="education-error">
+                  Please enter your current education.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="institution">Institution Name</label>
+                <input
+                  type="text"
+                  id="institution"
+                  name="institution"
+                  required
+                />
+                <div class="error" id="institution-error">
+                  Please enter your institution name.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="guardian-name">Guardian Name</label>
+                <input
+                  type="text"
+                  id="guardian-name"
+                  name="guardianName"
+                  required
+                />
+                <div class="error" id="guardian-name-error">
+                  Please enter the guardian's name.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="guardian-phone">Guardian Phone Number</label>
+                <div class="phone-group">
+                  <select
+                    id="guardian-isd-code"
+                    name="guardianIsdCode"
+                    required
+                  >
+                    <option value="">ISD</option>
+                    <option value="+91">+91 (India)</option>
+                    <option value="+1">+1 (USA/Canada)</option>
+                    <option value="+44">+44 (UK)</option>
+                    <option value="+61">+61 (Australia)</option>
+                    <option value="+81">+81 (Japan)</option>
+                    <option value="+86">+86 (China)</option>
+                    <option value="+33">+33 (France)</option>
+                    <option value="+49">+49 (Germany)</option>
+                  </select>
+                  <input
+                    type="tel"
+                    id="guardian-phone"
+                    name="guardianPhone"
+                    required
+                  />
+                </div>
+                <div class="error" id="guardian-isd-code-error">
+                  Please select an ISD code.
+                </div>
+                <div class="error" id="guardian-phone-error">
+                  Please enter a valid phone number.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="country">Country</label>
+                <select id="country" name="country" required>
+                  <option value="">Select Country</option>
+                  <option value="India">India</option>
+                  <option value="USA">USA</option>
+                  <option value="UK">UK</option>
+                  <option value="Canada">Canada</option>
+                </select>
+                <div class="error" id="country-error">
+                  Please select a country.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="address">Address</label>
+                <input type="text" id="address" name="address" required />
+                <div class="error" id="address-error">
+                  Please enter your address.
+                </div>
+              </div>
+            </div>
+            <div class="button-group">
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="nextStep(1)"
+              >
+                Next
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="step-content" id="step-2">
+          <h2>Confirm Your Details</h2>
+          <p>Please review your details below:</p>
+          <div class="confirmation-details">
+            <p><strong>Course:</strong> <span id="confirm-course"></span></p>
+            <p>
+              <strong>Full Name:</strong> <span id="confirm-full-name"></span>
+            </p>
+            <p><strong>Email:</strong> <span id="confirm-email"></span></p>
+            <p><strong>Phone:</strong> <span id="confirm-phone"></span></p>
+            <p><strong>Age:</strong> <span id="confirm-age"></span></p>
+            <p><strong>Gender:</strong> <span id="confirm-gender"></span></p>
+            <p>
+              <strong>Current Education:</strong>
+              <span id="confirm-education"></span>
+            </p>
+            <p>
+              <strong>Institution:</strong>
+              <span id="confirm-institution"></span>
+            </p>
+            <p>
+              <strong>Guardian Name:</strong>
+              <span id="confirm-guardian-name"></span>
+            </p>
+            <p>
+              <strong>Guardian Phone:</strong>
+              <span id="confirm-guardian-phone"></span>
+            </p>
+            <p><strong>Country:</strong> <span id="confirm-country"></span></p>
+            <p><strong>Address:</strong> <span id="confirm-address"></span></p>
+          </div>
+          <div class="button-group">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="prevStep(2)"
+            >
+              Back
+            </button>
+            <button type="button" class="btn btn-primary" onclick="nextStep(2)">
+              Proceed to Payment
+            </button>
+          </div>
+        </div>
+        <div class="step-content" id="step-3">
+          <h2>Complete Payment</h2>
+          <div class="fee-popup" id="fee-popup">
+            Course Fee: <span id="course-fee"></span>
+          </div>
+          <p>
+            Scan the QR code below to make the payment for your selected course:
+          </p>
+          <img
+            src="/images/qr-code.jpg"
+            alt="Payment QR Code"
+            class="qr-code"
+          />
+          <p>
+            After making the payment, please provide the transaction details
+            below:
+          </p>
+          <form id="payment-form" enctype="multipart/form-data">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="transaction-id">Transaction ID</label>
+                <input
+                  type="text"
+                  id="transaction-id"
+                  name="transactionId"
+                  required
+                />
+                <div class="error" id="transaction-id-error">
+                  Please enter the transaction ID.
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="payment-date">Payment Date</label>
+                <input
+                  type="text"
+                  id="payment-date"
+                  name="paymentDate"
+                  required
+                  readonly
+                  placeholder="Select your Payment Date"
+                />
+                <div class="error" id="payment-date-error">
+                  Please select the payment date.
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="payment-proof">Upload Payment Proof</label>
+              <div
+                class="file-upload"
+                onclick="document.getElementById('payment-proof').click()"
+              >
+                <p id="file-upload-text">
+                  Click to upload or drag and drop (PNG, JPG, PDF)
+                </p>
+                <input
+                  type="file"
+                  id="payment-proof"
+                  name="paymentProof"
+                  accept=".png,.jpg,.pdf"
+                  style="display: none"
+                  required
+                />
+              </div>
+              <div class="error" id="payment-proof-error">
+                Please upload a valid payment proof (PNG, JPG, or PDF, max 5MB).
+              </div>
+            </div>
+            <div class="button-group">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="prevStep(3)"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                id="submit-enrollment"
+                class="btn btn-primary"
+              >
+                Submit Enrollment
+              </button>
+            </div>
+          </form>
+        </div>
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+          <div class="spinner"></div>
+        </div>
+        <% } else { %>
+        <h2>Welcome, Guest</h2>
+        <p>
+          Please <a href="/signup?redirect=/payment">log in</a> to enroll in a
+          course.
+        </p>
+        <% } %>
+      </div>
+    </section>
+    <%- include('../partials/footer') %>
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+      // Initialize Flatpickr
+      flatpickr("#payment-date", {
+        dateFormat: "Y-m-d",
+        maxDate: "today",
+        enableTime: false,
+        altInput: true,
+        altFormat: "F j, Y",
+        readonly: true,
+      });
+
+      // Debug localStorage for navbar issue
+      console.log("LocalStorage user:", localStorage.getItem("user"));
+
+      // Fallback user data from server-side
+      const serverUser = {
+        name: "<%= user && user.name ? user.name : '' %>",
+        email: "<%= user && user.email ? user.email : '' %>",
+        profileImage:
+          "<%= user && user.profileImage ? user.profileImage : '/images/default-avatar.png' %>",
+      };
+
+      // Ensure localStorage is set
+      if (
+        !localStorage.getItem("user") &&
+        serverUser.name &&
+        serverUser.email
+      ) {
+        localStorage.setItem("user", JSON.stringify(serverUser));
+      }
+
+      // Explicitly call updateNavbar
+      if (typeof updateNavbar === "function") {
+        updateNavbar();
+      } else {
+        console.error(
+          "updateNavbar function not found. Ensure navbar.ejs script is loaded."
+        );
+      }
+
+      // Check if user is logged in client-side
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.name || !user.email) {
+        alert("Please log in to access the enrollment page.");
+        window.location.href = "/signup?redirect=/payment";
+      }
+
+      // Course fee mapping
+      const courseFees = {
+        "JavaScript Programming": "₹1,500",
+        "Full Stack Development": "₹3,000",
+        "Front End Development": "₹1,500",
+        "Back End Development": "₹1,500",
+        "Digital Marketing": "₹1,500",
+        "Java Programming": "₹1,500",
+        "Python Programming": "₹1,500",
+        "C++ Programming": "₹1,500",
+        "Programming Fundamentals": "₹1,500",
+        "Gen AI": "₹1,500",
+      };
+
+      // Update progress bar
+      function updateProgressBar(step) {
+        const progress = (step - 1) * 50; // 0% for step 1, 50% for step 2, 100% for step 3
+        document
+          .querySelector(".steps")
+          .style.setProperty("--progress", `${progress}%`);
+      }
+
+      function nextStep(currentStep) {
+        if (currentStep === 1) {
+          const form = document.getElementById("student-details-form");
+          if (!validateForm(form)) return;
+
+          const formData = new FormData(form);
+          document.getElementById("confirm-course").textContent =
+            formData.get("course");
+          document.getElementById("confirm-full-name").textContent =
+            formData.get("fullName");
+          document.getElementById("confirm-email").textContent =
+            formData.get("email");
+          document.getElementById(
+            "confirm-phone"
+          ).textContent = `${formData.get("isdCode")} ${formData.get("phone")}`;
+          document.getElementById("confirm-age").textContent =
+            formData.get("age");
+          document.getElementById("confirm-gender").textContent =
+            formData.get("gender");
+          document.getElementById("confirm-education").textContent =
+            formData.get("education");
+          document.getElementById("confirm-institution").textContent =
+            formData.get("institution");
+          document.getElementById("confirm-guardian-name").textContent =
+            formData.get("guardianName");
+          document.getElementById(
+            "confirm-guardian-phone"
+          ).textContent = `${formData.get("guardianIsdCode")} ${formData.get(
+            "guardianPhone"
+          )}`;
+          document.getElementById("confirm-country").textContent =
+            formData.get("country");
+          document.getElementById("confirm-address").textContent =
+            formData.get("address");
+
+          // Store form data in sessionStorage
+          const studentData = {
+            course: formData.get("course"),
+            fullName: formData.get("fullName"),
+            email: formData.get("email"),
+            phone: `${formData.get("isdCode")} ${formData.get("phone")}`,
+            age: formData.get("age"),
+            gender: formData.get("gender"),
+            education: formData.get("education"),
+            institution: formData.get("institution"),
+            guardianName: formData.get("guardianName"),
+            guardianPhone: `${formData.get("guardianIsdCode")} ${formData.get(
+              "guardianPhone"
+            )}`,
+            country: formData.get("country"),
+            address: formData.get("address"),
+          };
+          sessionStorage.setItem("studentData", JSON.stringify(studentData));
+        }
+
+        document
+          .getElementById(`step-${currentStep}`)
+          .classList.remove("active");
+        document
+          .getElementsByClassName("step")
+          [currentStep - 1].classList.remove("active");
+        document
+          .getElementsByClassName("step")
+          [currentStep - 1].classList.add("completed");
+
+        document
+          .getElementById(`step-${currentStep + 1}`)
+          .classList.add("active");
+        document
+          .getElementsByClassName("step")
+          [currentStep].classList.add("active");
+        updateProgressBar(currentStep + 1);
+
+        if (currentStep + 1 === 3) {
+          const studentData = JSON.parse(
+            sessionStorage.getItem("studentData") || "{}"
+          );
+          const courseFee = courseFees[studentData.course] || "N/A";
+          document.getElementById("course-fee").textContent = courseFee;
+          if (courseFee === "N/A") {
+            document.getElementById("fee-popup").textContent =
+              "Course fee not available.";
+          }
+        }
+        3446;
+      }
+
+      function prevStep(currentStep) {
+        document
+          .getElementById(`step-${currentStep}`)
+          .classList.remove("active");
+        document
+          .getElementsByClassName("step")
+          [currentStep - 1].classList.remove("active");
+
+        document
+          .getElementById(`step-${currentStep - 1}`)
+          .classList.add("active");
+        document
+          .getElementsByClassName("step")
+          [currentStep - 2].classList.add("active");
+        document
+          .getElementsByClassName("step")
+          [currentStep - 2].classList.remove("completed");
+        updateProgressBar(currentStep - 1);
+      }
+
+      function validateForm(form) {
+        let isValid = true;
+        const inputs = form.querySelectorAll(
+          "input[required], select[required]"
+        );
+        inputs.forEach((input) => {
+          const error = document.getElementById(`${input.id}-error`);
+          if (!error) {
+            console.error(`Error element missing for input: ${input.id}`);
+            return;
+          }
+          if (!input.value.trim()) {
+            error.textContent = `Please ${
+              input.type === "select-one" ? "select" : "enter"
+            } a valid ${input.name.replace(/([A-Z])/g, " $1").toLowerCase()}.`;
+            error.style.display = "block";
+            isValid = false;
+          } else {
+            error.style.display = "none";
+          }
+          if (input.type === "email" && input.value.trim()) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(input.value)) {
+              error.textContent = "Please enter a valid email address.";
+              error.style.display = "block";
+              isValid = false;
+            }
+          }
+          if (input.type === "tel" && input.value.trim()) {
+            const phoneRegex = /^\d{7,15}$/;
+            if (!phoneRegex.test(input.value)) {
+              error.textContent =
+                "Please enter a valid phone number (7-15 digits).";
+              error.style.display = "block";
+              isValid = false;
+            }
+          }
+          if (input.id === "age" && input.value.trim()) {
+            const age = parseInt(input.value);
+            if (age < 15 || age > 100) {
+              error.textContent = "Please enter a valid age (15-100).";
+              error.style.display = "block";
+              isValid = false;
+            }
+          }
+          if (input.id === "payment-proof" && input.files.length > 0) {
+            const file = input.files[0];
+            const allowedTypes = ["image/png", "image/jpeg", "application/pdf"];
+            if (!allowedTypes.includes(file.type)) {
+              error.textContent = "Only PNG, JPG, or PDF files are allowed.";
+              error.style.display = "block";
+              isValid = false;
+            } else if (file.size > 5 * 1024 * 1024) {
+              error.textContent = "File size must be less than 5MB.";
+              error.style.display = "block";
+              isValid = false;
+            }
+          } else if (input.id === "payment-proof" && input.files.length === 0) {
+            error.textContent = "Please upload a payment proof file.";
+            error.style.display = "block";
+            isValid = false;
+          }
+        });
+        return isValid;
+      }
+
+      document
+        .getElementById("payment-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          if (!validateForm(this)) return;
+
+          const submitButton = document.getElementById("submit-enrollment");
+          const loadingOverlay = document.getElementById("loading-overlay");
+
+          // Show loading spinner and disable button
+          submitButton.disabled = true;
+          loadingOverlay.style.display = "flex";
+
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          if (!user.name || !user.email) {
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            alert("Please log in to submit enrollment.");
+            window.location.href = "/signup?redirect=/payment";
+            return;
+          }
+
+          const formData = new FormData(this);
+          const studentData = JSON.parse(
+            sessionStorage.getItem("studentData") || "{}"
+          );
+          if (!studentData.course) {
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            alert("Student data is missing. Please complete Step 1 again.");
+            document.getElementById("step-3").classList.remove("active");
+            document.getElementById("step-1").classList.add("active");
+            document
+              .getElementsByClassName("step")[2]
+              .classList.remove("active");
+            document.getElementsByClassName("step")[0].classList.add("active");
+            updateProgressBar(1);
+            return;
+          }
+          formData.append("studentData", JSON.stringify(studentData));
+
+          try {
+            const response = await fetch("/api/enroll", {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+            const result = await response.json();
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            if (response.ok) {
+              alert(
+                "Enrollment submitted successfully! Check your email for confirmation."
+              );
+              sessionStorage.removeItem("studentData");
+              window.location.href = "/dashboard";
+            } else {
+              console.error("Enrollment error response:", result);
+              alert(
+                `Error: ${
+                  result.message ||
+                  "Failed to submit enrollment. Please try again."
+                }`
+              );
+              if (
+                result.message.includes("token") ||
+                result.message.includes("Unauthorized")
+              ) {
+                localStorage.removeItem("user");
+                window.location.href = "/signup?redirect=/payment";
+              }
+            }
+          } catch (error) {
+            console.error("Enrollment submission error:", error);
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            alert(
+              "An error occurred while submitting your enrollment. Please check your input and try again."
+            );
+          }
+        });
+
+      document
+        .getElementById("payment-proof")
+        .addEventListener("change", function () {
+          const file = this.files[0];
+          const error = document.getElementById("payment-proof-error");
+          if (file) {
+            const fileName = file.name;
+            document.getElementById("file-upload-text").textContent = fileName;
+            const allowedTypes = ["image/png", "image/jpeg", "application/pdf"];
+            if (!allowedTypes.includes(file.type)) {
+              error.textContent = "Only PNG, JPG, or PDF files are allowed.";
+              error.style.display = "block";
+            } else if (file.size > 5 * 1024 * 1024) {
+              error.textContent = "File size must be less than 5MB.";
+              error.style.display = "block";
+            } else {
+              error.style.display = "none";
+            }
+          } else {
+            document.getElementById("file-upload-text").textContent =
+              "Click to upload or drag and drop (PNG, JPG, PDF)";
+            error.textContent = "Please upload a payment proof file.";
+            error.style.display = "block";
+          }
+        });
+
+      // Initialize progress bar
+      updateProgressBar(1);
+    </script>
+    <script src="/js/navbar.js"></script>
+  </body>
+</html>

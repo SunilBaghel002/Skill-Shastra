@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Marketing Courses - Skillshastra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            overflow-x: hidden;
+        }
+
+        /* Navbar Styles */
+        /* .btm {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btm-primary {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: white;
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+        }
+
+        .btm-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
+        }
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1rem 0;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(147, 51, 234, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1.5rem;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #7c3aed;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo i {
+            font-size: 1.3rem;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: #4b5563;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover,
+        .nav-link:focus {
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            min-width: 220px;
+            padding: 1rem 0;
+            border: 1px solid rgba(124, 58, 237, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-item:hover .dropdown,
+        .nav-item:focus-within .dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+            color: #4b5563;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background: rgba(124, 58, 237, 0.05);
+            color: #7c3aed;
+            border-left-color: #7c3aed;
+            padding-left: 2rem;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 4px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #7c3aed;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        } */
+
+        /* Hero Section */
+        .courses-hero {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding: 6rem 1.5rem 4rem;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d1b69 100%);
+            overflow: hidden;
+        }
+
+        .courses-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .courses-hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+            z-index: 2;
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .courses-hero h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: white;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .courses-hero .gradient-text {
+            background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 3s ease-in-out infinite;
+        }
+
+        @keyframes gradient-shift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .courses-hero p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            opacity: 0;
+            animation: fadeIn 1.5s ease forwards 0.5s;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Courses Section */
+        .courses-section {
+            padding: 4rem 1.5rem;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        }
+
+        .courses-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .course-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: cardFadeIn 1s ease forwards;
+            animation-delay: calc(var(--delay) * 0.2s);
+        }
+
+        .course-card:nth-child(1) {
+            --delay: 1;
+        }
+
+        .course-card:nth-child(2) {
+            --delay: 2;
+        }
+
+        @keyframes cardFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .course-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #7c3aed, #a855f7) border-box;
+        }
+
+        .course-icon {
+            font-size: 2rem;
+            color: #7c3aed;
+            margin-bottom: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .course-card:hover .course-icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .course-card h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .course-card p {
+            font-size: 0.85rem;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .course-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .course-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .course-btn:hover::after {
+            left: 100%;
+        }
+
+        .course-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+        }
+
+        /* Footer Styles */
+        .footer {
+            background: linear-gradient(135deg, #0a0a1a 0%, #14142b 50%, #1f1247 100%);
+            padding: 4rem 1.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(88, 28, 135, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section {
+            padding: 1rem;
+        }
+
+        .footer-logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #9333ea;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-logo i {
+            font-size: 1.3rem;
+            transition: transform 0.3s ease;
+        }
+
+        .footer-logo:hover i {
+            transform: rotate(360deg);
+        }
+
+        .footer-description {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-icon {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            color: #9333ea;
+            transform: translateY(-3px) scale(1.2);
+        }
+
+        .footer-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #9333ea;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .footer-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, #581c87, #9333ea);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .footer-section:hover .footer-title::after {
+            width: 60px;
+        }
+
+        .footer-menu {
+            list-style: none;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #9333ea;
+            transform: translateX(5px);
+        }
+
+        .footer-contact p {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .newsletter-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            position: relative;
+        }
+
+        .newsletter-input {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 0.85rem;
+            width: 100%;
+            max-width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .newsletter-input:invalid:not(:placeholder-shown) {
+            border: 2px solid #ef4444;
+        }
+
+        .newsletter-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #581c87, #9333ea);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .newsletter-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .newsletter-btn:hover::after {
+            left: 100%;
+        }
+
+        .newsletter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(88, 28, 135, 0.4);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(88, 28, 135, 0.3);
+            position: relative;
+        }
+
+        .footer-bottom p {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            
+
+            .courses-hero {
+                padding: 4rem 1rem 3rem;
+            }
+
+            .courses-hero h1 {
+                font-size: 2rem;
+            }
+
+            .courses-hero p {
+                font-size: 1rem;
+            }
+
+            .courses-section {
+                padding: 3rem 1rem;
+            }
+
+            .courses-container {
+                grid-template-columns: 1fr;
+            }
+
+            .course-card {
+                padding: 1.5rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .social-links,
+            .footer-logo {
+                justify-content: center;
+            }
+
+            .newsletter-form {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .newsletter-input {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo {
+                font-size: 1.4rem;
+            }
+
+            .courses-hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .courses-hero p {
+                font-size: 0.9rem;
+            }
+
+            .course-card h3 {
+                font-size: 1.1rem;
+            }
+
+            .course-card p {
+                font-size: 0.8rem;
+            }
+
+            .course-btn {
+                font-size: 0.8rem;
+                padding: 0.6rem 1.2rem;
+            }
+
+            .footer-logo {
+                font-size: 1.4rem;
+            }
+
+            .footer-title {
+                font-size: 1rem;
+            }
+
+            .footer-link,
+            .footer-contact p,
+            .footer-description {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Ripple Animation */
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <%- include('../partials/navbar') %>
+
+    <!-- Courses Hero Section -->
+    <section class="courses-hero">
+        <div class="courses-hero-container">
+            <h1>Excel in <span class="gradient-text">Digital Marketing</span></h1>
+            <p>Master the art of digital marketing and create stunning visuals with our comprehensive courses.</p>
+        </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section class="courses-section">
+        <div class="courses-container">
+            <div class="course-card">
+                <i class="fas fa-bullhorn course-icon"></i>
+                <h3>Digital Marketing</h3>
+                <p>Learn SEO, social media marketing, content creation, and analytics to boost your brand's online
+                    presence.</p>
+                <a href="/details-digital-marketing" class="course-btn"><i class="fas fa-arrow-right"></i> Explore
+                    Course</a>
+            </div>
+            <div class="course-card">
+                <i class="fas fa-paint-brush course-icon"></i>
+                <h3>Canva Tutorials</h3>
+                <p>Create professional designs with Canva for social media, presentations, and marketing materials.</p>
+                <a href="canva.html" class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section footer-brand">
+                    <a href="index.html" class="footer-logo"><i class="fas fa-code"></i> Skillshastra</a>
+                    <p class="footer-description">Empowering the future with cutting-edge tech skills and
+                        industry-focused learning.</p>
+                    <div class="social-links">
+                        <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section footer-links">
+                    <h4 class="footer-title">Quick Links</h4>
+                    <ul class="footer-menu">
+                        <li><a href="index.html" class="footer-link">Home</a></li>
+                        <li><a href="digitalMarketing.html" class="footer-link">Digital Marketing</a></li>
+                        <li><a href="canva.html" class="footer-link">Canva Tutorials</a></li>
+                        <li><a href="about.html" class="footer-link">About</a></li>
+                        <li><a href="contact.html" class="footer-link">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section footer-contact">
+                    <h4 class="footer-title">Contact Us</h4>
+                    <p><i class="fas fa-envelope"></i> skillshastra001@gmail.com</p>
+                    <p><i class="fas fa-phone"></i> +91 8510882886</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Ballabgarh, Faridabad, Haryana</p>
+                </div>
+                <div class="footer-section footer-newsletter">
+                    <h4 class="footer-title">Stay Updated</h4>
+                    <p>Subscribe to our newsletter for the latest courses and updates.</p>
+                    <form class="newsletter-form">
+                        <input type="email" placeholder="Enter your email" class="newsletter-input" required>
+                        <button type="submit" class="newsletter-btn"><i class="fas fa-paper-plane"></i>
+                            Subscribe</button>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 Skillshastra. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+
+        // Smooth Scroll for Links
+        document.querySelectorAll('.footer-link, .btm, .course-btn').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+
+        // Newsletter Form Submission
+        const newsletterForm = document.querySelector('.newsletter-form');
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailInput = newsletterForm.querySelector('.newsletter-input');
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+                alert('Thank you for subscribing!');
+                emailInput.value = '';
+            } else {
+                emailInput.style.border = '2px solid #ef4444';
+            }
+        });
+
+    </script>
+    <script src="/js/navbar.js"></script>
+</body>
+
+</html>

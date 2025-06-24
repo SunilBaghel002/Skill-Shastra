@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Shastra - Admin Feedback</title>
+    <meta name="description" content="View user feedback for Skill Shastra." />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        color: #1f2937;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+        position: relative;
+      }
+      .main-content.full {
+        margin-left: 0;
+      }
+      .feedback-section {
+        padding: 4rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .section-title {
+        font-size: 1.8rem;
+        color: #7c3aed;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        position: relative;
+      }
+      .section-title::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, #7c3aed, #a855f7);
+        border-radius: 2px;
+      }
+      .admin-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+      }
+      .feedback-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+      .feedback-card {
+        background: #f8f9ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+      }
+      .feedback-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
+      }
+      .feedback-card h4 {
+        font-size: 1.2rem;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+      }
+      .feedback-card p {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+      .rating-stars {
+        color: #f59e0b;
+        margin-bottom: 0.5rem;
+      }
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+      }
+      .loading-overlay .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #7c3aed;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @media (max-width: 768px) {
+        body {
+          margin-left: 0;
+        }
+        .feedback-section {
+          padding: 3rem 1rem;
+        }
+        .feedback-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('../partials/sidebar') %>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+    <main class="main-content" id="main-content">
+      <section class="feedback-section">
+        <% if (user && user.role === 'admin') { %>
+        <h1 class="section-title">User Feedback</h1>
+        <div class="admin-card">
+          <h2 class="section-title">All Feedback</h2>
+          <div class="feedback-grid" id="feedback-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <% } else { %>
+        <p>
+          You do not have permission to access this page.
+          <a href="/signup?redirect=/admin/feedback">Log in</a> as an admin.
+        </p>
+        <% } %>
+      </section>
+      <%- include('../partials/footer') %>
+    </main>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.email || user.role !== "admin") {
+          alert("Access denied. Admin login required.");
+          window.location.href = "/signup?redirect=/admin/feedback";
+          return;
+        }
+
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) loadingOverlay.style.display = "flex";
+
+        // Update main content margin
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
+        if (sidebar && mainContent) {
+          if (sidebar.classList.contains("hidden")) {
+            mainContent.classList.add("full");
+          }
+          sidebar.addEventListener("transitionend", () => {
+            mainContent.classList.toggle(
+              "full",
+              sidebar.classList.contains("hidden")
+            );
+          });
+        }
+
+        // Fetch feedback
+        try {
+          const feedbackRes = await fetch("/api/admin/feedback", {
+            credentials: "include",
+          });
+          if (!feedbackRes.ok) {
+            if (feedbackRes.status === 401) {
+              localStorage.removeItem("user");
+              window.location.href = "/signup?redirect=/admin/feedback";
+            }
+            throw new Error("Failed to load feedback");
+          }
+          const { feedback } = await feedbackRes.json();
+          const feedbackGrid = document.getElementById("feedback-grid");
+          if (feedbackGrid) {
+            feedbackGrid.innerHTML = feedback.length
+              ? feedback
+                  .map(
+                    (f) => `
+            <div class="feedback-card">
+              <h4>${f.userName}</h4>
+              <p>Email: ${f.userEmail}</p>
+              <div class="rating-stars">
+                ${"★".repeat(f.rating)}${"☆".repeat(5 - f.rating)}
+              </div>
+              <p>${f.text}</p>
+              <p><small>${new Date(f.createdAt).toLocaleString()}</small></p>
+            </div>
+          `
+                  )
+                  .join("")
+              : "<p>No feedback received.</p>";
+          }
+        } catch (error) {
+          console.error("Error loading feedback:", error);
+          const feedbackGrid = document.getElementById("feedback-grid");
+          if (feedbackGrid) {
+            feedbackGrid.innerHTML =
+              '<p style="color: #ff0000;">Failed to load feedback. Please try again.</p>';
+          }
+          alert("Failed to load feedback. Check console for details.");
+        } finally {
+          if (loadingOverlay) loadingOverlay.style.display = "none";
+        }
+      });
+    </script>
+    <script src="/js/sidebar.js"></script>
+  </body>
+</html>

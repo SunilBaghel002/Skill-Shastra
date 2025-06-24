@@ -1,0 +1,105 @@
+<nav class="navbar" aria-label="Main navigation">
+  <div class="nav-container">
+    <a href="/" class="logo"><img src="/images/Logo.png" alt="Skillshastra Logo" /></a>
+    <div class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </div>
+    <ul class="nav-menu" aria-label="Navigation menu">
+      <li class="nav-item">
+        <a href="/" class="nav-link"><i class="fas fa-home"></i> Home</a>
+      </li>
+      <li class="nav-item">
+        <a href="#coursesSection" class="nav-link" aria-haspopup="true">Courses <i class="fas fa-chevron-down"></i></a>
+        <div class="dropdown" aria-label="Courses dropdown">
+          <div class="has-sub-dropdown">
+            <a href="/programming" class="dropdown-item" aria-haspopup="true"><i class="fas fa-laptop-code"></i>
+              Programming Languages</a>
+            <i class="fas fa-chevron-right sub-dropdown-toggle"></i>
+            <div class="sub-dropdown" aria-label="Programming Languages submenu">
+              <a href="/python" class="sub-dropdown-item"><i class="fab fa-python"></i> Python</a>
+              <a href="/java" class="sub-dropdown-item"><i class="fab fa-java"></i> Java</a>
+              <a href="/cpp" class="sub-dropdown-item"><i class="fas fa-code"></i> C++</a>
+              <a href="/javaScript" class="sub-dropdown-item"><i class="fab fa-js"></i> JavaScript</a>
+            </div>
+          </div>
+          <div class="has-sub-dropdown">
+            <a href="/web-dev" class="dropdown-item" aria-haspopup="true"><i class="fas fa-globe"></i> Web
+              Development</a>
+            <i class="fas fa-chevron-right sub-dropdown-toggle"></i>
+            <div class="sub-dropdown" aria-label="Web Development submenu">
+              <a href="/frontend" class="sub-dropdown-item"><i class="fas fa-desktop"></i> Frontend Development</a>
+              <a href="/backend" class="sub-dropdown-item"><i class="fas fa-server"></i> Backend Development</a>
+              <a href="/fullstack" class="sub-dropdown-item"><i class="fas fa-laptop-code"></i> Full Stack
+                Development</a>
+            </div>
+          </div>
+          <div class="has-sub-dropdown">
+            <a href="/digital-marketing" class="dropdown-item" aria-haspopup="true"><i class="fas fa-bullhorn"></i>
+              Digital Marketing</a>
+            <i class="fas fa-chevron-right sub-dropdown-toggle"></i>
+            <div class="sub-dropdown" aria-label="Digital Marketing submenu">
+              <a href="/details-digital-marketing" class="sub-dropdown-item"><i class="fas fa-search"></i> Digital
+                Marketing</a>
+            </div>
+          </div>
+          <div class="has-sub-dropdown">
+            <a href="/genai" class="dropdown-item" aria-haspopup="true"><i class="fas fa-robot"></i> Generative AI</a>
+            <i class="fas fa-chevron-right sub-dropdown-toggle"></i>
+            <div class="sub-dropdown" aria-label="Generative AI submenu">
+              <a href="/ai-fundamentals" class="sub-dropdown-item"><i class="fas fa-brain"></i> AI Fundamentals</a>
+            </div>
+          </div>
+          <div class="has-sub-dropdown">
+            <a href="/fundamentals" class="dropdown-item" aria-haspopup="true"><i class="fas fa-bullhorn"></i>
+              Fundamentals of Computers</a>
+          </div>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a href="#about" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
+      </li>
+      <li class="nav-item">
+        <a href="#mentorsSection" class="nav-link" aria-haspopup="true">Instructors <i
+            class="fas fa-chevron-down"></i></a>
+        <div class="dropdown" aria-label="Instructors dropdown">
+          <a href="/meetTeam" class="dropdown-item"><i class="fas fa-users"></i> Meet Our Team</a>
+          <a href="/expertProfiles" class="dropdown-item"><i class="fas fa-user-tie"></i> Expert Profiles</a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a href="#" class="nav-link" aria-haspopup="true">Resources <i class="fas fa-chevron-down"></i></a>
+        <div class="dropdown" aria-label="Resources dropdown">
+          <a href="/studyMaterials" class="dropdown-item"><i class="fas fa-file-alt"></i> Study Materials</a>
+          <a href="/practiceProject" class="dropdown-item"><i class="fas fa-project-diagram"></i> Practice Projects</a>
+          <a href="/codingChallenges" class="dropdown-item"><i class="fas fa-trophy"></i> Coding Challenges</a>
+          <a href="#" class="dropdown-item"><i class="fas fa-route"></i> Career Guidance</a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a href="#contact" class="nav-link"><i class="fas fa-envelope"></i> Contact</a>
+      </li>
+      <li class="profile-wrapper" id="profile-section">
+        <div class="profile-container">
+          <img id="profile-img" src="" alt="User Profile" class="profile-img" aria-label="Toggle profile menu" />
+          <div class="profile-dropdown" aria-label="Profile dropdown">
+            <div class="profile-info">
+              <p><strong>Name:</strong> <span id="profile-name"></span></p>
+              <p><strong>Email:</strong> <span id="profile-email"></span></p>
+            </div>
+            <a href="/dashboard" class="profile-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a id="admin-link" href="/admin" class="profile-link" style="display: none"><i
+                class="fas fa-user-shield"></i> Admin Panel</a>
+            <a href="#" class="profile-link" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
+        </div>
+      </li>
+      <li class="profile-wrapper" id="login-section">
+        <a href="/signup" class="btm btm-primary" onclick="handleLoginRedirect()">
+          <i class="fas fa-user"></i> Login
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>

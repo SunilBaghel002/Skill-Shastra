@@ -1,0 +1,44 @@
+
+  <div class="hamburger" id="hamburger">
+    <i class="fas fa-bars"></i>
+  </div>
+  <aside class="sidebar" id="sidebar">
+    <div>
+      <div class="sidebar-logo">
+        <div class="skill">SKILL</div>
+        <div class="shastra">SHASTRA</div>
+      </div>
+      <nav class="sidebar-nav">
+        <ul>
+          <li><a href="/" <%= request.path === '/' ? 'class="active"' : '' %>><i class="fas fa-home"></i> Home</a></li>
+          <% if (user && user.role !== 'admin') { %>
+            <li><a href="/dashboard" <%= request.path.includes('/dashboard') ? 'class="active"' : '' %>><i class="fas fa-book"></i> Dashboard</a></li>
+            <li><a href="/dashboard/coding-Challenge" <%= request.path.includes('/dashboard/codingChallenge') ? 'class="active"' : '' %>><i class="fas fa-code"></i> Coding Challenges</a></li>
+            <li><a href="/dashboard/practiceProject" <%= request.path.includes('/dashboard/practiceProject') ? 'class="active"' : '' %>><i class="fas fa-laptop-code"></i> Practice Projects</a></li>
+            <li><a href="/dashboard/studyMaterials" <%= request.path.includes('/dashboard/studyMaterials') ? 'class="active"' : '' %>><i class="fas fa-folder-open"></i> Resources</a></li>
+            <li><a href="/dashboard/messages" <%= request.path.includes('/dashboard/messages') ? 'class="active"' : '' %>><i class="fas fa-envelope"></i> Message Mentor</a></li>
+            <li><a href="/dashboard/feedback" <%= request.path.includes('/dashboard/feedback') ? 'class="active"' : '' %>><i class="fas fa-comment-dots"></i> Feedback</a></li>
+            <li><a href="/dashboard/feed" <%= request.path.includes('/dashboard/feed') ? 'class="active"' : '' %>><i class="fas fa-rss"></i> Feed</a></li>
+          <% } %>
+          <% if (user && user.role === 'admin') { %>
+            <li class="section-title">Admin Panel</li>
+            <li><a href="/admin" <%= request.path === '/admin' ? 'class="active"' : '' %>><i class="fas fa-user-shield"></i> Manage Users</a></li>
+            <li><a href="/admin/feedback" <%= request.path.includes('/admin/feedback') ? 'class="active"' : '' %>><i class="fas fa-comment-dots"></i> View Feedback</a></li>
+            <li><a href="/admin/analytics" <%= request.path.includes('/admin/analytics') ? 'class="active"' : '' %>><i class="fas fa-chart-bar"></i> Analytics</a></li>
+            <li><a href="/admin/messages" <%= request.path.includes('/admin/messages') ? 'class="active"' : '' %>><i class="fas fa-envelope"></i> Messages</a></li>
+            <li><a href="/admin/announcements" <%= request.path.includes('/admin/announcements') ? 'class="active"' : '' %>><i class="fas fa-bullhorn"></i> Announcements</a></li>
+          <% } %>
+        </ul>
+      </nav>
+    </div>
+    <div class="sidebar-user">
+      <% if (user) { %>
+        <img src="<%= user.profileImage || '/images/default-avatar.jpg' %>" alt="User Profile">
+        <p class="name"><%= user.name %></p>
+        <p class="email"><%= user.email %></p>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      <% } else { %>
+        <p>Please <a href="/signup?redirect=/dashboard">log in</a> to access the dashboard.</p>
+      <% } %>
+    </div>
+  </aside>

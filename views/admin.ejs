@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Shastra - Admin Panel</title>
+    <meta
+      name="description"
+      content="Manage users, enrollments, feedback, and analytics."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <link rel="stylesheet" href="/css/sidebar.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        color: #1f2937;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+        position: relative;
+      }
+      .main-content.full {
+        margin-left: 0;
+      }
+      .admin-section {
+        padding: 4rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .section-title {
+        font-size: 1.8rem;
+        color: #7c3aed;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        position: relative;
+      }
+      .section-title::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, #7c3aed, #a855f7);
+        border-radius: 2px;
+      }
+      .admin-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+      .users-grid,
+      .feedback-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+      }
+      .user-card,
+      .feedback-card {
+        background: #f8f9ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .user-card::-webkit-scrollbar,
+      .feedback-card::-webkit-scrollbar {
+        width: 8px;
+      }
+      .user-card::-webkit-scrollbar-thumb,
+      .feedback-card::-webkit-scrollbar-thumb {
+        background: #a855f7;
+        border-radius: 4px;
+      }
+      .user-card:hover,
+      .feedback-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
+      }
+      .user-card img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 0.5rem;
+      }
+      .user-card h4,
+      .feedback-card h4 {
+        font-size: 1.2rem;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+      }
+      .user-card p,
+      .feedback-card p {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+      .status-pending {
+        color: #f59e0b;
+        font-weight: 600;
+      }
+      .status-approved {
+        color: #10b981;
+        font-weight: 600;
+      }
+      .status-rejected {
+        color: #ef4444;
+        font-weight: 600;
+      }
+      .action-btn {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+      .action-btn.reject {
+        background: #ef4444;
+      }
+      .action-btn.details {
+        background: #3b82f6;
+      }
+      .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
+      }
+      .action-btn.reject:hover {
+        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+      }
+      .action-btn.details:hover {
+        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+      }
+      .action-btn.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+      }
+      .analytics-card {
+        background: #f8f9ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+      }
+      .analytics-card i {
+        font-size: 2rem;
+        color: #7c3aed;
+        margin-bottom: 0.5rem;
+      }
+      .analytics-card h3 {
+        font-size: 1.5rem;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+      }
+      .analytics-card p {
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
+      .placeholder-card {
+        background: #f8f9ff;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        opacity: 0.7;
+      }
+      .placeholder-card p {
+        color: #6b7280;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+      .rating-stars {
+        color: #f59e0b;
+        margin-bottom: 0.5rem;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-content {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        position: relative;
+      }
+      .modal-content h3 {
+        font-size: 1.5rem;
+        color: #7c3aed;
+        margin-bottom: 1rem;
+      }
+      .modal-content p {
+        font-size: 0.9rem;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+      }
+      .modal-content img {
+        max-width: 100%;
+        border-radius: 8px;
+        margin: 1rem 0;
+      }
+      .modal-content a {
+        color: #7c3aed;
+        text-decoration: underline;
+      }
+      .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        color: #6b7280;
+        cursor: pointer;
+        background: none;
+        border: none;
+      }
+      .close-btn:hover {
+        color: #1f2937;
+      }
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #7c3aed;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        margin-left: 0.5rem;
+      }
+      .modal-spinner {
+        display: none;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #7c3aed;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 1rem auto;
+      }
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+      }
+      .loading-overlay .spinner {
+        width: 40px;
+        height: 40px;
+      }
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 1.5rem;
+        gap: 0.5rem;
+      }
+      .pagination-btn {
+        background: #f8f9ff;
+        border: 1px solid #e5e7eb;
+        color: #1f2937;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+      }
+      .pagination-btn:hover {
+        background: #7c3aed;
+        color: white;
+        border-color: #7c3aed;
+      }
+      .pagination-btn.active {
+        background: #7c3aed;
+        color: white;
+        border-color: #7c3aed;
+      }
+      .pagination-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .notification-container {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 4000;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .notification {
+        background: #10b981;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        animation: slideIn 0.5s ease forwards;
+        max-width: 400px;
+        font-size: 0.9rem;
+      }
+      .notification.error {
+        background: #ef4444;
+      }
+      .notification .close-notification {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .notification .close-notification:hover {
+        color: #d1d5db;
+      }
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .search-bar {
+        flex: 1;
+        max-width: 300px;
+        position: relative;
+      }
+      .search-bar input {
+        width: 100%;
+        padding: 0.8rem 1rem 0.8rem 2.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #1f2937;
+        outline: none;
+        transition: border-color 0.3s ease;
+      }
+      .search-bar input:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+      }
+      .search-bar i {
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        color: #6b7280;
+        font-size: 1rem;
+      }
+      .sort-select {
+        padding: 0.8rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #1f2937;
+        background: #f8f9ff;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.3s ease;
+      }
+      .sort-select:focus {
+        border-color: #7c3aed;
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @media (max-width: 768px) {
+        body {
+          margin-left: 0;
+        }
+        .admin-section {
+          padding: 3rem 1rem;
+        }
+        .users-grid,
+        .feedback-grid,
+        .analytics-grid {
+          grid-template-columns: 1fr;
+        }
+        .modal-content {
+          width: 95%;
+          padding: 1.5rem;
+        }
+        .notification {
+          max-width: 90%;
+        }
+        .controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .search-bar {
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('partials/sidebar') %>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+    <div class="notification-container" id="notification-container"></div>
+    <main class="main-content" id="main-content">
+      <section class="admin-section">
+        <% if (user && user.role === 'admin') { %>
+        <h1 class="section-title">Admin Panel</h1>
+        <div class="admin-card">
+          <h2 class="section-title">Analytics Dashboard</h2>
+          <div class="analytics-grid" id="analytics-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="admin-card">
+          <h2 class="section-title">Manage Users & Enrollments</h2>
+          <div class="controls">
+            <div class="search-bar">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Search by email..."
+                oninput="searchUsers()"
+              />
+            </div>
+            <select class="sort-select" id="sort-select" onchange="sortUsers()">
+              <option value="courses-desc">Courses (High to Low)</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="email-asc">Email (A-Z)</option>
+            </select>
+          </div>
+          <div class="users-grid" id="users-grid">
+            <!-- Populated by JS -->
+          </div>
+          <div class="pagination" id="pagination">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="admin-card">
+          <h2 class="section-title">User Feedback</h2>
+          <div class="feedback-grid" id="feedback-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="admin-card">
+          <h2 class="section-title">Messages</h2>
+          <div class="placeholder-card">
+            <p>Messaging feature is under development.</p>
+          </div>
+        </div>
+        <div class="admin-card">
+          <h2 class="section-title">Post Announcements</h2>
+          <div class="placeholder-card">
+            <p>Content posting feature is under development.</p>
+          </div>
+        </div>
+        <!-- Modal for Enrollment Details -->
+        <div class="modal" id="enrollment-modal">
+          <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">
+              <i class="fas fa-times"></i>
+            </button>
+            <h3>Enrollment Details</h3>
+            <div id="modal-body">
+              <div class="modal-spinner" id="modal-spinner"></div>
+            </div>
+          </div>
+        </div>
+        <% } else { %>
+        <p>
+          You do not have permission to access this page.
+          <a href="/signup?redirect=/dashboard">Log in</a> as an admin.
+        </p>
+        <% } %>
+      </section>
+      <%- include('partials/footer') %>
+    </main>
+    <script>
+      let allUsers = [];
+      let filteredUsers = [];
+      const USERS_PER_PAGE = 6;
+      let currentPage = 1;
+
+      function renderUsers(page) {
+        const start = (page - 1) * USERS_PER_PAGE;
+        const end = start + USERS_PER_PAGE;
+        const paginatedUsers = filteredUsers.slice(start, end);
+        const usersGrid = document.getElementById("users-grid");
+        if (usersGrid) {
+          usersGrid.innerHTML = paginatedUsers.length
+            ? paginatedUsers
+                .map(
+                  (user) => `
+                    <div class="user-card">
+                      <img src="${user.profileImage}" alt="${user.name}">
+                      <h4>${user.name}</h4>
+                      <p>Email: ${user.email}</p>
+                      <p>Courses:</p>
+                      ${
+                        user.enrollments.length
+                          ? user.enrollments
+                              .map(
+                                (e) => `
+                                <div>
+                                  ${
+                                    e.course
+                                  } (<span class="status-${e.status.toLowerCase()}">${
+                                  e.status
+                                }</span>)
+                                  <div>
+                                    <button class="action-btn" onclick="updateEnrollment('${
+                                      e._id
+                                    }', 'approved', this)">
+                                      Approve
+                                      <span class="spinner" style="display: none;"></span>
+                                    </button>
+                                    <button class="action-btn reject" onclick="updateEnrollment('${
+                                      e._id
+                                    }', 'rejected', this)">
+                                      Reject
+                                      <span class="spinner" style="display: none;"></span>
+                                    </button>
+                                    <button class="action-btn details" onclick="showEnrollmentDetails('${
+                                      e._id
+                                    }')">Details</button>
+                                  </div>
+                                </div>
+                              `
+                              )
+                              .join("")
+                          : "<p>No enrollments</p>"
+                      }
+                    </div>
+                  `
+                )
+                .join("")
+            : "<p>No users found.</p>";
+
+          // Render pagination
+          const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+          const pagination = document.getElementById("pagination");
+          if (pagination) {
+            pagination.innerHTML = `
+              <button class="pagination-btn ${
+                currentPage === 1 ? "disabled" : ""
+              }" onclick="changePage(${currentPage - 1})" ${
+              currentPage === 1 ? "disabled" : ""
+            }>Previous</button>
+              ${Array.from({ length: totalPages }, (_, i) => i + 1)
+                .map(
+                  (p) =>
+                    `<button class="pagination-btn ${
+                      p === currentPage ? "active" : ""
+                    }" onclick="changePage(${p})">${p}</button>`
+                )
+                .join("")}
+              <button class="pagination-btn ${
+                currentPage === totalPages ? "disabled" : ""
+              }" onclick="changePage(${currentPage + 1})" ${
+              currentPage === totalPages ? "disabled" : ""
+            }>Next</button>
+            `;
+          }
+        }
+      }
+
+      function changePage(page) {
+        if (
+          page >= 1 &&
+          page <= Math.ceil(filteredUsers.length / USERS_PER_PAGE)
+        ) {
+          currentPage = page;
+          renderUsers(currentPage);
+        }
+      }
+
+      function sortUsers() {
+        const sortValue = document.getElementById("sort-select").value;
+        filteredUsers = [...allUsers].sort((a, b) => {
+          if (sortValue === "courses-desc") {
+            return b.enrollments.length - a.enrollments.length;
+          } else if (sortValue === "name-asc") {
+            return a.name.localeCompare(b.name);
+          } else if (sortValue === "email-asc") {
+            return a.email.localeCompare(b.email);
+          }
+          return 0;
+        });
+        currentPage = 1; // Reset to first page
+        renderUsers(currentPage);
+      }
+
+      function searchUsers() {
+        const searchValue = document
+          .getElementById("search-input")
+          .value.trim()
+          .toLowerCase();
+        filteredUsers = allUsers.filter((user) =>
+          user.email.toLowerCase().includes(searchValue)
+        );
+        currentPage = 1; // Reset to first page
+        renderUsers(currentPage);
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.email || user.role !== "admin") {
+          showNotification("Access denied. Admin login required.", "error");
+          window.location.href = "/signup?redirect=/dashboard";
+          return;
+        }
+
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) loadingOverlay.style.display = "flex";
+
+        // Update main content margin
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
+        if (sidebar && mainContent) {
+          if (sidebar.classList.contains("hidden")) {
+            mainContent.classList.add("full");
+          }
+          sidebar.addEventListener("transitionend", () => {
+            mainContent.classList.toggle(
+              "full",
+              sidebar.classList.contains("hidden")
+            );
+          });
+        }
+
+        try {
+          // Fetch all data concurrently
+          const [analyticsRes, usersRes, feedbackRes] = await Promise.all([
+            fetch("/api/admin/analytics", { credentials: "include" }),
+            fetch("/api/admin/users", { credentials: "include" }),
+            fetch("/api/admin/feedback", { credentials: "include" }),
+          ]);
+
+          // Analytics
+          if (!analyticsRes.ok) throw new Error("Failed to load analytics");
+          const { analytics } = await analyticsRes.json();
+          const analyticsGrid = document.getElementById("analytics-grid");
+          if (analyticsGrid) {
+            analyticsGrid.innerHTML = `
+              <div class="analytics-card">
+                <i class="fas fa-users"></i>
+                <h3>${analytics.totalUsers}</h3>
+                <p>Total Users</p>
+              </div>
+              <div class="analytics-card">
+                <i class="fas fa-book"></i>
+                <h3>${analytics.totalEnrollments}</h3>
+                <p>Total Enrollments</p>
+              </div>
+              <div class="analytics-card">
+                <i class="fas fa-check-circle"></i>
+                <h3>${analytics.enrollmentsByStatus.approved || 0}</h3>
+                <p>Approved Enrollments</p>
+              </div>
+              <div class="analytics-card">
+                <i class="fas fa-star"></i>
+                <h3>${analytics.avgFeedbackRating.toFixed(1)}</h3>
+                <p>Average Feedback Rating</p>
+              </div>
+            `;
+          }
+
+          // Users and enrollments
+          if (!usersRes.ok) {
+            if (usersRes.status === 401) {
+              localStorage.removeItem("user");
+              window.location.href = "/signup?redirect=/admin";
+            }
+            throw new Error("Failed to load users");
+          }
+          const { users } = await usersRes.json();
+          allUsers = users;
+          filteredUsers = [...allUsers]; // Initialize filteredUsers
+          sortUsers(); // Apply initial sort (Courses High to Low)
+
+          // Feedback
+          if (!feedbackRes.ok) throw new Error("Failed to load feedback");
+          const { feedback } = await feedbackRes.json();
+          const feedbackGrid = document.getElementById("feedback-grid");
+          if (feedbackGrid) {
+            feedbackGrid.innerHTML = feedback.length
+              ? feedback
+                  .map(
+                    (f) => `
+                        <div class="feedback-card">
+                          <h4>${f.userName}</h4>
+                          <p>Email: ${f.userEmail}</p>
+                          <div class="rating-stars">
+                            ${"★".repeat(f.rating)}${"☆".repeat(5 - f.rating)}
+                          </div>
+                          <p>${f.text}</p>
+                          <p><small>${new Date(
+                            f.createdAt
+                          ).toLocaleString()}</small></p>
+                        </div>
+                      `
+                  )
+                  .join("")
+              : "<p>No feedback received.</p>";
+          }
+        } catch (error) {
+          console.error("Error loading data:", error);
+          showNotification(
+            "Failed to load data. Check console for details.",
+            "error"
+          );
+        } finally {
+          if (loadingOverlay) loadingOverlay.style.display = "none";
+        }
+
+        // Add modal click listener once
+        const modal = document.getElementById("enrollment-modal");
+        if (modal) {
+          modal.addEventListener("click", handleModalClick);
+        }
+      });
+
+      function handleModalClick(e) {
+        if (e.target === document.getElementById("enrollment-modal")) {
+          closeModal();
+        }
+      }
+
+      async function updateEnrollment(enrollmentId, status, button) {
+        try {
+          const spinner = button.querySelector(".spinner");
+          if (spinner) spinner.style.display = "inline-block";
+          button.classList.add("disabled");
+          button.disabled = true;
+
+          const response = await fetch(
+            `/api/admin/enrollments/${enrollmentId}`,
+            {
+              method: "PATCH",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status }),
+            }
+          );
+          const result = await response.json();
+          if (response.ok) {
+            showNotification(`Enrollment ${status} successfully!`, "success");
+            window.location.reload();
+          } else {
+            showNotification(
+              result.message || `Error updating enrollment to ${status}.`,
+              "error"
+            );
+          }
+        } catch (error) {
+          console.error("Error updating enrollment:", error);
+          showNotification("Error updating enrollment.", "error");
+        } finally {
+          if (button) {
+            const spinner = button.querySelector(".spinner");
+            if (spinner) spinner.style.display = "none";
+            button.classList.remove("disabled");
+            button.disabled = false;
+          }
+        }
+      }
+
+      async function showEnrollmentDetails(enrollmentId) {
+        const modal = document.getElementById("enrollment-modal");
+        const modalBody = document.getElementById("modal-body");
+        const spinner = document.getElementById("modal-spinner");
+
+        if (!modal || !modalBody || !spinner) {
+          console.error("Modal elements not found");
+          showNotification(
+            "Error: Modal not found. Please refresh the page.",
+            "error"
+          );
+          return;
+        }
+
+        try {
+          spinner.style.display = "block"; // Show spinner
+          modalBody.innerHTML =
+            '<div class="modal-spinner" style="display: block;"></div>'; // Clear content
+          modal.style.display = "flex"; // Show modal
+
+          const response = await fetch(
+            `/api/admin/enrollments/${enrollmentId}`,
+            {
+              method: "GET",
+              credentials: "include",
+            }
+          );
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch enrollment: ${response.statusText}`
+            );
+          }
+          const { enrollment } = await response.json();
+
+          console.log("Enrollment data:", enrollment);
+
+          const isImage = enrollment.paymentProof.match(/\.(png|jpg|jpeg)$/i);
+          const paymentProofUrl = `${enrollment.paymentProof}`;
+          console.log("Payment proof URL:", paymentProofUrl);
+
+          modalBody.innerHTML = `
+            <p><strong>Course:</strong> ${enrollment.course}</p>
+            <p><strong>Full Name:</strong> ${enrollment.fullName}</p>
+            <p><strong>Email:</strong> ${enrollment.email}</p>
+            <p><strong>Phone:</strong> ${enrollment.phone}</p>
+            <p><strong>Age:</strong> ${enrollment.age}</p>
+            <p><strong>Gender:</strong> ${enrollment.gender}</p>
+            <p><strong>Education:</strong> ${enrollment.education}</p>
+            <p><strong>Institution:</strong> ${enrollment.institution}</p>
+            <p><strong>Guardian Name:</strong> ${enrollment.guardianName}</p>
+            <p><strong>Guardian Phone:</strong> ${enrollment.guardianPhone}</p>
+            <p><strong>Country:</strong> ${enrollment.country}</p>
+            <p><strong>Address:</strong> ${enrollment.address}</p>
+            <p><strong>Transaction ID:</strong> ${enrollment.transactionId}</p>
+            <p><strong>Payment Date:</strong> ${new Date(
+              enrollment.paymentDate
+            ).toLocaleString()}</p>
+            <p><strong>Status:</strong> <span class="status-${enrollment.status.toLowerCase()}">${
+            enrollment.status
+          }</span></p>
+            <p><strong>Payment Proof:</strong></p>
+            ${
+              isImage
+                ? `<img src="${paymentProofUrl}" alt="Payment Proof" onerror="this.src='/images/default-proof.png'; console.error('Failed to load image:', '${paymentProofUrl}')">`
+                : `<a href="${paymentProofUrl}" target="_blank">View PDF</a>`
+            }
+          `;
+        } catch (error) {
+          console.error("Error loading enrollment details:", error);
+          modalBody.innerHTML =
+            '<p style="color: #ff0000;">Failed to load enrollment details. Please try again.</p>';
+          showNotification(
+            "Failed to load enrollment details. Check console for details.",
+            "error"
+          );
+        } finally {
+          spinner.style.display = "none"; // Hide spinner
+        }
+      }
+
+      function closeModal() {
+        const modal = document.getElementById("enrollment-modal");
+        const modalBody = document.getElementById("modal-body");
+        const spinner = document.getElementById("modal-spinner");
+        if (modal) modal.style.display = "none";
+        if (modalBody)
+          modalBody.innerHTML =
+            '<div class="modal-spinner" id="modal-spinner" style="display: none;"></div>';
+        if (spinner) spinner.style.display = "none";
+      }
+
+      function showNotification(message, type = "success") {
+        const container = document.getElementById("notification-container");
+        if (!container) return;
+
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+        notification.innerHTML = `
+          <span>${message}</span>
+          <button class="close-notification" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        container.appendChild(notification);
+
+        setTimeout(() => {
+          notification.style.animation = "slideIn 0.5s ease reverse";
+          setTimeout(() => notification.remove(), 500);
+        }, 5000);
+      }
+    </script>
+    <script src="/js/sidebar.js"></script>
+  </body>
+</html>

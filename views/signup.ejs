@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login or signup to Skillshastra to master future-ready skills.">
+    <title>Skillshastra - Login & Signup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/css/signup.css">
+</head>
+<body>
+    <div class="hover-grid" aria-hidden="true"></div>
+    <div class="auth-container" id="authContainer" role="main">
+        <button class="close-btn" onclick="closePage()" aria-label="Close authentication form">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="auth-form">
+            <h2>Welcome to <span class="gradient-text">Skillshastra</span></h2>
+            <p>Join our community to master future-ready skills!</p>
+
+            <div class="form-toggle" role="tablist">
+                <button role="tab" aria-selected="true" class="active" onclick="typeof showLogin === 'function' ? showLogin() : console.error('showLogin not defined')">Login</button>
+                <button role="tab" aria-selected="false" onclick="typeof showSignup === 'function' ? showSignup() : console.error('showSignup not defined')">Signup</button>
+            </div>
+
+            <div id="errorMessage" class="error-message" role="alert" style="display: none;"></div>
+            <div id="successMessage" class="success-message" role="alert" style="display: none;"></div>
+
+            <form id="loginForm" role="form" aria-labelledby="loginTitle">
+                <h3 id="loginTitle">Login</h3>
+                <div class="form-group">
+                    <input type="email" id="loginEmail" name="email" placeholder="Email Address" required aria-required="true" autocomplete="email">
+                    <i class="fas fa-envelope" aria-hidden="true"></i>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="loginPassword" name="password" placeholder="Password" required aria-required="true" autocomplete="current-password">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    <button type="button" class="toggle-password" onclick="typeof togglePassword === 'function' ? togglePassword('loginPassword', this) : console.error('togglePassword not defined')" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="forgot-password">
+                    <a href="#" onclick="typeof showForgotPassword === 'function' ? showForgotPassword() : console.error('showForgotPassword not defined')" aria-label="Forgot your password?">Forgot Password?</a>
+                </div>
+                <button type="submit" class="auth-btn" id="loginBtn" aria-busy="false">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <form id="signupForm" role="form" aria-labelledby="signupTitle" style="display: none;">
+                <h3 id="signupTitle">Signup</h3>
+                <div class="form-group">
+                    <input type="text" id="signupName" name="name" placeholder="Full Name" required aria-required="true" autocomplete="name">
+                    <i class="fas fa-user" aria-hidden="true"></i>
+                </div>
+                <div class="form-group">
+                    <input type="email" id="signupEmail" name="email" placeholder="Email Address" required aria-required="true" autocomplete="email">
+                    <i class="fas fa-envelope" aria-hidden="true"></i>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="signupPassword" name="password" placeholder="Password" required aria-required="true" autocomplete="new-password">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    <button type="button" class="toggle-password" onclick="typeof togglePassword === 'function' ? togglePassword('signupPassword', this) : console.error('togglePassword not defined')" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="password-strength" id="passwordStrength" aria-live="polite"></div>
+                <div class="form-group">
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" required aria-required="true" autocomplete="new-password">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    <button type="button" class="toggle-password" onclick="typeof togglePassword === 'function' ? togglePassword('confirmPassword', this) : console.error('togglePassword not defined')" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <button type="submit" class="auth-btn" id="submitSignup" aria-busy="false">
+                    <i class="fas fa-user-plus"></i> Signup
+                </button>
+            </form>
+
+            <form id="otpForm" role="form" aria-labelledby="otpTitle" style="display: none;">
+                <h3 id="otpTitle">Verify OTP</h3>
+                <div class="form-group">
+                    <input type="text" id="otpInput" name="otp" placeholder="Enter OTP" maxlength="6" required aria-required="true" inputmode="numeric" autocomplete="one-time-code">
+                    <i class="fas fa-key" aria-hidden="true"></i>
+                </div>
+                <button type="submit" class="auth-btn" id="otpBtn" aria-busy="false">
+                    <i class="fas fa-check"></i> Verify OTP
+                </button>
+                <div class="forgot-password">
+                    <a href="#" onclick="typeof resendOTP === 'function' ? resendOTP() : console.error('resendOTP not defined')" aria-label="Resend OTP">Resend OTP</a>
+                </div>
+                <div class="back-link">
+                    <a href="#" onclick="typeof showSignup === 'function' ? showSignup() : console.error('showSignup not defined')" aria-label="Back to Signup">Back to Signup</a>
+                </div>
+            </form>
+
+            <form id="forgotPasswordForm" role="form" aria-labelledby="forgotTitle" style="display: none;">
+                <h3 id="forgotTitle">Reset Password</h3>
+                <div class="form-group" id="forgotEmailGroup">
+                    <input type="email" id="forgotEmail" name="forgotEmail" placeholder="Email Address" required aria-required="true" autocomplete="email">
+                    <i class="fas fa-envelope" aria-hidden="true"></i>
+                </div>
+                <div class="form-group" id="resetOtpGroup" style="display: none;">
+                    <input type="text" id="resetOtp" name="resetOtp" placeholder="Enter OTP" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+                    <i class="fas fa-key" aria-hidden="true"></i>
+                </div>
+                <div class="form-group" id="newPasswordGroup" style="display: none;">
+                    <input type="password" id="newPassword" name="newPassword" placeholder="New Password" autocomplete="new-password">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    <button type="button" class="toggle-password" onclick="typeof togglePassword === 'function' ? togglePassword('newPassword', this) : console.error('togglePassword not defined')" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="password-strength" id="newPasswordStrength" style="display: none;" aria-live="polite"></div>
+                <div class="form-group" id="confirmNewPasswordGroup" style="display: none;">
+                    <input type="password" id="confirmNewPassword" name="confirmNewPassword" placeholder="Confirm New Password" autocomplete="new-password">
+                    <i class="fas fa-lock" aria-hidden="true"></i>
+                    <button type="button" class="toggle-password" onclick="typeof togglePassword === 'function' ? togglePassword('confirmNewPassword', this) : console.error('togglePassword not defined')" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <button type="submit" class="auth-btn" id="forgotBtn" aria-busy="false">
+                    <i class="fas fa-paper-plane"></i> Send OTP
+                </button>
+                <div class="back-link">
+                    <a href="#" onclick="typeof showLogin === 'function' ? showLogin() : console.error('showLogin not defined')" aria-label="Back to Login">Back to Login</a>
+                </div>
+            </form>
+
+            <div class="social-login">
+                <p>Or continue with</p>
+                <div class="social-icons">
+                    <a href="#" title="Google" aria-label="Login with Google" onclick="typeof socialLogin === 'function' ? socialLogin('Google') : console.error('socialLogin not defined')">
+                        <i class="fab fa-google"></i>
+                    </a>
+                    <a href="#" title="GitHub" aria-label="Login with GitHub" onclick="typeof socialLogin === 'function' ? socialLogin('GitHub') : console.error('socialLogin not defined')">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" title="LinkedIn" aria-label="Login with LinkedIn" onclick="typeof socialLogin === 'function' ? socialLogin('LinkedIn') : console.error('socialLogin not defined')">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-visual" aria-hidden="true">
+            <h2 class="gradient-text">Empower Your Future</h2>
+            <p>Learn cutting-edge skills with Skillshastra’s expert-led courses.</p>
+            <div class="code-window">
+                <div class="window-header">
+                    <div class="window-dot dot-red"></div>
+                    <div class="window-dot dot-yellow"></div>
+                    <div class="window-dot dot-green"></div>
+                </div>
+                <div class="code-content">
+                    <div class="code-line"><span>const</span> user = {</div>
+                    <div class="code-line">  name: <span>'Future Coder'</span>,</div>
+                    <div class="code-line">  skills: <span>['Tech', 'AI', 'Web']</span></div>
+                    <div class="code-line">};</div>
+                    <div class="code-line">console.log(<span>'Ready to learn! 🚀'</span>);</div>
+                </div>
+            </div>
+            <div class="floating-elements">
+                <div class="float-element code-bracket">{</div>
+                <div class="float-element code-bracket">}</div>
+                <div class="float-element code-symbol"></></div>
+                <div class="float-element code-word">AI</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set redirect URL globally
+        window.redirectUrl = new URLSearchParams(window.location.search).get('redirect') || document.referrer || '/dashboard';
+    </script>
+    <script src="/js/signup.js"></script>
+</body>
+</html>

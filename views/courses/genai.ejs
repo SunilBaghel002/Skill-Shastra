@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative AI Courses - Skillshastra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/genai.css">
+</head>
+
+<body>
+    <!-- Navigation (Unchanged from Previous Digital Marketing Page) -->
+    <%- include('../partials/navbar') %>
+
+    <!-- Courses Hero Section -->
+    <section class="courses-hero">
+        <div class="courses-hero-container">
+            <h1>Master <span class="gradient-text">Generative AI</span></h1>
+            <p>Unlock the power of artificial intelligence with our cutting-edge generative AI courses.</p>
+        </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section class="courses-section">
+        <div class="courses-container">
+            <div class="course-card">
+                <i class="fas fa-robot course-icon"></i>
+                <h3>Generative AI Fundamentals</h3>
+                <p>Learn the basics of generative AI, including neural networks, GANs, and text generation models.</p>
+                <a href="/details-digital-marketing" class="course-btn"><i class="fas fa-arrow-right"></i> Explore
+                    Course</a>
+            </div>
+            <div class="course-card">
+                <i class="fas fa-brain course-icon"></i>
+                <h3>Advanced Generative AI</h3>
+                <p>Dive into advanced applications like image synthesis, music generation, and AI-driven content
+                    creation.</p>
+                <button class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <%- include('../partials/footer') %>
+
+    <script>
+
+        // Smooth Scroll for Buttons and Links
+        document.querySelectorAll('.course-btn, .footer-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const targetElement = document.querySelector(href);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                        const ripple = document.createElement('span');
+                        ripple.style.position = 'absolute';
+                        ripple.style.borderRadius = '50%';
+                        ripple.style.background = 'rgba(255, 255, 255, 0.6)';
+                        ripple.style.transform = 'scale(0)';
+                        ripple.style.animation = 'ripple 0.6s linear';
+                        const rect = link.getBoundingClientRect();
+                        ripple.style.left = `${e.clientX - rect.left}px`;
+                        ripple.style.top = `${e.clientY - rect.top}px`;
+                        link.appendChild(ripple);
+                        setTimeout(() => ripple.remove(), 600);
+                    }
+                }
+            });
+        });
+
+        // Footer Newsletter Form Submission
+        const newsletterForm = document.querySelector('.newsletter-form');
+        if (newsletterForm) {
+            newsletterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const emailInput = newsletterForm.querySelector('.newsletter-input');
+                const email = emailInput.value.trim();
+                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    alert('Thank you for subscribing to Skillshastra!');
+                    emailInput.value = '';
+                } else {
+                    alert('Please enter a valid email address.');
+                }
+            });
+        }
+
+        // Footer Social and Link Hover Animation
+        document.querySelectorAll('.footer-link, .social-icon').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                link.style.transition = 'all 0.3s ease';
+            });
+            link.addEventListener('mouseleave', () => {
+                link.style.transform = '';
+            });
+        });
+
+        // Ripple Animation Styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+    <script src="/js/navbar.js"></script>
+</body>
+
+</html>

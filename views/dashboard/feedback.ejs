@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Shastra - Submit Feedback</title>
+  <meta name="description" content="Submit your feedback for Skill Shastra.">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/footer.css">
+  <link rel="stylesheet" href="/css/sidebar.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+      color: #1f2937;
+      margin-left: 280px;
+      transition: margin-left 0.3s ease;
+      position: relative;
+    }
+    .main-content.full {
+      margin-left: 0;
+    }
+    .feedback-section {
+      padding: 4rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-size: 1.8rem;
+      color: #7c3aed;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      position: relative;
+    }
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, #7c3aed, #a855f7);
+      border-radius: 2px;
+    }
+    .feedback-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      text-align: center;
+    }
+    .feedback-card h2 {
+      font-size: 1.5rem;
+      color: #1f2937;
+      margin-bottom: 1rem;
+    }
+    .rating-stars {
+      font-size: 2rem;
+      color: #d1d5db;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+    .rating-stars .fa-star.active {
+      color: #f59e0b;
+    }
+    .feedback-card textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.8rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      resize: vertical;
+      margin-bottom: 1rem;
+    }
+    .submit-btn {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
+    }
+    .submit-btn.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .spinner {
+      display: none;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #7c3aed;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin-left: 0.5rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @media (max-width: 768px) {
+      body {
+        margin-left: 0;
+      }
+      .feedback-section {
+        padding: 3rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%- include('../partials/sidebar') %>
+  <main class="main-content" id="main-content">
+    <section class="feedback-section">
+      <% if (user) { %>
+        <h1 class="section-title">Share Your Feedback</h1>
+        <div class="feedback-card">
+          <h2>We Value Your Opinion</h2>
+          <p>Please rate your experience and share any suggestions or thoughts about Skill Shastra.</p>
+          <div class="rating-stars" id="rating-stars">
+            <i class="fas fa-star" data-rating="1"></i>
+            <i class="fas fa-star" data-rating="2"></i>
+            <i class="fas fa-star" data-rating="3"></i>
+            <i class="fas fa-star" data-rating="4"></i>
+            <i class="fas fa-star" data-rating="5"></i>
+          </div>
+          <textarea id="feedback-text" placeholder="Tell us what you think or suggest improvements (max 500 characters)" maxlength="500"></textarea>
+          <button class="submit-btn" id="submit-feedback">
+            Submit Feedback
+            <span class="spinner" id="submit-spinner"></span>
+          </button>
+        </div>
+      <% } else { %>
+        <p>Please <a href="/signup?redirect=/dashboard/feedback">log in</a> to submit feedback.</p>
+      <% } %>
+    </section>
+    <%- include('../partials/footer') %>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.email) {
+        alert('Please log in to submit feedback.');
+        window.location.href = '/signup?redirect=/dashboard/feedback';
+        return;
+      }
+
+      // Update main content margin
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      if (sidebar && mainContent) {
+        if (sidebar.classList.contains('hidden')) {
+          mainContent.classList.add('full');
+        }
+        sidebar.addEventListener('transitionend', () => {
+          mainContent.classList.toggle('full', sidebar.classList.contains('hidden'));
+        });
+      }
+
+      // Star rating
+      const stars = document.querySelectorAll('#rating-stars .fa-star');
+      let selectedRating = 0;
+
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          selectedRating = parseInt(star.getAttribute('data-rating'));
+          stars.forEach(s => {
+            s.classList.toggle('active', parseInt(s.getAttribute('data-rating')) <= selectedRating);
+          });
+        });
+      });
+
+      // Submit feedback
+      const submitBtn = document.getElementById('submit-feedback');
+      const submitSpinner = document.getElementById('submit-spinner');
+      const feedbackText = document.getElementById('feedback-text');
+
+      if (submitBtn && submitSpinner && feedbackText) {
+        submitBtn.addEventListener('click', async () => {
+          if (selectedRating === 0) {
+            alert('Please select a star rating.');
+            return;
+          }
+          if (!feedbackText.value.trim()) {
+            alert('Please enter your feedback.');
+            return;
+          }
+
+          submitBtn.classList.add('disabled');
+          submitBtn.disabled = true;
+          submitSpinner.style.display = 'inline-block';
+
+          try {
+            const response = await fetch('/api/feedback', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                rating: selectedRating,
+                text: feedbackText.value.trim()
+              })
+            });
+            const result = await response.json();
+            if (response.ok) {
+              alert('Feedback submitted successfully!');
+              feedbackText.value = '';
+              selectedRating = 0;
+              stars.forEach(s => s.classList.remove('active'));
+            } else {
+              alert(result.message || 'Error submitting feedback.');
+            }
+          } catch (error) {
+            console.error('Error submitting feedback:', error);
+            alert('Failed to submit feedback. Please try again.');
+          } finally {
+            submitBtn.classList.remove('disabled');
+            submitBtn.disabled = false;
+            submitSpinner.style.display = 'none';
+          }
+        });
+      }
+    });
+  </script>
+  <script src="/js/sidebar.js"></script>
+</body>
+</html>

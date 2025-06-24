@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Development Courses - Skillshastra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/webdev.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <%- include('../partials/navbar') %>
+
+    <!-- Courses Hero Section -->
+    <section class="courses-hero">
+        <div class="courses-hero-container">
+            <h1>Become a <span class="gradient-text" id="typing-text">Web Development</span> Expert</h1>
+            <p>Master Frontend, Backend, and Full Stack development with our hands-on, industry-focused MERN Stack
+                courses designed to make you job-ready.</p>
+            <div class="hero-buttons">
+                <a href="#courses" class="btm btm-primary"><i class="fas fa-arrow-right"></i> Explore Courses</a>
+                <a href="contact.html" class="btm btm-secondary"><i class="fas fa-info-circle"></i> Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits-section">
+        <h2>Why Learn Web Development?</h2>
+        <div class="benefits-container">
+            <div class="benefit-card">
+                <i class="fas fa-briefcase benefit-icon"></i>
+                <h3>High-Demand Careers</h3>
+                <p>Web developers are sought after globally, with opportunities in tech giants and startups alike.</p>
+            </div>
+            <div class="benefit-card">
+                <i class="fas fa-paint-brush benefit-icon"></i>
+                <h3>Creative Freedom</h3>
+                <p>Design and build innovative, user-friendly websites and applications that stand out.</p>
+            </div>
+            <div class="benefit-card">
+                <i class="fas fa-globe benefit-icon"></i>
+                <h3>Global Opportunities</h3>
+                <p>Work remotely or freelance, connecting with clients and teams worldwide.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section class="courses-section" id="courses">
+        <h2>Our Web Development Courses</h2>
+        <div class="courses-container">
+            <div class="course-card">
+                <i class="fas fa-desktop course-icon"></i>
+                <h3>Frontend Development</h3>
+                <div class="course-meta">
+                    <span><i class="fas fa-clock"></i> 8 Weeks</span>
+                    <span><i class="fas fa-level-up-alt"></i> Beginner</span>
+                </div>
+                <p>Learn HTML, CSS, and JavaScript to create stunning, interactive user interfaces for modern websites.
+                </p>
+                <a href="/frontend" class="course-btn"><i class="fas fa-arrow-right"></i> Explore
+                    Course</a>
+            </div>
+            <div class="course-card">
+                <i class="fas fa-server course-icon"></i>
+                <h3>Backend Development</h3>
+                <div class="course-meta">
+                    <span><i class="fas fa-clock"></i> 10 Weeks</span>
+                    <span><i class="fas fa-level-up-alt"></i> Intermediate</span>
+                </div>
+                <p>Master server-side technologies like Node.js and Express to build robust APIs and manage databases.
+                </p>
+                <a href="/backend" class="course-btn"><i class="fas fa-arrow-right"></i> Explore
+                    Course</a>
+            </div>
+            <div class="course-card">
+                <i class="fas fa-laptop-code course-icon"></i>
+                <h3>Full Stack (MERN)</h3>
+                <div class="course-meta">
+                    <span><i class="fas fa-clock"></i> 12 Weeks</span>
+                    <span><i class="fas fa-level-up-alt"></i> Advanced</span>
+                </div>
+                <p>Become a full-stack developer with MongoDB, Express, React, and Node.js to build complete web
+                    applications.</p>
+                <a href="/fullstack" class="course-btn"><i class="fas fa-arrow-right"></i> Explore
+                    Course</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Us Section -->
+    <section class="why-us-section">
+        <h2>Why Choose Skillshastra?</h2>
+        <div class="why-us-container">
+            <div class="why-us-card">
+                <i class="fas fa-chalkboard-teacher why-us-icon"></i>
+                <h3>Expert Instructors</h3>
+                <p>Learn from industry professionals with years of real-world experience.</p>
+            </div>
+            <div class="why-us-card">
+                <i class="fas fa-project-diagram why-us-icon"></i>
+                <h3>Hands-On Projects</h3>
+                <p>Build real-world applications to showcase in your portfolio.</p>
+            </div>
+            <div class="why-us-card">
+                <i class="fas fa-user-shield why-us-icon"></i>
+                <h3>Career Support</h3>
+                <p>Get personalized mentorship and job placement assistance.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <%- include('../partials/footer') %>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top"><i class="fas fa-arrow-up"></i></button>
+
+    <script>
+
+        // Typing Animation for Hero
+        const typingText = document.getElementById('typing-text');
+        const words = ['Web Development', 'Frontend Expert', 'Backend Guru', 'Full Stack Master'];
+        let wordIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+
+        function type() {
+            const currentWord = words[wordIndex];
+            if (!isDeleting && charIndex < currentWord.length) {
+                typingText.textContent = currentWord.substring(0, charIndex + 1);
+                charIndex++;
+                setTimeout(type, 100);
+            } else if (isDeleting && charIndex > 0) {
+                typingText.textContent = currentWord.substring(0, charIndex - 1);
+                charIndex--;
+                setTimeout(type, 50);
+            } else if (!isDeleting && charIndex === currentWord.length) {
+                setTimeout(() => { isDeleting = true; type(); }, 1000);
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                wordIndex = (wordIndex + 1) % words.length;
+                setTimeout(type, 200);
+            }
+        }
+        type();
+
+        // Scroll Animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.2 });
+
+        document.querySelectorAll('.benefits-section, .courses-section, .why-us-section').forEach(section => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(30px)';
+            section.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(section);
+        });
+
+        // Newsletter Form Submission
+        const newsletterForm = document.querySelector('.newsletter-form');
+        newsletterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailInput = newsletterForm.querySelector('.newsletter-input');
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+                alert('Thank you for subscribing!');
+                emailInput.value = '';
+            } else {
+                emailInput.style.border = '2px solid #ef4444';
+            }
+        });
+
+        // Back to Top
+        const backToTop = document.querySelector('.back-to-top');
+        window.addEventListener('scroll', () => {
+            backToTop.style.display = window.scrollY > 300 ? 'block' : 'none';
+        });
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+    </script>
+    <script src="/js/navbar.js"></script>
+</body>
+
+</html>

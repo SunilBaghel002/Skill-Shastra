@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Shastra - Coding Challenges</title>
+  <meta name="description" content="This page is under development. Check back soon for updates!">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar.css">
+  <link rel="stylesheet" href="/css/footer.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+      color: #1f2937;
+      margin-left: 280px;
+      transition: margin-left 0.3s ease;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .main-content.full {
+      margin-left: 0;
+    }
+    /* Hero Section */
+    .hero-section {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding: 8rem 2rem 4rem;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d1b69 100%);
+      overflow: hidden;
+    }
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 30% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+      z-index: 2;
+      position: relative;
+      display: flex !important;
+      flex-direction: column;
+    }
+    .hero-container h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      color: white;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+    }
+    .hero-container .gradient-text {
+      background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradient-shift 3s ease-in-out infinite;
+    }
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .hero-container p {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+    .btm-primary {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .btm-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
+    }
+    /* Message Section */
+    .message-section {
+      padding: 6rem 2rem;
+      background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+    }
+    .message-container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .section-tag {
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      background: rgba(124, 58, 237, 0.2);
+      color: #a855f7;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 10px rgba(124, 58, 237, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(124, 58, 237, 0.6), 0 0 50px rgba(124, 58, 237, 0.3); }
+    }
+    .section-title {
+      font-size: 2.8rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 1rem;
+    }
+    .section-description {
+      font-size: 1.1rem;
+      color: #6b7280;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+    .marquee {
+      margin: 2rem auto;
+      color: white;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #230f0f 0%, #3a1a1a 50%, #691b1b 100%);
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    @media (max-width: 768px) {
+      body {
+        margin-left: 0;
+      }
+      .hero-section {
+        padding: 6rem 1rem 3rem;
+      }
+      .hero-container h1 {
+        font-size: 2.5rem;
+      }
+      .message-section {
+        padding: 3rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%- include('../partials/sidebar') %>
+  <main class="main-content" id="main-content">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-container">
+        <% const pageName = 'Coding Challenges'; %>
+        <h1><span class="gradient-text"><%= pageName %></span> Under Development</h1>
+        <p>We’re working hard to bring you the <%= pageName %> feature. Stay tuned for an amazing experience!</p>
+        <a href="/dashboard" class="btm-primary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+      </div>
+    </section>
+    <!-- Message Section -->
+    <section class="message-section">
+      <div class="message-container">
+        <span class="section-tag">Coming Soon</span>
+        <h2 class="section-title"><span class="gradient-text"><%= pageName %></span> is on the Way!</h2>
+        <p class="section-description">
+          This feature is currently under development as we strive to deliver the best learning experience at Skill Shastra. 
+          We apologize for any inconvenience and appreciate your patience. Check back soon or explore other features on your dashboard!
+        </p>
+        <marquee class="marquee" scrollamount="15" width="100%" direction="left">
+          The <%= pageName %> page is under development. We’ll notify you when it’s ready!
+        </marquee>
+      </div>
+    </section>
+    <!-- Footer -->
+    <%- include('../partials/footer') %>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.name || !user.email) {
+        alert('Please log in to access this page.');
+        window.location.href = '/signup?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+
+      // Update main content margin
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      if (sidebar && mainContent) {
+        if (sidebar.classList.contains('hidden')) {
+          mainContent.classList.add('full');
+        }
+        sidebar.addEventListener('transitionend', () => {
+          mainContent.classList.toggle('full', sidebar.classList.contains('hidden'));
+        });
+      }
+    });
+  </script>
+  <script src="/js/sidebar.js"></script>
+</body>
+</html>
