@@ -1178,7 +1178,7 @@ app.get("/python", renderPage("courses/course-details/python"));
 app.get("/fundamentals", renderPage("courses/course-details/fundamentals"));
 app.get("/javaScript", renderPage("courses/course-details/javaScript"));
 app.get("/programming", renderPage("courses/Programming"));
-app.get("/genai", renderPage("genai"));
+app.get("/genai", renderPage("courses/genai"));
 app.get("/codingChallenge", renderPage("resources/CodingChallenge"));
 app.get("/practiceProject", renderPage("resources/PracticeProject"));
 app.get("/studyMaterials", renderPage("resources/StudyMaterials"));

@@ -1,131 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Programming Languages - Skillshastra</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/navbar.css">
-    <link rel="stylesheet" href="/css/programming.css">
-</head>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/programming.css" />
+  </head>
 
-<body>
+  <body>
     <!-- Navigation -->
     <%- include('../partials/navbar') %>
 
     <!-- Courses Hero Section -->
     <section class="courses-hero">
-        <div class="courses-hero-container">
-            <h1>Master <span class="gradient-text">Programming Languages</span></h1>
-            <p>Unlock your coding potential with our comprehensive courses in Java, Python, C, C++, and JavaScript.</p>
-        </div>
+      <div class="courses-hero-container">
+        <h1>Master <span class="gradient-text">Programming Languages</span></h1>
+        <p>
+          Unlock your coding potential with our comprehensive courses in Java,
+          Python, C, C++, and JavaScript.
+        </p>
+      </div>
     </section>
 
     <!-- Courses Section -->
     <section class="courses-section">
-        <div class="courses-container">
-            <div class="course-card">
-                <i class="fab fa-java course-icon"></i>
-                <h3>Java Programming</h3>
-                <p>Learn Java, a versatile and widely-used language for building robust applications, from web to
-                    enterprise solutions.</p>
-                <button class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</button>
-            </div>
-            <div class="course-card">
-                <i class="fab fa-python course-icon"></i>
-                <h3>Python Programming</h3>
-                <p>Master Python, the go-to language for data science, machine learning, web development, and
-                    automation.</p>
-                <button class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</button>
-            </div>
-            <div class="course-card">
+      <div class="courses-container">
+        <div class="course-card">
+          <i class="fab fa-java course-icon"></i>
+          <h3>Java Programming</h3>
+          <p>
+            Learn Java, a versatile and widely-used language for building robust
+            applications, from web to enterprise solutions.
+          </p>
+          <a href="/java"
+            ><button class="course-btn">
+              <i class="fas fa-arrow-right"></i> Explore Course
+            </button></a
+          >
+        </div>
+        <div class="course-card">
+          <i class="fab fa-python course-icon"></i>
+          <h3>Python Programming</h3>
+          <p>
+            Master Python, the go-to language for data science, machine
+            learning, web development, and automation.
+          </p>
+          <a href="/python"
+            ><button class="course-btn">
+              <i class="fas fa-arrow-right"></i> Explore Course
+            </button></a
+          >
+        </div>
+        <!-- <div class="course-card">
                 <i class="fas fa-code course-icon"></i>
                 <h3>C Programming</h3>
                 <p>Dive into C, the foundation of modern programming, ideal for system programming and understanding
                     computer fundamentals.</p>
                 <button class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</button>
-            </div>
-            <div class="course-card">
-                <i class="fas fa-code course-icon"></i>
-                <h3>C++ Programming</h3>
-                <p>Explore C++, a powerful language for high-performance applications, game development, and system
-                    software.</p>
-                <button class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</button>
-            </div>
-            <div class="course-card">
-                <i class="fab fa-js course-icon"></i>
-                <h3>JavaScript Programming</h3>
-                <p>Become proficient in JavaScript, the backbone of web development, for creating interactive and
-                    dynamic websites.</p>
-                <button class="course-btn"><i class="fas fa-arrow-right"></i> Explore Course</button>
-            </div>
+            </div> -->
+        <div class="course-card">
+          <i class="fas fa-code course-icon"></i>
+          <h3>C++ Programming</h3>
+          <p>
+            Explore C++, a powerful language for high-performance applications,
+            game development, and system software.
+          </p>
+          <a href="/cpp"
+            ><button class="course-btn">
+              <i class="fas fa-arrow-right"></i> Explore Course
+            </button></a
+          >
         </div>
+        <div class="course-card">
+          <i class="fab fa-js course-icon"></i>
+          <h3>JavaScript Programming</h3>
+          <p>
+            Become proficient in JavaScript, the backbone of web development,
+            for creating interactive and dynamic websites.
+          </p>
+          <a href="/javaScript"
+            ><button class="course-btn">
+              <i class="fas fa-arrow-right"></i> Explore Course
+            </button></a
+          >
+        </div>
+      </div>
     </section>
-
-
 
     <!-- Footer -->
     <%- include('../partials/footer') %>
 
     <script>
-
-        // Smooth Scroll for Buttons and Links
-        document.querySelectorAll('.course-btn, .footer-link, .nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                const href = link.getAttribute('href');
-                if (href && href.startsWith('#')) {
-                    e.preventDefault();
-                    const targetElement = document.querySelector(href);
-                    if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'smooth' });
-                        const ripple = document.createElement('span');
-                        ripple.style.position = 'absolute';
-                        ripple.style.borderRadius = '50%';
-                        ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-                        ripple.style.transform = 'scale(0)';
-                        ripple.style.animation = 'ripple 0.6s linear';
-                        const rect = link.getBoundingClientRect();
-                        ripple.style.left = `${e.clientX - rect.left}px`;
-                        ripple.style.top = `${e.clientY - rect.top}px`;
-                        link.appendChild(ripple);
-                        setTimeout(() => ripple.remove(), 600);
-                    }
-                }
-            });
+      // Smooth Scroll for Buttons and Links
+      document
+        .querySelectorAll(".course-btn, .footer-link, .nav-link")
+        .forEach((link) => {
+          link.addEventListener("click", (e) => {
+            const href = link.getAttribute("href");
+            if (href && href.startsWith("#")) {
+              e.preventDefault();
+              const targetElement = document.querySelector(href);
+              if (targetElement) {
+                targetElement.scrollIntoView({ behavior: "smooth" });
+                const ripple = document.createElement("span");
+                ripple.style.position = "absolute";
+                ripple.style.borderRadius = "50%";
+                ripple.style.background = "rgba(255, 255, 255, 0.6)";
+                ripple.style.transform = "scale(0)";
+                ripple.style.animation = "ripple 0.6s linear";
+                const rect = link.getBoundingClientRect();
+                ripple.style.left = `${e.clientX - rect.left}px`;
+                ripple.style.top = `${e.clientY - rect.top}px`;
+                link.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+              }
+            }
+          });
         });
 
-        // Footer Newsletter Form Submission
-        const newsletterForm = document.querySelector('.newsletter-form');
-        if (newsletterForm) {
-            newsletterForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const emailInput = newsletterForm.querySelector('.newsletter-input');
-                const email = emailInput.value.trim();
-                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    alert('Thank you for subscribing to Skillshastra!');
-                    emailInput.value = '';
-                } else {
-                    alert('Please enter a valid email address.');
-                }
-            });
-        }
+      // Footer Newsletter Form Submission
+      const newsletterForm = document.querySelector(".newsletter-form");
+      if (newsletterForm) {
+        newsletterForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const emailInput = newsletterForm.querySelector(".newsletter-input");
+          const email = emailInput.value.trim();
+          if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert("Thank you for subscribing to Skillshastra!");
+            emailInput.value = "";
+          } else {
+            alert("Please enter a valid email address.");
+          }
+        });
+      }
 
-        // Footer Social and Link Hover Animation
-        document.querySelectorAll('.footer-link, .social-icon').forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                link.style.transition = 'all 0.3s ease';
-            });
-            link.addEventListener('mouseleave', () => {
-                link.style.transform = '';
-            });
+      // Footer Social and Link Hover Animation
+      document
+        .querySelectorAll(".footer-link, .social-icon")
+        .forEach((link) => {
+          link.addEventListener("mouseenter", () => {
+            link.style.transition = "all 0.3s ease";
+          });
+          link.addEventListener("mouseleave", () => {
+            link.style.transform = "";
+          });
         });
 
-        // Ripple Animation Styles
-        const style = document.createElement('style');
-        style.textContent = `
+      // Ripple Animation Styles
+      const style = document.createElement("style");
+      style.textContent = `
             @keyframes ripple {
                 to {
                     transform: scale(4);
@@ -133,10 +165,8 @@
                 }
             }
         `;
-        document.head.appendChild(style);
-        
+      document.head.appendChild(style);
     </script>
     <script src="/js/navbar.js"></script>
-</body>
-
+  </body>
 </html>
