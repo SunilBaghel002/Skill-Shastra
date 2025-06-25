@@ -201,6 +201,11 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
   tls: { rejectUnauthorized: false },
+  // Optimize connection pooling for Vercel
+  pool: true,
+  maxConnections: 3,
+  rateDelta: 1000, // 1 second between sends
+  rateLimit: 3, // Max 3 emails per second
 });
 
 transporter.verify((error, success) => {
@@ -208,36 +213,63 @@ transporter.verify((error, success) => {
   else console.log("SMTP Server is ready to send emails");
 });
 
-// Email Queue
+// Email Queue with Optimized Concurrent Processing
 const emailQueue = [];
-let isProcessingQueue = false;
+const MAX_CONCURRENT_EMAILS = 3; // Gmail-safe concurrency
+let activeEmailCount = 0;
 
-const processEmailQueue = async () => {
-  if (isProcessingQueue || emailQueue.length === 0) return;
-  isProcessingQueue = true;
-
-  const { to, subject, html } = emailQueue.shift();
-  const startTime = Date.now();
-
-  try {
-    await transporter.sendMail({
-      from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    console.log(`Email sent to ${to} in ${Date.now() - startTime}ms`);
-  } catch (error) {
-    console.error(`Email Error to ${to}:`, error);
-    // Optionally re-queue or log for retry
-  } finally {
-    isProcessingQueue = false;
-    setImmediate(processEmailQueue); // Process next email
+const sendEmailWithRetry = async (mailOptions, retries = 3, delay = 1000) => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const startTime = Date.now();
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent to ${mailOptions.to} in ${Date.now() - startTime}ms (Attempt ${attempt})`);
+      return true;
+    } catch (error) {
+      console.error(`Email Error to ${mailOptions.to} (Attempt ${attempt}):`, error.message);
+      if (attempt === retries) {
+        console.error(`Failed to send email to ${mailOptions.to} after ${retries} attempts`);
+        return false;
+      }
+      // Exponential backoff: delay * (2 ^ attempt)
+      await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
+    }
   }
 };
 
-const sendEmail = async (to, subject, html, retries = 3) => {
+const processEmailQueue = async () => {
+  if (activeEmailCount >= MAX_CONCURRENT_EMAILS || emailQueue.length === 0) return;
+
+  activeEmailCount++;
+  const { to, subject, html } = emailQueue.shift();
+  const mailOptions = {
+    from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  // Add slight delay to prevent Gmail throttling
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  sendEmailWithRetry(mailOptions)
+    .catch((error) => {
+      console.error(`Unexpected error sending email to ${to}:`, error);
+    })
+    .finally(() => {
+      activeEmailCount--;
+      setImmediate(processEmailQueue); // Process next email
+    });
+
+  // Trigger next email if queue isn't empty
+  if (emailQueue.length > 0 && activeEmailCount < MAX_CONCURRENT_EMAILS) {
+    setImmediate(processEmailQueue);
+  }
+};
+
+const sendEmail = async (to, subject, html) => {
   emailQueue.push({ to, subject, html });
+  console.log(`Queued email to ${to}. Queue length: ${emailQueue.length}, Active: ${activeEmailCount}`);
   setImmediate(processEmailQueue);
 };
 
