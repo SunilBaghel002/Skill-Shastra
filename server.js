@@ -207,8 +207,8 @@ transporter.verify((error, success) => {
   else console.log("SMTP Server is ready to send emails");
 });
 
-// Updated sendEmail Function
-const sendEmail = async (to, subject, html, retries = 3) => {
+// Updated sendEmail Function (Removed retry loop)
+const sendEmail = async (to, subject, html) => {
   const mailOptions = {
     from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
     to,
@@ -216,27 +216,16 @@ const sendEmail = async (to, subject, html, retries = 3) => {
     html,
   };
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const startTime = Date.now();
-      const info = await transporter.sendMail(mailOptions);
-      console.log(
-        `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
-      );
-      return info;
-    } catch (error) {
-      console.error(
-        `Email Error to ${to} (Attempt ${attempt}/${retries}):`,
-        error
-      );
-      if (attempt === retries) {
-        throw new Error(
-          `Failed to send email to ${to} after ${retries} attempts: ${error.message}`
-        );
-      }
-      // Wait before retrying (exponential backoff)
-      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-    }
+  try {
+    const startTime = Date.now();
+    const info = await transporter.sendMail(mailOptions);
+    console.log(
+      `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
+    );
+    return info;
+  } catch (error) {
+    console.error(`Email Error to ${to}:`, error);
+    throw new Error(`Failed to send email to ${to}: ${error.message}`);
   }
 };
 
@@ -328,78 +317,18 @@ const getOtpEmailTemplate = (otp, type = "verify") =>
 
 const getWelcomeEmailTemplate = (name) =>
   getBaseEmailTemplate(`
-  <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Welcome to Skill Shastra</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Poppins', Arial, sans-serif; background-color: #f3f0ff;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f3f0ff;">
-        <tr>
-            <td align="center">
-                <div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto;">
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;">
-                        <div style="position: absolute; top: -50px; left: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%); border-radius: 50%;"></div>
-                        <div style="position: absolute; bottom: -100px; right: -100px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(167, 139, 250, 0.1), transparent 70%); border-radius: 50%;"></div>
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);"></div>
-                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, #d1d5db, 1px, transparent 1px); background-size: 20px 20px; opacity: 0.3;"></div>
-                    </div>
-                    <table role="presentation" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); position: relative; z-index: 1;">
-                        <tr>
-                            <td style="padding: 30px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                                <img src="https://res.cloudinary.com/dsk80td7v/image/upload/v1750568168/public/images/logo.png" alt="Skill Shastra Logo" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
-                                <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 15px 0 0;">Welcome to Skill Shastra</h1>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 20px 20px;">
-                                <h2 style="font-size: 20px; font-weight: 500; color: #8b5cf6; margin: 0 0 15px;">Hello, ${name}!</h2>
-                                <p style="font-size: 16px; line-height: 1.6; color: #4a4a4a; margin: 0 0 15px;">
-                                    We’re beyond excited to welcome you to <strong>Skill Shastra</strong>! Your account is now verified, and you’re ready to join our vibrant community of learners mastering skills for the future.
-                                </p>
-                                <p style="font-size: 16px; line-height: 1.6; color: #4a4a4a; margin: 0 0 20px;">
-                                    Dive into our curated courses, designed to empower you to achieve your personal and professional goals. Your journey to success starts today!
-                                </p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 0 20px 20px; text-align: center;">
-                                <a href="https://skill-shastra.vercel.app/dashboard/courses" style="display: inline-block; padding: 12px 24px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px;">Start Learning Now</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 0 20px 20px; text-align: center;">
-                                <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">
-                                    Need help or have questions? Our support team is here for you at 
-                                    <a href="mailto:support@skillshastra.com" style="color: #8b5cf6; text-decoration: none; font-weight: 500;">support@skillshastra.com</a>.
-                                </p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 20px; background-color: #f3f0ff; text-align: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
-                                <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px;">
-                                    Connect with us: 
-                                    <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Twitter</a> | 
-                                    <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">LinkedIn</a> | 
-                                    <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Instagram</a>
-                                </p>
-                                <p style="font-size: 12px; color: #6b7280; margin: 0;">
-                                    © ${new Date().getFullYear()} Skill Shastra. All rights reserved.
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-`);
+    <h1>Welcome to Skill Shastra</h1>
+    <p>Hello, ${name}!</p>
+    <p>We’re beyond excited to welcome you to <strong>Skill Shastra</strong>! Your account is now verified, and you’re ready to join our vibrant community of learners mastering skills for the future.</p>
+    <p>Dive into our curated courses, designed to empower you to achieve your personal and professional goals. Your journey to success starts today!</p>
+    <p><a href="https://skill-shastra.vercel.app/dashboard/courses" class="cta-button">Start Learning Now</a></p>
+    <p>Need help or have questions? Our support team is here for you at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
+    <p>Connect with us: 
+      <a href="https://twitter.com/skillshastra">Twitter</a> | 
+      <a href="https://linkedin.com/company/skillshastra">LinkedIn</a> | 
+      <a href="https://instagram.com/skillshastra">Instagram</a>
+    </p>
+  `);
 
 const getEnrollmentConfirmationEmailTemplate = (
   fullName,
