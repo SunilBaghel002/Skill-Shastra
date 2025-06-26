@@ -22,9 +22,14 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(cors({ origin: "https://skill-shastra.vercel.app/", credentials: true }));
+app.use(
+  cors({
+    origin: "https://skill-shastra.vercel.app/",
+    credentials: true,
+  })
+);
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -68,10 +73,11 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: 6,
     },
+    phone: { type: String },
+    dob: { type: Date },
     role: { type: String, enum: ["user", "admin"], default: "user" },
-    otp: { type: String },
-    otpExpires: { type: Date },
-    isVerified: { type: Boolean, default: false },
+    resetOtp: { type: String },
+    resetOtpExpiry: { type: Date },
     profileImage: {
       type: String,
       default: function () {
@@ -118,7 +124,7 @@ const enrollmentSchema = new mongoose.Schema({
   address: { type: String, required: true },
   transactionId: { type: String, required: true },
   paymentDate: { type: Date, required: true },
-  paymentProof: { type: String, required: true }, // Stores Cloudinary URL
+  paymentProof: { type: String, required: true },
   status: {
     type: String,
     default: "pending",
@@ -166,6 +172,16 @@ const announcementSchema = new mongoose.Schema({
 
 const Announcement = mongoose.model("Announcement", announcementSchema);
 
+// Course Schema
+const courseSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  duration: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+});
+
+const Course = mongoose.model("Course", courseSchema);
+
 // Multer Setup (Memory Storage for Cloudinary)
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -193,19 +209,11 @@ const multerErrorHandler = (err, req, res, next) => {
 
 // Nodemailer Setup
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  tls: { rejectUnauthorized: false },
-  // Optimize connection pooling for Vercel
-  pool: true,
-  maxConnections: 3,
-  rateDelta: 1000, // 1 second between sends
-  rateLimit: 3, // Max 3 emails per second
 });
 
 transporter.verify((error, success) => {
@@ -213,155 +221,248 @@ transporter.verify((error, success) => {
   else console.log("SMTP Server is ready to send emails");
 });
 
-// Email Queue with Optimized Concurrent Processing
-const emailQueue = [];
-const MAX_CONCURRENT_EMAILS = 3; // Gmail-safe concurrency
-let activeEmailCount = 0;
+// OTP Storage
+let otpStorage = {};
 
-const sendEmailWithRetry = async (mailOptions, retries = 3, delay = 1000) => {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const startTime = Date.now();
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent to ${mailOptions.to} in ${Date.now() - startTime}ms (Attempt ${attempt})`);
-      return true;
-    } catch (error) {
-      console.error(`Email Error to ${mailOptions.to} (Attempt ${attempt}):`, error.message);
-      if (attempt === retries) {
-        console.error(`Failed to send email to ${mailOptions.to} after ${retries} attempts`);
-        return false;
-      }
-      // Exponential backoff: delay * (2 ^ attempt)
-      await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));
-    }
-  }
-};
+// Utility Function: Generate OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-const processEmailQueue = async () => {
-  if (activeEmailCount >= MAX_CONCURRENT_EMAILS || emailQueue.length === 0) return;
-
-  activeEmailCount++;
-  const { to, subject, html } = emailQueue.shift();
-  const mailOptions = {
-    from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  };
-
-  // Add slight delay to prevent Gmail throttling
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  sendEmailWithRetry(mailOptions)
-    .catch((error) => {
-      console.error(`Unexpected error sending email to ${to}:`, error);
-    })
-    .finally(() => {
-      activeEmailCount--;
-      setImmediate(processEmailQueue); // Process next email
-    });
-
-  // Trigger next email if queue isn't empty
-  if (emailQueue.length > 0 && activeEmailCount < MAX_CONCURRENT_EMAILS) {
-    setImmediate(processEmailQueue);
-  }
-};
-
-const sendEmail = async (to, subject, html) => {
-  emailQueue.push({ to, subject, html });
-  console.log(`Queued email to ${to}. Queue length: ${emailQueue.length}, Active: ${activeEmailCount}`);
-  setImmediate(processEmailQueue);
-};
-
-// Email Template Functions
-const getBaseEmailTemplate = (content) => `
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Skill Shastra</title>
-      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Poppins', sans-serif; background-color: #f8f9ff; color: #1f2937; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #7c3aed; text-align: center; padding: 20px; border-radius: 8px 8px 0 0; }
-        .header img { max-width: 150px; height: auto; }
-        .content { background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        .content h1 { font-size: 24px; color: #7c3aed; margin-bottom: 20px; }
-        .content p { font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
-        .otp { font-size: 28px; font-weight: 600; color: #1f2937; text-align: center; padding: 15px; background-color: #f8f9ff; border-radius: 8px; margin: 20px 0; }
-        .cta-button { display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; margin: 15px 0; }
-        .cta-button:hover { background-color: #a855f7; }
-        .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        .table th { font-weight: 600; color: #7c3aed; }
-        .status-approved { color: #10b981; font-weight: 600; }
-        .status-rejected { color: #ef4444; font-weight: 600; }
-        .footer { text-align: center; padding: 20px; font-size: 14px; color: #6b7280; }
-        .footer a { color: #7c3aed; text-decoration: none; margin: 0 10px; }
-        .footer a:hover { text-decoration: underline; }
-        @media (max-width: 600px) {
-          .container { padding: 10px; }
-          .content { padding: 20px; }
-          .header img { max-width: 120px; }
-          .content h1 { font-size: 20px; }
-          .content p { font-size: 14px; }
-          .otp { font-size: 24px; }
-          .cta-button { padding: 10px 20px; }
+// Email Templates
+const getRegistrationOtpEmailTemplate = (otp) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your OTP for Skill Shastra Login</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            color: #e0e0e0;
+            line-height: 1.6;
         }
-      </style>
-    </head>
-    <body>
-      <div class="container">
+        .container {
+            width: 100%;
+            max-width: 700px;
+            margin: 20px auto;
+            background-color: rgb(207, 199, 199);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        .header {
+            text-align: center;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #1f3a44, #0a2629);
+            border-bottom: 3px solid #00cccc;
+        }
+        .header img {
+            max-width: 120px;
+            height: auto;
+            margin: 5px 0;
+        }
+        .header h1 {
+            color: #00cccc;
+            font-size: 24px;
+            margin: 5px 0 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .header p {
+            color: #b0b0b0;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+        .content {
+            padding: 20px;
+            text-align: center;
+        }
+        .otp-box {
+            font-size: 28px;
+            font-weight: bold;
+            color: #00cccc;
+            background-color: #1a1a1a;
+            padding: 12px 25px;
+            display: inline-block;
+            margin: 20px 0;
+            border: 2px solid #00cccc;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+        }
+        .features {
+            margin: 25px 0;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            padding: 0 20px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            flex: 1 1 30%;
+            min-width: 200px;
+        }
+        .feature-item img {
+            width: 28px;
+            height: 28px;
+            margin-right: 12px;
+        }
+        .footer {
+            background-color: #333333;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #b0b0b0;
+            border-top: 1px solid #00cccc;
+        }
+        a {
+            color: #00cccc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: #00ffff;
+        }
+        h2 {
+            color: #00cccc;
+            margin: 15px 0;
+            font-size: 24px;
+        }
+        p {
+            margin: 10px 0;
+        }
+        @media only screen and (min-width: 601px) {
+            .header { padding: 15px 20px; }
+            .header h1 { font-size: 28px; }
+            .header p { font-size: 16px; }
+            .content { padding: 30px; }
+            .otp-box { font-size: 32px; padding: 15px 30px; }
+            .features { padding: 0 30px; }
+            .feature-item { min-width: 180px; }
+            .feature-item img { width: 32px; height: 32px; }
+            h2 { font-size: 26px; }
+            p { font-size: 16px; }
+        }
+        @media only screen and (max-width: 600px) {
+            .container { margin: 10px; border-radius: 6px; max-width: 100%; }
+            .header { padding: 8px 10px; }
+            .header img { max-width: 100px; }
+            .header h1 { font-size: 20px; }
+            .header p { font-size: 12px; }
+            .content { padding: 15px; }
+            .otp-box { font-size: 22px; padding: 10px 20px; }
+            .features { padding: 0 10px; display: block; }
+            .feature-item { min-width: 100%; margin-bottom: 12px; }
+            .feature-item img { width: 24px; height: 24px; }
+            .footer { padding: 12px; font-size: 10px; }
+            h2 { font-size: 20px; }
+            p { font-size: 14px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
         <div class="header">
-          <img src="https://res.cloudinary.com/dsk80td7v/image/upload/v1750568168/public/images/logo.png" alt="Skill Shastra Logo" />
+            <img src="https://i.postimg.cc/pT69mFMB/logo.png" alt="Skill Shastra Logo">
+            <h1>Skill Shastra</h1>
+            <p>Your Career Mapping and Skill Development Platform</p>
         </div>
         <div class="content">
-          ${content}
+            <h2>Unlock Your Career Potential</h2>
+            <p style="font-size: 16px;">
+                Hello,<br>
+                Welcome to Skill Shastra—your platform for career growth and skill enhancement. We're here to guide you with personalized tools and insights.
+            </p>
+            <p style="font-size: 16px;">
+                Your One-Time Password (OTP) to register securely:
+            </p>
+            <div class="otp-box">${otp}</div>
+            <p style="font-size: 14px; color: #b0b0b0;">
+                Valid for 10 minutes. Keep it confidential.
+            </p>
+            <div class="features">
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/ios-filled/50/00cccc/clock.png" alt="Career Icon">
+                    <span>Personalized career mapping</span>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/ios-filled/50/00cccc/settings.png" alt="Skill Icon">
+                    <span>Skill development tools</span>
+                </div>
+                <div class="feature-item">
+                    <img src="https://img.icons8.com/ios-filled/50/00cccc/shield.png" alt="Guidance Icon">
+                    <span>Expert career guidance</span>
+                </div>
+            </div>
+            <p style="font-size: 16px;">
+                Stay connected:<br>
+                <a href="https://instagram.com/skillshastra" target="_blank">@SkillShastra</a> | 
+                <a href="https://skill-shastra.vercel.app/" target="_blank">www.skillshastra.com</a>
+            </p>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
-          <p><a href="mailto:support@skillshastra.com">support@skillshastra.com</a> | <a href="https://skill-shastra.vercel.app/">skillshastra.com</a></p>
-          <p>
-            <a href="https://facebook.com/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/facebook.png" alt="Facebook" style="width: 24px; height: 24px;" /></a>
-            <a href="https://linkedin.com/company/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/linkedin.png" alt="LinkedIn" style="width: 24px; height: 24px;" /></a>
-            <a href="https://twitter.com/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/twitter.png" alt="Twitter" style="width: 24px; height: 24px;" /></a>
-          </p>
-          <p><a href="#">Unsubscribe</a></p>
+            <p>Best regards,<br><strong>Skill Shastra Team</strong></p>
+            <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
+            <p>Need help? <a href="mailto:support@skillshastra.com">support@skillshastra.com</a></p>
         </div>
-      </div>
-    </body>
-  </html>
+    </div>
+</body>
+</html>
 `;
 
-const getOtpEmailTemplate = (otp, type = "verify") =>
-  getBaseEmailTemplate(`
-  <h1>${type === "verify" ? "Verify Your Account" : "Reset Your Password"}</h1>
-  <p>Welcome to Skill Shastra${
-    type === "verify"
-      ? ", we're excited to have you!"
-      : "! Let's get your password reset."
-  }</p>
-  <p>Your One-Time Password (OTP) for ${
-    type === "verify" ? "email verification" : "password reset"
-  } is:</p>
-  <div class="otp">${otp}</div>
-  <p>This OTP is valid for 10 minutes. Please use it to complete your ${
-    type === "verify" ? "verification" : "password reset"
-  }.</p>
-  <a href="https://skill-shastra.vercel.app/${
-    type === "verify" ? "signup" : "forgot-password"
-  }" class="cta-button">${
-    type === "verify" ? "Verify Now" : "Reset Password"
-  }</a>
-  <p>If you didn't request this, please ignore this email.</p>
-`);
+const getPasswordResetOtpEmailTemplate = (otp) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset OTP</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+        body { font-family: "Poppins", sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; }
+        .email-container { max-width: 600px; margin: 20px auto; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+        .email-header { background-color: #4caf50; color: #ffffff; text-align: center; padding: 20px; }
+        .email-header img { width: 150px; }
+        .email-header h1 { margin: 10px 0 0; font-size: 24px; }
+        .email-body { padding: 20px; text-align: center; }
+        .email-body h2 { font-size: 20px; color: #333; }
+        .email-body .otp-box { background-color: #f4f4f4; font-size: 24px; color: #4caf50; padding: 15px; margin: 20px auto; width: fit-content; border-radius: 5px; border: 1px solid #ddd; }
+        .email-body p { font-size: 16px; color: #555; line-height: 1.6; }
+        .email-footer { text-align: center; padding: 15px; font-size: 14px; color: #777; background-color: #f4f4f4; }
+        .email-footer a { color: #4caf50; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <img src="https://i.postimg.cc/pT69mFMB/logo.png" alt="Skill Shastra Logo">
+            <h1>Skill Shastra</h1>
+        </div>
+        <div class="email-body">
+            <h2>🔑 Password Reset</h2>
+            <p>We received a request to reset your password. Use the OTP below to proceed:</p>
+            <div class="otp-box">${otp}</div>
+            <p><em>(This OTP is valid for the next 10 minutes.)</em></p>
+            <p>If you didn’t request this, please ignore this email or <a href="mailto:support@skillshastra.com">contact support</a>.</p>
+        </div>
+        <div class="email-footer">
+            <p>Need help? <a href="https://skill-shastra.vercel.app/support">Visit our support page</a>.</p>
+            <p>The <strong>Skill Shastra Team</strong></p>
+        </div>
+    </div>
+</body>
+</html>
+`;
 
-const getWelcomeEmailTemplate = (name) =>
-  getBaseEmailTemplate(`
-  <!DOCTYPE html>
+const getWelcomeEmailTemplate = (name) => `
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -374,28 +475,20 @@ const getWelcomeEmailTemplate = (name) =>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f3f0ff;">
         <tr>
             <td align="center">
-                <!-- Background Design -->
                 <div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto;">
                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;">
-                        <!-- Gradient Circles -->
                         <div style="position: absolute; top: -50px; left: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%); border-radius: 50%;"></div>
                         <div style="position: absolute; bottom: -100px; right: -100px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(167, 139, 250, 0.1), transparent 70%); border-radius: 50%;"></div>
-                        <!-- Lines -->
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);"></div>
-                        <!-- Dots -->
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, #d1d5db, 1px, transparent 1px); background-size: 20px 20px; opacity: 0.3;"></div>
                     </div>
-
-                    <!-- Email Content -->
                     <table role="presentation" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); position: relative; z-index: 1;">
-                        <!-- Header with Logo -->
                         <tr>
                             <td style="padding: 30px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                                <img src="../images/logo.png" alt="Skill Shastra Logo" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
+                                <img src="https://res.cloudinary.com/dsk80td7v/image/upload/v1750568168/public/images/logo.png" alt="Skill Shastra Logo" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
                                 <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 15px 0 0;">Welcome to Skill Shastra</h1>
                             </td>
                         </tr>
-                        <!-- Greeting Message -->
                         <tr>
                             <td style="padding: 20px 20px;">
                                 <h2 style="font-size: 20px; font-weight: 500; color: #8b5cf6; margin: 0 0 15px;">Hello, ${name}!</h2>
@@ -407,13 +500,11 @@ const getWelcomeEmailTemplate = (name) =>
                                 </p>
                             </td>
                         </tr>
-                        <!-- Call to Action -->
                         <tr>
                             <td style="padding: 0 20px 20px; text-align: center;">
                                 <a href="https://skill-shastra.vercel.app/dashboard/courses" style="display: inline-block; padding: 12px 24px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px;">Start Learning Now</a>
                             </td>
                         </tr>
-                        <!-- Support Info -->
                         <tr>
                             <td style="padding: 0 20px 20px; text-align: center;">
                                 <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">
@@ -422,17 +513,16 @@ const getWelcomeEmailTemplate = (name) =>
                                 </p>
                             </td>
                         </tr>
-                        <!-- Footer -->
                         <tr>
                             <td style="padding: 20px; background-color: #f3f0ff; text-align: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                                 <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px;">
                                     Connect with us: 
-                                    <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Twitter</a> | 
-                                    <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">LinkedIn</a> | 
-                                    <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Instagram</a>
+                                    <a href="https://twitter.com/skillshastra" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Twitter</a> | 
+                                    <a href="https://linkedin.com/company/skillshastra" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">LinkedIn</a> | 
+                                    <a href="https://instagram.com/skillshastra" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Instagram</a>
                                 </p>
                                 <p style="font-size: 12px; color: #6b7280; margin: 0;">
-                                    © 2025 Skill Shastra. All rights reserved.
+                                    © ${new Date().getFullYear()} Skill Shastra. All rights reserved.
                                 </p>
                             </td>
                         </tr>
@@ -443,41 +533,106 @@ const getWelcomeEmailTemplate = (name) =>
     </table>
 </body>
 </html>
-`);
+`;
 
 const getEnrollmentConfirmationEmailTemplate = (
   fullName,
   course,
   transactionId,
   paymentProofUrl
-) =>
-  getBaseEmailTemplate(`
-  <h1>Enrollment Confirmation</h1>
-  <p>Dear ${fullName},</p>
-  <p>Thank you for enrolling in <strong>${course}</strong> with Skill Shastra!</p>
-  <p>We have received your enrollment details and payment proof. Our team will verify your payment and update your enrollment status soon.</p>
-  <table class="table">
-    <tr><th>Course</th><td>${course}</td></tr>
-    <tr><th>Transaction ID</th><td>${transactionId}</td></tr>
-    <tr><th>Status</th><td>Pending</td></tr>
-  </table>
-  <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
-  <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a> if you have any questions.</p>
-`);
+) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Confirmation</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        .header { text-align: center; padding: 10px 0; }
+        .header img { max-width: 150px; }
+        .content { padding: 20px; }
+        .content h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+        .content p { color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
+        .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .table th { background-color: #f8f8f8; color: #333; }
+        .cta-button { display: inline-block; background-color: #4caf50; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+        .footer { text-align: center; padding: 10px 0; font-size: 12px; color: #777; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://i.postimg.cc/pT69mFMB/logo.png" alt="Skill Shastra Logo">
+        </div>
+        <div class="content">
+            <h1>Enrollment Confirmation</h1>
+            <p>Dear ${fullName},</p>
+            <p>Thank you for enrolling in <strong>${course}</strong> with Skill Shastra!</p>
+            <p>We have received your enrollment details and payment proof. Our team will verify your payment and update your enrollment status soon.</p>
+            <table class="table">
+                <tr><th>Course</th><td>${course}</td></tr>
+                <tr><th>Transaction ID</th><td>${transactionId}</td></tr>
+                <tr><th>Status</th><td>Pending</td></tr>
+            </table>
+            <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
+            <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a> if you have any questions.</p>
+        </div>
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+`;
 
-const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
-  getBaseEmailTemplate(`
-  <h1>Enrollment Status Update</h1>
-  <p>Dear ${fullName},</p>
-  <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-  ${
-    status === "approved"
-      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
-  }
-  <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
-  <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
-`);
+const getEnrollmentStatusEmailTemplate = (fullName, course, status) => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment Status Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        .header { text-align: center; padding: 10px 0; }
+        .header img { max-width: 150px; }
+        .content { padding: 20px; }
+        .content h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+        .content p { color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
+        .status-approved { color: #4caf50; font-weight: bold; }
+        .status-rejected { color: #f44336; font-weight: bold; }
+        .cta-button { display: inline-block; background-color: #4caf50; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+        .footer { text-align: center; padding: 10px 0; font-size: 12px; color: #777; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://i.postimg.cc/pT69mFMB/logo.png" alt="Skill Shastra Logo">
+        </div>
+        <div class="content">
+            <h1>Enrollment Status Update</h1>
+            <p>Dear ${fullName},</p>
+            <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
+            ${
+              status === "approved"
+                ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+                : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+            }
+            <p><a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a></p>
+            <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
+        </div>
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+`;
 
 // Authentication Middleware
 const protect = async (req, res, next) => {
@@ -488,10 +643,10 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select(
-      "-password -otp -otpExpires"
+    const user = await User.findById(decoded.userId).select(
+      "-password -resetOtp -resetOtpExpiry"
     );
-    if (!user || !user.isVerified) {
+    if (!user) {
       res.clearCookie("token");
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -513,82 +668,74 @@ const restrictToAdmin = async (req, res, next) => {
   next();
 };
 
-// Helper Function
-const generateOTP = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
-
 // Authentication Routes
-app.post(
-  "/api/auth/signup",
-  upload.none(), // Remove profileImage upload
-  async (req, res) => {
-    const { name, email, password, redirect } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    try {
-      let user = await User.findOne({ email });
-      if (user) {
-        return res.status(400).json({ message: "User already exists" });
-      }
-
-      const otp = generateOTP();
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-      user = new User({
-        name,
-        email,
-        password,
-        otp,
-        otpExpires,
-        role: process.env.ADMIN_EMAILS.split(",").includes(email)
-          ? "admin"
-          : "user",
-      });
-
-      await user.save();
-
-      await sendEmail(
-        email,
-        "Verify Your Skill Shastra Account",
-        getOtpEmailTemplate(otp, "verify")
-      );
-
-      res.status(201).json({ message: "OTP sent to your email", redirect });
-    } catch (error) {
-      console.error("Signup Error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
-app.post("/api/auth/verify-otp", async (req, res) => {
-  const { email, otp, redirect } = req.body;
-  if (!email || !otp) {
-    return res.status(400).json({ message: "Email and OTP are required" });
+app.post("/api/auth/register", upload.none(), async (req, res) => {
+  const { email, password, redirect } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
-    if (user.isVerified) {
-      return res.status(400).json({ message: "User already verified" });
+    const otp = generateOTP();
+    otpStorage[email] = otp;
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: "Registration OTP - Skill Shastra",
+      html: getRegistrationOtpEmailTemplate(otp),
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Error sending OTP email:", error);
+        return res.status(500).json({ message: "Failed to send OTP" });
+      }
+      console.log("OTP email sent:", info.response);
+      res.status(200).json({ message: "OTP sent! Please verify.", redirect });
+    });
+  } catch (error) {
+    console.error("Register Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/api/auth/register/verify", async (req, res) => {
+  const { email, otp, password, name, phone, dob, redirect } = req.body;
+  if (!email || !otp || !password || !name) {
+    return res.status(400).json({ message: "All required fields must be provided" });
+  }
+
+  try {
+    if (otpStorage[email] !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
     }
 
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpires = null;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({
+      email,
+      password: hashedPassword,
+      name,
+      phone,
+      dob: dob ? new Date(dob) : null,
+      role: process.env.ADMIN_EMAILS?.split(",").includes(email) ? "admin" : "user",
+    });
+
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    delete otpStorage[email];
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
@@ -599,13 +746,24 @@ app.post("/api/auth/verify-otp", async (req, res) => {
       sameSite: "strict",
     });
 
-    await sendEmail(
-      user.email,
-      "Welcome to Skill Shastra!",
-      getWelcomeEmailTemplate(user.name)
+    transporter.sendMail(
+      {
+        from: process.env.GMAIL_USER,
+        to: email,
+        subject: "Welcome to Skill Shastra!",
+        html: getWelcomeEmailTemplate(name),
+      },
+      (error, info) => {
+        if (error) {
+          console.error("Error sending welcome email:", error);
+        } else {
+          console.log("Welcome email sent:", info.response);
+        }
+      }
     );
 
-    res.status(200).json({
+    res.status(201).json({
+      message: "Registration successful",
       user: {
         name: user.name,
         email: user.email,
@@ -631,19 +789,19 @@ app.post("/api/auth/login", async (req, res) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select(
-          "-password -otp -otpExpires"
+        const user = await User.findById(decoded.userId).select(
+          "-password-resOtp-resOtpExpiry"
         );
-        if (user && user.isVerified) {
+        if (user) {
           return res.status(400).json({
             message: "User already logged in",
             user: {
               name: user.name,
               email: user.email,
               role: user.role,
-              profileImage: user.profileImage,
+              profileImage: profileImage.profileImage,
             },
-            redirect,
+            redirect: redirect,
           });
         }
         res.clearCookie("token");
@@ -652,18 +810,12 @@ app.post("/api/auth/login", async (req, res) => {
       }
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email });
     if (!user || !(await user.comparePassword(password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    if (!user.isVerified) {
-      return res
-        .status(400)
-        .json({ message: "Please verify your email first" });
-    }
-
-    const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const newToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
@@ -672,6 +824,7 @@ app.post("/api/auth/login", async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
+      meSite: "Strict",
     });
 
     res.status(200).json({
@@ -681,7 +834,7 @@ app.post("/api/auth/login", async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
       },
-      redirect,
+      redirect: redirect,
     });
   } catch (error) {
     console.error("Login Error:", error);
@@ -694,6 +847,7 @@ app.post("/api/auth/logout", (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
+    status: true,
   });
   res.status(200).json({ message: "Logged out successfully" });
 });
@@ -707,33 +861,56 @@ app.post("/api/auth/forgot-password", async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Email not found" });
     }
 
     const otp = generateOTP();
-    user.otp = otp;
-    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    user.resetOtp = otp;
+    user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendEmail(
-      email,
-      "Skill Shastra Password Reset",
-      getOtpEmailTemplate(otp, "reset")
-    );
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: "Password Reset OTP - Skill Shastra",
+      html: getPasswordResetOtpEmailTemplate(otp),
+    };
 
-    res
-      .status(200)
-      .json({ message: "OTP sent to your email for password reset", redirect });
+    transporter.sendMail(mailOptions, (error) => {
+      if (error) {
+        console.error("Error sending OTP email:", error);
+        return res.status(500).json({ message: "Failed to send OTP" });
+      }
+      res.status(200).json({ message: "OTP sent to your email", redirect });
+    });
   } catch (error) {
     console.error("Forgot Password Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
+app.post("/api/auth/reset-password/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email and OTP are required" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user || user.resetOtp !== otp || user.resetOtpExpiry < Date.now()) {
+      return res.status(400).json({ valid: false });
+    }
+    res.status(200).json({ valid: true });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 app.post("/api/auth/reset-password", async (req, res) => {
-  const { email, otp, newPassword, redirect } = req.body;
-  if (!email || !otp || !newPassword) {
-    return res.status(400).json({ message: "All fields are required" });
+  const { email, password, redirect } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
@@ -742,13 +919,9 @@ app.post("/api/auth/reset-password", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-
-    user.password = newPassword;
-    user.otp = null;
-    user.otpExpires = null;
+    user.password = password;
+    user.resetOtp = null;
+    user.resetOtpExpiry = null;
     await user.save();
 
     res.status(200).json({ message: "Password reset successfully", redirect });
@@ -761,7 +934,7 @@ app.post("/api/auth/reset-password", async (req, res) => {
 // Admin Middleware
 app.get("/api/auth/admin-panel", protect, restrictToAdmin, async (req, res) => {
   try {
-    const users = await User.find().select("-password -otp -otpExpires");
+    const users = await User.find().select("-password -resetOtp -resetOtpExpiry");
     res.status(200).json({ message: "Welcome to Admin Panel", users });
   } catch (error) {
     console.error("Admin Panel Error:", error);
@@ -802,27 +975,33 @@ app.patch(
       }
       const enrollment = await Enrollment.findByIdAndUpdate(
         req.params.id,
-        { status },
+        { status: status },
         { new: true }
       );
       if (!enrollment) {
         return res.status(404).json({ message: "Enrollment not found" });
       }
       const user = await User.findById(enrollment.userId);
-      await sendEmail(
-        enrollment.email,
-        `Skill Shastra Enrollment ${
-          status.charAt(0).toUpperCase() + status.slice(1)
-        }`,
-        getEnrollmentStatusEmailTemplate(
-          enrollment.fullName,
-          enrollment.course,
-          status
-        )
+      transporter.sendMail(
+        {
+          from: process.env.GMAIL_USER,
+          to: enrollment.email,
+          subject: `Skill Shastra Enrollment ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          html: getEnrollmentStatusEmailTemplate(
+            enrollment.fullName,
+            enrollment.course,
+            status
+          ),
+        },
+        (error, info) => {
+          if (error) {
+            console.error("Error sending enrollment status email:", error);
+          } else {
+            console.log("Enrollment status email sent:", info.response);
+          }
+        }
       );
-      res
-        .status(200)
-        .json({ message: `Enrollment ${status} successfully`, enrollment });
+      res.status(200).json({ message: `Enrollment ${status} successfully`, enrollment });
     } catch (error) {
       console.error("Error updating enrollment:", error);
       res.status(500).json({ message: "Server error" });
@@ -830,7 +1009,7 @@ app.patch(
   }
 );
 
-// POST Feedback Route
+// Feedback Routes
 app.post("/api/feedback", protect, async (req, res) => {
   try {
     const { rating, text } = req.body;
@@ -876,6 +1055,7 @@ app.get("/api/admin/feedback", protect, restrictToAdmin, async (req, res) => {
   }
 });
 
+// Analytics Route
 app.get("/api/admin/analytics", protect, restrictToAdmin, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -904,6 +1084,7 @@ app.get("/api/admin/analytics", protect, restrictToAdmin, async (req, res) => {
   }
 });
 
+// Enrollment Details Route
 app.get(
   "/api/admin/enrollments/:id",
   protect,
@@ -924,7 +1105,7 @@ app.get(
   }
 );
 
-// Placeholder APIs for Messages and Announcements
+// Messages Route
 app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
   try {
     const messages = await Message.find().lean();
@@ -936,15 +1117,6 @@ app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-const courseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-});
-
-const Course = mongoose.model("Course", courseSchema);
 
 // Recommended Courses Route
 app.get("/api/courses/recommended", protect, async (req, res) => {
@@ -988,6 +1160,7 @@ app.get("/api/courses/recommended", protect, async (req, res) => {
   }
 });
 
+// Announcements Route
 app.post(
   "/api/admin/announcements",
   protect,
@@ -1105,15 +1278,25 @@ app.post(
 
       await enrollment.save();
 
-      await sendEmail(
-        studentData.email,
-        "Skill Shastra Enrollment Confirmation",
-        getEnrollmentConfirmationEmailTemplate(
-          studentData.fullName,
-          studentData.course,
-          transactionId,
-          paymentProofUrl
-        )
+      transporter.sendMail(
+        {
+          from: process.env.GMAIL_USER,
+          to: studentData.email,
+          subject: "Skill Shastra Enrollment Confirmation",
+          html: getEnrollmentConfirmationEmailTemplate(
+            studentData.fullName,
+            studentData.course,
+            transactionId,
+            paymentProofUrl
+          ),
+        },
+        (error, info) => {
+          if (error) {
+            console.error("Error sending enrollment confirmation email:", error);
+          } else {
+            console.log("Enrollment confirmation email sent:", info.response);
+          }
+        }
       );
 
       res.status(201).json({ message: "Enrollment submitted successfully" });
