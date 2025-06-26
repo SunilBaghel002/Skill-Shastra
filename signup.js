@@ -669,7 +669,7 @@ const restrictToAdmin = async (req, res, next) => {
 };
 
 // Authentication Routes
-app.post("/api/auth/register", upload.none(), async (req, res) => {
+app.post("/api/auth/signup", upload.none(), async (req, res) => {
   const { email, password, redirect } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
@@ -705,7 +705,7 @@ app.post("/api/auth/register", upload.none(), async (req, res) => {
   }
 });
 
-app.post("/api/auth/register/verify", async (req, res) => {
+app.post("/api/auth/verify-otp", async (req, res) => {
   const { email, otp, password, name, phone, dob, redirect } = req.body;
   if (!email || !otp || !password || !name) {
     return res.status(400).json({ message: "All required fields must be provided" });
