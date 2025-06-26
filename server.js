@@ -207,7 +207,7 @@ transporter.verify((error, success) => {
   else console.log("SMTP Server is ready to send emails");
 });
 
-// Updated sendEmail Function (Removed retry loop)
+// sendEmail Function
 const sendEmail = async (to, subject, html) => {
   const mailOptions = {
     from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
@@ -219,9 +219,7 @@ const sendEmail = async (to, subject, html) => {
   try {
     const startTime = Date.now();
     const info = await transporter.sendMail(mailOptions);
-    console.log(
-      `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
-    );
+    console.log(`Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`);
     return info;
   } catch (error) {
     console.error(`Email Error to ${to}:`, error);
@@ -292,28 +290,27 @@ const getBaseEmailTemplate = (content) => `
   </html>
 `;
 
-const getOtpEmailTemplate = (otp, type = "verify") =>
+const getVerifyEmailTemplate = (otp) =>
   getBaseEmailTemplate(`
-  <h1>${type === "verify" ? "Verify Your Account" : "Reset Your Password"}</h1>
-  <p>Welcome to Skill Shastra${
-    type === "verify"
-      ? ", we're excited to have you!"
-      : "! Let's get your password reset."
-  }</p>
-  <p>Your One-Time Password (OTP) for ${
-    type === "verify" ? "email verification" : "password reset"
-  } is:</p>
-  <div class="otp">${otp}</div>
-  <p>This OTP is valid for 10 minutes. Please use it to complete your ${
-    type === "verify" ? "verification" : "password reset"
-  }.</p>
-  <a href="https://skill-shastra.vercel.app/${
-    type === "verify" ? "signup" : "forgot-password"
-  }" class="cta-button">${
-    type === "verify" ? "Verify Now" : "Reset Password"
-  }</a>
-  <p>If you didn't request this, please ignore this email.</p>
-`);
+    <h1>Verify Your Account</h1>
+    <p>Welcome to Skill Shastra, we're excited to have you!</p>
+    <p>Your One-Time Password (OTP) for email verification is:</p>
+    <div class="otp">${otp}</div>
+    <p>This OTP is valid for 10 minutes. Please use it to complete your verification.</p>
+    <a href="https://skill-shastra.vercel.app/signup" class="cta-button">Verify Now</a>
+    <p>If you didn't request this, please ignore this email.</p>
+  `);
+
+const getResetPasswordEmailTemplate = (otp) =>
+  getBaseEmailTemplate(`
+    <h1>Reset Your Password</h1>
+    <p>Welcome to Skill Shastra! Let's get your password reset.</p>
+    <p>Your One-Time Password (OTP) for password reset is:</p>
+    <div class="otp">${otp}</div>
+    <p>This OTP is valid for 10 minutes. Please use it to complete your password reset.</p>
+    <a href="https://skill-shastra.vercel.app/forgot-password" class="cta-button">Reset Password</a>
+    <p>If you didn't request this, please ignore this email.</p>
+  `);
 
 const getWelcomeEmailTemplate = (name) =>
   getBaseEmailTemplate(`
@@ -337,32 +334,32 @@ const getEnrollmentConfirmationEmailTemplate = (
   paymentProofUrl
 ) =>
   getBaseEmailTemplate(`
-  <h1>Enrollment Confirmation</h1>
-  <p>Dear ${fullName},</p>
-  <p>Thank you for enrolling in <strong>${course}</strong> with Skill Shastra!</p>
-  <p>We have received your enrollment details and payment proof. Our team will verify your payment and update your enrollment status soon.</p>
-  <table class="table">
-    <tr><th>Course</th><td>${course}</td></tr>
-    <tr><th>Transaction ID</th><td>${transactionId}</td></tr>
-    <tr><th>Status</th><td>Pending</td></tr>
-  </table>
-  <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
-  <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a> if you have any questions.</p>
-`);
+    <h1>Enrollment Confirmation</h1>
+    <p>Dear ${fullName},</p>
+    <p>Thank you for enrolling in <strong>${course}</strong> with Skill Shastra!</p>
+    <p>We have received your enrollment details and payment proof. Our team will verify your payment and update your enrollment status soon.</p>
+    <table class="table">
+      <tr><th>Course</th><td>${course}</td></tr>
+      <tr><th>Transaction ID</th><td>${transactionId}</td></tr>
+      <tr><th>Status</th><td>Pending</td></tr>
+    </table>
+    <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
+    <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a> if you have any questions.</p>
+  `);
 
 const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
   getBaseEmailTemplate(`
-  <h1>Enrollment Status Update</h1>
-  <p>Dear ${fullName},</p>
-  <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-  ${
-    status === "approved"
-      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
-  }
-  <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
-  <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
-`);
+    <h1>Enrollment Status Update</h1>
+    <p>Dear ${fullName},</p>
+    <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
+    ${
+      status === "approved"
+        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+    }
+    <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
+    <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
+  `);
 
 // Authentication Middleware
 const protect = async (req, res, next) => {
@@ -434,7 +431,7 @@ app.post("/api/auth/signup", upload.none(), async (req, res) => {
     await sendEmail(
       email,
       "Verify Your Skill Shastra Account",
-      getOtpEmailTemplate(otp, "verify")
+      getVerifyEmailTemplate(otp)
     );
 
     res.status(201).json({ message: "OTP sent to your email", redirect });
@@ -599,7 +596,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
     await sendEmail(
       email,
       "Skill Shastra Password Reset",
-      getOtpEmailTemplate(otp, "reset")
+      getResetPasswordEmailTemplate(otp)
     );
 
     res
