@@ -120,7 +120,7 @@ const enrollmentSchema = new mongoose.Schema({
   address: { type: String, required: true },
   transactionId: { type: String, required: true },
   paymentDate: { type: Date, required: true },
-  paymentProof: { type: String, required: true }, // Stores Cloudinary URL
+  paymentProof: { type: String, required: true },
   status: {
     type: String,
     default: "pending",
@@ -207,37 +207,37 @@ transporter.verify((error, success) => {
   else console.log("SMTP Server is ready to send emails");
 });
 
-// Email Queue
-const emailQueue = [];
-let isProcessingQueue = false;
-
-const processEmailQueue = async () => {
-  if (isProcessingQueue || emailQueue.length === 0) return;
-  isProcessingQueue = true;
-
-  const { to, subject, html } = emailQueue.shift();
-  const startTime = Date.now();
-
-  try {
-    await transporter.sendMail({
-      from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    console.log(`Email sent to ${to} in ${Date.now() - startTime}ms`);
-  } catch (error) {
-    console.error(`Email Error to ${to}:`, error);
-    // Optionally re-queue or log for retry
-  } finally {
-    isProcessingQueue = false;
-    setImmediate(processEmailQueue); // Process next email
-  }
-};
-
+// Updated sendEmail Function
 const sendEmail = async (to, subject, html, retries = 3) => {
-  emailQueue.push({ to, subject, html });
-  setImmediate(processEmailQueue);
+  const mailOptions = {
+    from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
+    to,
+    subject,
+    html,
+  };
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const startTime = Date.now();
+      const info = await transporter.sendMail(mailOptions);
+      console.log(
+        `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
+      );
+      return info;
+    } catch (error) {
+      console.error(
+        `Email Error to ${to} (Attempt ${attempt}/${retries}):`,
+        error
+      );
+      if (attempt === retries) {
+        throw new Error(
+          `Failed to send email to ${to} after ${retries} attempts: ${error.message}`
+        );
+      }
+      // Wait before retrying (exponential backoff)
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    }
+  }
 };
 
 // Email Template Functions
@@ -341,28 +341,20 @@ const getWelcomeEmailTemplate = (name) =>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f3f0ff;">
         <tr>
             <td align="center">
-                <!-- Background Design -->
                 <div style="position: relative; width: 100%; max-width: 600px; margin: 0 auto;">
                     <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;">
-                        <!-- Gradient Circles -->
                         <div style="position: absolute; top: -50px; left: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent 70%); border-radius: 50%;"></div>
                         <div style="position: absolute; bottom: -100px; right: -100px; width: 250px; height: 250px; background: radial-gradient(circle, rgba(167, 139, 250, 0.1), transparent 70%); border-radius: 50%;"></div>
-                        <!-- Lines -->
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);"></div>
-                        <!-- Dots -->
                         <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, #d1d5db, 1px, transparent 1px); background-size: 20px 20px; opacity: 0.3;"></div>
                     </div>
-
-                    <!-- Email Content -->
                     <table role="presentation" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); position: relative; z-index: 1;">
-                        <!-- Header with Logo -->
                         <tr>
                             <td style="padding: 30px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); text-align: center; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-                                <img src="../images/logo.png" alt="Skill Shastra Logo" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
+                                <img src="https://res.cloudinary.com/dsk80td7v/image/upload/v1750568168/public/images/logo.png" alt="Skill Shastra Logo" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
                                 <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 15px 0 0;">Welcome to Skill Shastra</h1>
                             </td>
                         </tr>
-                        <!-- Greeting Message -->
                         <tr>
                             <td style="padding: 20px 20px;">
                                 <h2 style="font-size: 20px; font-weight: 500; color: #8b5cf6; margin: 0 0 15px;">Hello, ${name}!</h2>
@@ -374,13 +366,11 @@ const getWelcomeEmailTemplate = (name) =>
                                 </p>
                             </td>
                         </tr>
-                        <!-- Call to Action -->
                         <tr>
                             <td style="padding: 0 20px 20px; text-align: center;">
                                 <a href="https://skill-shastra.vercel.app/dashboard/courses" style="display: inline-block; padding: 12px 24px; background: linear-gradient(90deg, #8b5cf6, #a78bfa); color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; border-radius: 8px;">Start Learning Now</a>
                             </td>
                         </tr>
-                        <!-- Support Info -->
                         <tr>
                             <td style="padding: 0 20px 20px; text-align: center;">
                                 <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0;">
@@ -389,7 +379,6 @@ const getWelcomeEmailTemplate = (name) =>
                                 </p>
                             </td>
                         </tr>
-                        <!-- Footer -->
                         <tr>
                             <td style="padding: 20px; background-color: #f3f0ff; text-align: center; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
                                 <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px;">
@@ -399,7 +388,7 @@ const getWelcomeEmailTemplate = (name) =>
                                     <a href="#" style="color: #8b5cf6; text-decoration: none; margin: 0 5px;">Instagram</a>
                                 </p>
                                 <p style="font-size: 12px; color: #6b7280; margin: 0;">
-                                    © 2025 Skill Shastra. All rights reserved.
+                                    © ${new Date().getFullYear()} Skill Shastra. All rights reserved.
                                 </p>
                             </td>
                         </tr>
@@ -485,50 +474,46 @@ const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
 // Authentication Routes
-app.post(
-  "/api/auth/signup",
-  upload.none(), // Remove profileImage upload
-  async (req, res) => {
-    const { name, email, password, redirect } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    try {
-      let user = await User.findOne({ email });
-      if (user) {
-        return res.status(400).json({ message: "User already exists" });
-      }
-
-      const otp = generateOTP();
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-      user = new User({
-        name,
-        email,
-        password,
-        otp,
-        otpExpires,
-        role: process.env.ADMIN_EMAILS.split(",").includes(email)
-          ? "admin"
-          : "user",
-      });
-
-      await user.save();
-
-      await sendEmail(
-        email,
-        "Verify Your Skill Shastra Account",
-        getOtpEmailTemplate(otp, "verify")
-      );
-
-      res.status(201).json({ message: "OTP sent to your email", redirect });
-    } catch (error) {
-      console.error("Signup Error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
+app.post("/api/auth/signup", upload.none(), async (req, res) => {
+  const { name, email, password, redirect } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "All fields are required" });
   }
-);
+
+  try {
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    user = new User({
+      name,
+      email,
+      password,
+      otp,
+      otpExpires,
+      role: process.env.ADMIN_EMAILS.split(",").includes(email)
+        ? "admin"
+        : "user",
+    });
+
+    await user.save();
+
+    await sendEmail(
+      email,
+      "Verify Your Skill Shastra Account",
+      getOtpEmailTemplate(otp, "verify")
+    );
+
+    res.status(201).json({ message: "OTP sent to your email", redirect });
+  } catch (error) {
+    console.error("Signup Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 app.post("/api/auth/verify-otp", async (req, res) => {
   const { email, otp, redirect } = req.body;
@@ -797,7 +782,7 @@ app.patch(
   }
 );
 
-// POST Feedback Route
+// Feedback Routes
 app.post("/api/feedback", protect, async (req, res) => {
   try {
     const { rating, text } = req.body;
@@ -843,6 +828,7 @@ app.get("/api/admin/feedback", protect, restrictToAdmin, async (req, res) => {
   }
 });
 
+// Analytics Route
 app.get("/api/admin/analytics", protect, restrictToAdmin, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -871,6 +857,7 @@ app.get("/api/admin/analytics", protect, restrictToAdmin, async (req, res) => {
   }
 });
 
+// Enrollment Details Route
 app.get(
   "/api/admin/enrollments/:id",
   protect,
@@ -891,7 +878,7 @@ app.get(
   }
 );
 
-// Placeholder APIs for Messages and Announcements
+// Messages Route
 app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
   try {
     const messages = await Message.find().lean();
