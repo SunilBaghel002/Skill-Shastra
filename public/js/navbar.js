@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (profileContainer && profileDropdown) {
     profileContainer.addEventListener("click", (e) => {
       if (window.innerWidth <= 768) {
-        e.preventDefault();
+        // e.preventDefault();
         const isActive = profileContainer.classList.contains("active");
         profileContainer.classList.toggle("active", !isActive);
         profileContainer.setAttribute("aria-expanded", !isActive);
