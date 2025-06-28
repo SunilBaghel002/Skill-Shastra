@@ -142,6 +142,22 @@
         cursor: pointer;
         transition: all 0.3s ease;
       }
+      .section-title a{
+        text-decoration: none;
+      }
+      .buy-btn{
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
       .course-card-2 .course-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
@@ -256,7 +272,7 @@
           <div class="courses-grid" id="purchased-courses">
             <!-- Populated by JS -->
           </div>
-          <a href="/payment"><div class="course-btn">Buy a Course</div></a>
+          <a href="/payment"><div class="buy-btn">Buy a Course</div></a>
         </div>
         <div class="courses-card">
           <h2 class="section-title">Recommended Courses</h2>
