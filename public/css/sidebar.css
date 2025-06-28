@@ -35,6 +35,13 @@
   align-items: center;
   margin-bottom: 2rem;
 }
+.sidebar-logo .logo img {
+  width: 100px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 .sidebar-logo .skill {
   font-size: 1.8rem;
   font-weight: 900;
