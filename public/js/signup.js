@@ -362,10 +362,9 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       localStorage.setItem("user", JSON.stringify(data.user));
       showSuccess("You are already logged in. Redirecting...");
       setTimeout(() => {
-        const url =
-          data.redirect ||
-          (data.user.role === "admin" ? "/admin" : "/dashboard");
-        window.location.href = url;
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirect = urlParams.get("redirect") || "/dashboard";
+        window.location.href = redirect;
       }, 1000);
     } else {
       showError(data.message || "Login failed. Please try again.");
@@ -375,34 +374,6 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     console.error("Login Error:", error);
   } finally {
     enableButton(loginBtn, originalText);
-  }
-});
-document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  try {
-    const response = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
-    const result = await response.json();
-
-    if (response.ok) {
-      localStorage.setItem("user", JSON.stringify(result.user));
-      // Get redirect URL from query parameter
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get("redirect") || "/dashboard";
-      window.location.href = redirect;
-    } else {
-      alert(result.message || "Login failed. Please try again.");
-    }
-  } catch (error) {
-    console.error("Login error:", error);
-    alert("An error occurred during login. Please try again.");
   }
 });
 
