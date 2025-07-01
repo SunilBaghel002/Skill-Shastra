@@ -364,8 +364,14 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
 // Authentication Middleware
 const protect = async (req, res, next) => {
   const token = req.cookies.token;
+  const isApiRoute = req.originalUrl.startsWith('/api/');
+
   if (!token) {
-    return res.status(401).json({ message: "No token provided" });
+    if (isApiRoute) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    console.log(`No token provided, redirecting to /signup from ${req.originalUrl}`);
+    return res.redirect(`/signup?redirect=${encodeURIComponent(req.originalUrl)}`);
   }
 
   try {
@@ -375,14 +381,25 @@ const protect = async (req, res, next) => {
     );
     if (!user || !user.isVerified) {
       res.clearCookie("token");
-      return res.status(401).json({ message: "Unauthorized" });
+      if (isApiRoute) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      console.log(`Unauthorized user, redirecting to /signup from ${req.originalUrl}`);
+      return res.redirect(`/signup?redirect=${encodeURIComponent(req.originalUrl)}`);
     }
     req.user = user;
     next();
   } catch (error) {
-    console.error("JWT Verification Error:", error);
+    console.error("JWT Verification Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
     res.clearCookie("token");
-    return res.status(401).json({ message: "Invalid token" });
+    if (isApiRoute) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    console.log(`Invalid token, redirecting to /signup from ${req.originalUrl}`);
+    return res.redirect(`/signup?redirect=${encodeURIComponent(req.originalUrl)}`);
   }
 };
 

@@ -12,7 +12,11 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon">
+    <link
+      rel="shortcut icon"
+      href="/images/Logo_Black_Bg-2.png"
+      type="image/x-icon"
+    />
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/navbar.css" />
     <link rel="stylesheet" href="/css/footer.css" />
@@ -934,8 +938,6 @@
         localStorage.setItem("user", JSON.stringify(serverUser));
       }
 
-      if(!user) return window.location.href ="/signup"
-
       // Explicitly call updateNavbar
       if (typeof updateNavbar === "function") {
         updateNavbar();
@@ -948,8 +950,10 @@
       // Check if user is logged in client-side
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user.name || !user.email) {
-        alert("Please log in to access the enrollment page.");
-        window.location.href = "/signup?redirect=/payment";
+        console.log("No user data in localStorage, redirecting to /signup");
+        window.location.href = `/signup?redirect=${encodeURIComponent(
+          window.location.pathname
+        )}`;
       }
 
       // Course fee mapping
@@ -1058,7 +1062,6 @@
               "Course fee not available.";
           }
         }
-        3446;
       }
 
       function prevStep(currentStep) {
@@ -1162,10 +1165,12 @@
 
           const user = JSON.parse(localStorage.getItem("user") || "{}");
           if (!user.name || !user.email) {
+            console.log("No user data in localStorage, redirecting to /signup");
             loadingOverlay.style.display = "none";
             submitButton.disabled = false;
-            alert("Please log in to submit enrollment.");
-            window.location.href = "/signup?redirect=/payment";
+            window.location.href = `/signup?redirect=${encodeURIComponent(
+              window.location.pathname
+            )}`;
             return;
           }
 
@@ -1205,18 +1210,25 @@
               window.location.href = "/dashboard";
             } else {
               console.error("Enrollment error response:", result);
-              alert(
-                `Error: ${
-                  result.message ||
-                  "Failed to submit enrollment. Please try again."
-                }`
-              );
               if (
-                result.message.includes("token") ||
-                result.message.includes("Unauthorized")
+                result.message === "No token provided" ||
+                result.message === "Invalid token" ||
+                result.message === "Unauthorized"
               ) {
+                console.log(
+                  `API error: ${result.message}, redirecting to /signup`
+                );
                 localStorage.removeItem("user");
-                window.location.href = "/signup?redirect=/payment";
+                window.location.href = `/signup?redirect=${encodeURIComponent(
+                  window.location.pathname
+                )}`;
+              } else {
+                alert(
+                  `Error: ${
+                    result.message ||
+                    "Failed to submit enrollment. Please try again."
+                  }`
+                );
               }
             }
           } catch (error) {
@@ -1258,6 +1270,5 @@
       // Initialize progress bar
       updateProgressBar(1);
     </script>
-    <script src="/js/navbar.js"></script>
   </body>
 </html>
