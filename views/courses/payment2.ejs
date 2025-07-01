@@ -934,7 +934,7 @@
         localStorage.setItem("user", JSON.stringify(serverUser));
       }
 
-      if(!token) return window.location.href ="/signup"
+      if(!user) return window.location.href ="/signup"
 
       // Explicitly call updateNavbar
       if (typeof updateNavbar === "function") {
