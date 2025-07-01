@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Announcements - Skill Shastra</title>
+    <title>Announcements - Skill Shastra</title>
     <meta
       name="description"
-      content="Manage announcements for Skill Shastra users."
+      content="View the latest announcements from Skill Shastra."
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
@@ -79,8 +79,6 @@
         max-width: 1200px;
         margin: 0 auto;
         text-align: center;
-        display: flex !important;
-        flex-direction: column;
         z-index: 2;
         position: relative;
       }
@@ -114,12 +112,10 @@
         max-width: 600px;
         margin: 0 auto 1rem;
       }
-      .form-section,
       .announcements-section {
         padding: 3rem 2rem;
         background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
       }
-      .form-container,
       .announcements-container {
         max-width: 800px;
         margin: 0 auto;
@@ -152,58 +148,6 @@
         font-weight: 600;
         color: #1f2937;
         margin-bottom: 1rem;
-      }
-      .form-container {
-        background: #fff;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2rem;
-      }
-      .form-group {
-        margin-bottom: 1.5rem;
-      }
-      .form-group label {
-        display: block;
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-        color: #1f2937;
-      }
-      .form-group input,
-      .form-group textarea,
-      .form-group select {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        font-size: 1rem;
-        transition: border-color 0.3s ease;
-      }
-      .form-group input:focus,
-      .form-group textarea:focus,
-      .form-group select:focus {
-        outline: none;
-        border-color: #7c3aed;
-        box-shadow: 0 0 5px rgba(124, 58, 237, 0.3);
-      }
-      .form-group textarea {
-        resize: vertical;
-        min-height: 120px;
-      }
-      .btn {
-        background: linear-gradient(135deg, #7c3aed, #a855f7);
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
       }
       .error-message,
       .success-message {
@@ -245,22 +189,6 @@
         color: #6b7280;
         margin-bottom: 0.5rem;
       }
-      .announcement-card .actions {
-        margin-top: 1rem;
-        display: flex;
-        gap: 0.5rem;
-      }
-      .btn-edit,
-      .btn-delete {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
-      }
-      .btn-delete {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-      }
-      .btn-delete:hover {
-        box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
-      }
       @media (max-width: 768px) {
         body {
           margin-left: 0;
@@ -271,7 +199,6 @@
         .hero-container h1 {
           font-size: 2rem;
         }
-        .form-section,
         .announcements-section {
           padding: 2rem 1rem;
         }
@@ -284,85 +211,17 @@
       <!-- Hero Section -->
       <section class="hero-section">
         <div class="hero-container">
-          <h1><span class="gradient-text">Admin Announcements</span></h1>
-          <p>
-            Create and manage announcements for all users or specific courses.
-          </p>
-        </div>
-      </section>
-      <!-- Form Section -->
-      <section class="form-section">
-        <div class="form-container">
-          <span class="section-tag">Create Announcement</span>
-          <h2 class="section-title">Post a New Announcement</h2>
-          <div id="errorMessage" class="error-message"></div>
-          <div id="successMessage" class="success-message"></div>
-          <form id="announcementForm">
-            <div class="form-group">
-              <label for="title">Heading</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                maxlength="100"
-                required
-                placeholder="Enter announcement title"
-              />
-            </div>
-            <div class="form-group">
-              <label for="content">Content</label>
-              <textarea
-                id="content"
-                name="content"
-                maxlength="1000"
-                required
-                placeholder="Enter announcement details"
-              ></textarea>
-            </div>
-            <div class="form-group">
-              <label for="targetAudience">Target Audience</label>
-              <select id="targetAudience" name="targetAudience" required>
-                <option value="all">All Users</option>
-                <option value="JavaScript Programming">
-                    JavaScript Programming
-                  </option>
-                  <option value="Full Stack Development">
-                    Full Stack Development
-                  </option>
-                  <option value="Front End Development">
-                    Front End Development
-                  </option>
-                  <option value="Back End Development">
-                    Back End Development
-                  </option>
-                  <option value="Java Programming">Java Programming</option>
-                  <option value="Python Programming">Python Programming</option>
-                  <option value="C++ Programming">C++ Programming</option>
-                  <option value="Programming Fundamentals">
-                    Programming Fundamentals
-                  </option>
-                  <option value="Digital Marketing">Digital Marketing</option>
-                  <option value="Gen AI">Gen AI</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="announcementType">Announcement Type</label>
-              <select id="announcementType" name="announcementType" required>
-                <option value="general">General</option>
-                <option value="class_schedule">Class Schedule</option>
-                <option value="test">Test</option>
-                <option value="event">Event</option>
-              </select>
-            </div>
-            <button type="submit" class="btn">Post Announcement</button>
-          </form>
+          <h1><span class="gradient-text">Announcements</span></h1>
+          <p>Stay updated with the latest announcements from Skill Shastra.</p>
         </div>
       </section>
       <!-- Announcements Section -->
       <section class="announcements-section">
         <div class="announcements-container">
-          <span class="section-tag">Announcements</span>
-          <h2 class="section-title">Manage Announcements</h2>
+          <span class="section-tag">Your Announcements</span>
+          <h2 class="section-title">Latest Updates</h2>
+          <div id="errorMessage" class="error-message"></div>
+          <div id="successMessage" class="success-message"></div>
           <div class="announcements-list" id="announcements"></div>
         </div>
       </section>
