@@ -1,465 +1,526 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CodeVerse - Online Code Compiler</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/theme/monokai.min.css">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/theme/monokai.min.css"
+    />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/python/python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/edit/closebrackets.min.js"></script>
-    <!-- <link rel="stylesheet" href="/css/styles.css"> -->
-    <link rel="stylesheet" href="/css/sidebar.css">
-    <!-- <link rel="stylesheet" href="/css/footer.css"> -->
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/sidebar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
     <style>
-        :root {
-            --primary: #7c3aed;
-            --primary-light: #a855f7;
-            --background-dark: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d1b69 100%);
-            --background-light: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
-            --text-dark: rgba(255, 255, 255, 0.9);
-            --text-light: #1f2937;
-            --card-dark: #1f2937;
-            --card-light: #ffffff;
-            --border-dark: rgba(124, 58, 237, 0.3);
-            --border-light: rgba(124, 58, 237, 0.2);
-            --navbar-dark: rgba(255, 255, 255, 0.05);
-            --navbar-light: rgba(124, 58, 237, 0.1);
-            --output-dark: rgba(255, 255, 255, 0.05);
-            --output-light: rgba(124, 58, 237, 0.05);
-        }
+      :root {
+        --primary: #7c3aed;
+        --primary-light: #a855f7;
+        --background-dark: linear-gradient(
+          135deg,
+          #0f0f23 0%,
+          #1a1a3a 50%,
+          #2d1b69 100%
+        );
+        --background-light: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        --text-dark: rgba(255, 255, 255, 0.9);
+        --text-light: #1f2937;
+        --card-dark: #1f2937;
+        --card-light: #ffffff;
+        --border-dark: rgba(124, 58, 237, 0.3);
+        --border-light: rgba(124, 58, 237, 0.2);
+        --navbar-dark: rgba(255, 255, 255, 0.05);
+        --navbar-light: rgba(124, 58, 237, 0.1);
+        --output-dark: rgba(255, 255, 255, 0.05);
+        --output-light: rgba(124, 58, 237, 0.05);
+      }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--background-dark);
-            color: var(--text-dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
-        }
+      body {
+        font-family: "Poppins", sans-serif;
+        background: var(--background-dark);
+        color: var(--text-dark);
+        min-height: 100vh;
+        display: flex;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+        position: relative;
+        flex-direction: column;
+        transition: all 0.3s ease;
+      }
 
-        body.light-mode {
-            background: var(--background-light);
-            color: var(--text-light);
-        }
+      body.light-mode {
+        background: var(--background-light);
+        color: var(--text-light);
+      }
 
+      .navbar {
+        background: var(--navbar-dark);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border-dark);
+        padding: 1rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      body.light-mode .navbar {
+        background: var(--navbar-light);
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .navbar h2 {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--primary-light);
+      }
+
+      body.light-mode .navbar h2 {
+        color: var(--primary);
+      }
+
+      .navbar-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .language-list {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .language-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: transparent;
+        color: var(--text-dark);
+        border: 1px solid var(--border-dark);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      body.light-mode .language-option {
+        color: var(--text-light);
+        border: 1px solid var(--border-light);
+      }
+
+      .language-option:hover,
+      .language-option.active {
+        background: var(--primary-light);
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      body.light-mode .language-option:hover,
+      body.light-mode .language-option.active {
+        background: var(--primary);
+      }
+
+      .language-option i {
+        font-size: 1.1rem;
+        color: var(--primary-light);
+      }
+
+      body.light-mode .language-option i {
+        color: var(--primary);
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .editor-container {
+        flex: 1;
+        background: var(--card-dark);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        max-height: 400px;
+        overflow-y: auto;
+        position: relative;
+      }
+
+      body.light-mode .editor-container {
+        background: var(--card-light);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .CodeMirror {
+        height: 100% !important;
+        border-radius: 8px;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 0.95rem;
+        min-height: 360px;
+      }
+
+      .CodeMirror-scroll {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+
+      .input-output-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        height: 200px;
+      }
+
+      .input-section,
+      .output-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .input-section h3,
+      .output-section h3 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-light);
+      }
+
+      body.light-mode .input-section h3,
+      body.light-mode .output-section h3 {
+        color: var(--primary);
+      }
+
+      textarea {
+        flex: 1;
+        background: var(--card-dark);
+        border: 1px solid var(--border-dark);
+        border-radius: 8px;
+        padding: 1rem;
+        color: var(--text-dark);
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 0.9rem;
+        resize: none;
+      }
+
+      body.light-mode textarea {
+        background: var(--card-light);
+        border: 1px solid var(--border-light);
+        color: var(--text-light);
+      }
+
+      .output-section textarea {
+        background: var(--output-dark);
+      }
+
+      body.light-mode .output-section textarea {
+        background: var(--output-light);
+      }
+
+      .run-btn {
+        padding: 0.75rem 2rem;
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-light)
+        );
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        position: fixed;
+        top: 90px;
+        right: 40px;
+      }
+
+      .run-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+      }
+
+      .error {
+        color: #f87171;
+      }
+
+      .theme-toggle {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      body.light-mode .theme-toggle {
+        background: var(--primary-light);
+      }
+
+      .theme-toggle:hover {
+        transform: scale(1.1);
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
         .navbar {
-            background: var(--navbar-dark);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-dark);
-            padding: 1rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        body.light-mode .navbar {
-            background: var(--navbar-light);
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .navbar h2 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: var(--primary-light);
-        }
-
-        body.light-mode .navbar h2 {
-            color: var(--primary);
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
         }
 
         .navbar-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
+          width: 100%;
+          justify-content: center;
         }
 
         .language-list {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .language-option {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: transparent;
-            color: var(--text-dark);
-            border: 1px solid var(--border-dark);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .language-option {
-            color: var(--text-light);
-            border: 1px solid var(--border-light);
-        }
-
-        .language-option:hover,
-        .language-option.active {
-            background: var(--primary-light);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        body.light-mode .language-option:hover,
-        body.light-mode .language-option.active {
-            background: var(--primary);
-        }
-
-        .language-option i {
-            font-size: 1.1rem;
-            color: var(--primary-light);
-        }
-
-        body.light-mode .language-option i {
-            color: var(--primary);
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .editor-container {
-            flex: 1;
-            background: var(--card-dark);
-            border-radius: 12px;
-            padding: 1rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            max-height: 400px;
-            overflow-y: auto;
-            position: relative;
-        }
-
-        body.light-mode .editor-container {
-            background: var(--card-light);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .CodeMirror {
-            height: 100% !important;
-            border-radius: 8px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.95rem;
-            min-height: 400px;
-        }
-
-        .CodeMirror-scroll {
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
+          width: 100%;
+          justify-content: center;
         }
 
         .input-output-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            height: 200px;
+          grid-template-columns: 1fr;
+          height: auto;
         }
 
         .input-section,
         .output-section {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
+          height: 150px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .navbar {
+          padding: 1rem;
         }
 
-        .input-section h3,
-        .output-section h3 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--primary-light);
-        }
-
-        body.light-mode .input-section h3,
-        body.light-mode .output-section h3 {
-            color: var(--primary);
-        }
-
-        textarea {
-            flex: 1;
-            background: var(--card-dark);
-            border: 1px solid var(--border-dark);
-            border-radius: 8px;
-            padding: 1rem;
-            color: var(--text-dark);
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.9rem;
-            resize: none;
-        }
-
-        body.light-mode textarea {
-            background: var(--card-light);
-            border: 1px solid var(--border-light);
-            color: var(--text-light);
-        }
-
-        .output-section textarea {
-            background: var(--output-dark);
-        }
-
-        body.light-mode .output-section textarea {
-            background: var(--output-light);
+        .main-content {
+          padding: 1rem;
         }
 
         .run-btn {
-            padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
-            border: none;
-            border-radius: 20px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            position: fixed;
-            top: 90px;
-            right: 40px;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+          top: 0.5rem;
+          right: 0.5rem;
         }
 
-        .run-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+        .language-option {
+          padding: 0.5rem;
+          font-size: 0.8rem;
         }
 
-        .error {
-            color: #f87171;
+        .language-option i {
+          font-size: 1rem;
         }
 
-        .theme-toggle {
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .editor-container {
+          max-height: 300px;
         }
 
-        body.light-mode .theme-toggle {
-            background: var(--primary-light);
+        .CodeMirror {
+          min-height: 300px;
         }
-
-        .theme-toggle:hover {
-            transform: scale(1.1);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .navbar-right {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .language-list {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .input-output-container {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-
-            .input-section,
-            .output-section {
-                height: 150px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .navbar {
-                padding: 1rem;
-            }
-
-            .main-content {
-                padding: 1rem;
-            }
-
-            .run-btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-                top: 0.5rem;
-                right: 0.5rem;
-            }
-
-            .language-option {
-                padding: 0.5rem;
-                font-size: 0.8rem;
-            }
-
-            .language-option i {
-                font-size: 1rem;
-            }
-
-            .editor-container {
-                max-height: 300px;
-            }
-
-            .CodeMirror {
-                min-height: 300px;
-            }
-        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <%- include('../partials/sidebar') %>
     <div class="navbar">
-        <h2>CodeVerse</h2>
-        <div class="navbar-right">
-            <div class="language-list">
-                <div class="language-option active" data-lang="python"><i class="fab fa-python"></i> Python</div>
-                <div class="language-option" data-lang="javascript"><i class="fab fa-js"></i> JavaScript</div>
-                <div class="language-option" data-lang="cpp"><i class="fas fa-code"></i> C++</div>
-                <div class="language-option" data-lang="c"><i class="fas fa-code"></i> C</div>
-                <div class="language-option" data-lang="java"><i class="fab fa-java"></i> Java</div>
-            </div>
-            <button class="theme-toggle" aria-label="Toggle dark/light mode">
-                <i class="fas fa-moon"></i>
-            </button>
+      <h2>Skillshastra</h2>
+      <div class="navbar-right">
+        <div class="language-list">
+          <div class="language-option active" data-lang="python">
+            <i class="fab fa-python"></i> Python
+          </div>
+          <div class="language-option" data-lang="javascript">
+            <i class="fab fa-js"></i> JavaScript
+          </div>
+          <div class="language-option" data-lang="cpp">
+            <i class="fas fa-code"></i> C++
+          </div>
+          <div class="language-option" data-lang="c">
+            <i class="fas fa-code"></i> C
+          </div>
+          <div class="language-option" data-lang="java">
+            <i class="fab fa-java"></i> Java
+          </div>
         </div>
+        <button class="theme-toggle" aria-label="Toggle dark/light mode">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
     </div>
     <div class="main-content">
-        <div class="editor-container">
-            <textarea id="codeEditor"></textarea>
-            <button class="run-btn"><i class="fas fa-play"></i></button>
+      <div class="editor-container">
+        <textarea id="codeEditor"></textarea>
+        <button class="run-btn"><i class="fas fa-play"></i></button>
+      </div>
+      <div class="input-output-container">
+        <div class="input-section">
+          <h3>Input</h3>
+          <textarea id="inputArea" placeholder="Enter input here..."></textarea>
         </div>
-        <div class="input-output-container">
-            <div class="input-section">
-                <h3>Input</h3>
-                <textarea id="inputArea" placeholder="Enter input here..."></textarea>
-            </div>
-            <div class="output-section">
-                <h3>Output</h3>
-                <textarea id="outputArea" readonly></textarea>
-            </div>
+        <div class="output-section">
+          <h3>Output</h3>
+          <textarea id="outputArea" readonly></textarea>
         </div>
+      </div>
     </div>
+    <%- include('../partials/footer') %>
 
     <script>
-        // Initialize CodeMirror
-        const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
-            lineNumbers: true,
-            mode: 'python',
-            theme: 'monokai',
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            indentUnit: 4,
-            tabSize: 4,
-            indentWithTabs: true,
-            lineWrapping: true
+      // Initialize CodeMirror
+      const editor = CodeMirror.fromTextArea(
+        document.getElementById("codeEditor"),
+        {
+          lineNumbers: true,
+          mode: "python",
+          theme: "monokai",
+          autoCloseBrackets: true,
+          matchBrackets: true,
+          indentUnit: 4,
+          tabSize: 4,
+          indentWithTabs: true,
+          lineWrapping: true,
+        }
+      );
+
+      // Set initial code examples
+      const codeExamples = {
+        python: 'print("Hello, Skillshastra!")',
+        javascript: 'console.log("Hello, Skillshastra!");',
+        cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, Skillshastra!" << endl;\n    return 0;\n}',
+        c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, Skillshastra!\\n");\n    return 0;\n}',
+        java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, Skillshastra!");\n    }\n}',
+      };
+
+      editor.setValue(codeExamples.python);
+
+      // Language selection handler
+      const languageOptions = document.querySelectorAll(".language-option");
+      languageOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          languageOptions.forEach((opt) => opt.classList.remove("active"));
+          option.classList.add("active");
+          const lang = option.dataset.lang;
+          let mode = lang;
+          if (lang === "cpp" || lang === "c" || lang === "java") {
+            mode = "text/x-c++src";
+          }
+          editor.setOption("mode", mode);
+          editor.setValue(codeExamples[lang]);
         });
+      });
 
-        // Set initial code examples
-        const codeExamples = {
-            python: 'print("Hello, CodeVerse!")',
-            javascript: 'console.log("Hello, CodeVerse!");',
-            cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, CodeVerse!" << endl;\n    return 0;\n}',
-            c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, CodeVerse!\\n");\n    return 0;\n}',
-            java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, CodeVerse!");\n    }\n}'
-        };
+      // Run code handler
+      document.querySelector(".run-btn").addEventListener("click", async () => {
+        const code = editor.getValue();
+        const language = document.querySelector(".language-option.active")
+          .dataset.lang;
+        const input = document.getElementById("inputArea").value;
+        const outputArea = document.getElementById("outputArea");
 
-        editor.setValue(codeExamples.python);
+        outputArea.value = "Running...";
 
-        // Language selection handler
-        const languageOptions = document.querySelectorAll('.language-option');
-        languageOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                languageOptions.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
-                const lang = option.dataset.lang;
-                let mode = lang;
-                if (lang === 'cpp' || lang === 'c' || lang === 'java') {
-                    mode = 'text/x-c++src';
-                }
-                editor.setOption('mode', mode);
-                editor.setValue(codeExamples[lang]);
-            });
-        });
+        try {
+          const response = await fetch("http://localhost:5000/execute", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code, language, input }),
+          });
 
-        // Run code handler
-        document.querySelector('.run-btn').addEventListener('click', async () => {
-            const code = editor.getValue();
-            const language = document.querySelector('.language-option.active').dataset.lang;
-            const input = document.getElementById('inputArea').value;
-            const outputArea = document.getElementById('outputArea');
+          const result = await response.json();
+          if (result.error) {
+            outputArea.classList.add("error");
+            outputArea.value = result.error;
+          } else {
+            outputArea.classList.remove("error");
+            outputArea.value = result.output || "No output";
+          }
+        } catch (error) {
+          outputArea.classList.add("error");
+          outputArea.value = "Error: Failed to connect to server";
+        }
+      });
 
-            outputArea.value = 'Running...';
+      // Theme toggle handler
+      const themeToggle = document.querySelector(".theme-toggle");
+      themeToggle.addEventListener("click", () => {
+        document.body.classList.toggle("light-mode");
+        const isLightMode = document.body.classList.contains("light-mode");
+        editor.setOption("theme", isLightMode ? "default" : "monokai");
+        themeToggle.innerHTML = `<i class="fas fa-${
+          isLightMode ? "sun" : "moon"
+        }"></i>`;
+      });
+      document.addEventListener("DOMContentLoaded", () => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.name || !user.email) {
+          alert("Please log in to access this page.");
+          window.location.href =
+            "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+          return;
+        }
 
-            try {
-                const response = await fetch('http://localhost:5000/execute', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ code, language, input })
-                });
-
-                const result = await response.json();
-                if (result.error) {
-                    outputArea.classList.add('error');
-                    outputArea.value = result.error;
-                } else {
-                    outputArea.classList.remove('error');
-                    outputArea.value = result.output || 'No output';
-                }
-            } catch (error) {
-                outputArea.classList.add('error');
-                outputArea.value = 'Error: Failed to connect to server';
-            }
-        });
-
-        // Theme toggle handler
-        const themeToggle = document.querySelector('.theme-toggle');
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('light-mode');
-            const isLightMode = document.body.classList.contains('light-mode');
-            editor.setOption('theme', isLightMode ? 'default' : 'monokai');
-            themeToggle.innerHTML = `<i class="fas fa-${isLightMode ? 'sun' : 'moon'}"></i>`;
-        });
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
+        if (sidebar && mainContent) {
+          if (sidebar.classList.contains("hidden")) {
+            mainContent.classList.add("full");
+          }
+          sidebar.addEventListener("transitionend", () => {
+            mainContent.classList.toggle(
+              "full",
+              sidebar.classList.contains("hidden")
+            );
+          });
+        }
+      });
     </script>
     <script src="/js/sidebar.js"></script>
-</body>
-
+  </body>
 </html>
