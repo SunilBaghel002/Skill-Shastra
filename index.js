@@ -317,9 +317,9 @@ const getAnnouncementEmailTemplate = (title, content, announcementType) =>
     <h1>New Announcement: ${title}</h1>
     <p>Dear Skill Shastra User,</p>
     <p>We have a new ${announcementType.replace(
-      "_",
-      " "
-    )} announcement for you:</p>
+    "_",
+    " "
+  )} announcement for you:</p>
     <p><strong>${title}</strong></p>
     <p>${content}</p>
     <a href="https://skill-shastra.vercel.app/dashboard/announcements" class="cta-button">View Announcements</a>
@@ -388,10 +388,9 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
     <h1>Enrollment Status Update</h1>
     <p>Dear ${fullName},</p>
     <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-    ${
-      status === "approved"
-        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+    ${status === "approved"
+      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
     }
     <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
     <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
@@ -781,8 +780,7 @@ app.patch(
       const user = await User.findById(enrollment.userId);
       await sendEmail(
         enrollment.email,
-        `Skill Shastra Enrollment ${
-          status.charAt(0).toUpperCase() + status.slice(1)
+        `Skill Shastra Enrollment ${status.charAt(0).toUpperCase() + status.slice(1)
         }`,
         getEnrollmentStatusEmailTemplate(
           enrollment.fullName,
@@ -1361,7 +1359,7 @@ const languageConfig = {
 };
 
 // Execute code endpoint
-app.post("/execute", async (req, res) => {
+app.post("/api/execute", protect, async (req, res) => {
   const { language, code, input } = req.body;
 
   // Validate request
@@ -1536,7 +1534,7 @@ app.get("/practiceProject", renderPage("resources/PracticeProject"));
 app.get("/studyMaterials", renderPage("resources/StudyMaterials"));
 app.get("/expertProfiles", renderPage("team/ExpertProfile"));
 app.get("/meetTeam", renderPage("team/MeetOurTeam"));
-app.get("/dashboard/compiler", renderPage("dashboard/compiler"));
+app.get("/dashboard/compiler", protect, renderPage("dashboard/compiler"));
 
 app.get("/payment", protect, (req, res) => {
   res.render("courses/payment2", {

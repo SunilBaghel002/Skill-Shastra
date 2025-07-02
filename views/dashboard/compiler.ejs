@@ -465,7 +465,7 @@
         outputArea.value = "Running...";
 
         try {
-          const response = await fetch("https://skill-shastra.vercel.app/execute", {
+          const response = await fetch("/api/execute", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
