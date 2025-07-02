@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CodeVerse - Online Code Compiler</title>
+    <title>Skillshastra - Online Code Compiler</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
@@ -465,7 +465,7 @@
         outputArea.value = "Running...";
 
         try {
-          const response = await fetch("http://localhost:5000/execute", {
+          const response = await fetch("https://skill-shastra.vercel.app/execute", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
