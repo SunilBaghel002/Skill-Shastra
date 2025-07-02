@@ -198,15 +198,25 @@ const multerErrorHandler = (err, req, res, next) => {
 
 // Nodemailer Setup
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000, // 10 seconds
+  socketTimeout: 10000, // 10 seconds
+  tls: {
+    // Ensure compatibility with Gmail's TLS requirements
+    ciphers: "SSLv3",
+    rejectUnauthorized: false, // Allow self-signed certificates (optional, for testing)
+  },
 });
 
-// sendEmail Function
-const sendEmail = async (to, subject, html) => {
+// sendEmail Function with Retry Logic
+const sendEmail = async (to, subject, html, retries = 3, delay = 2000) => {
   const mailOptions = {
     from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
     to,
@@ -214,28 +224,38 @@ const sendEmail = async (to, subject, html) => {
     html,
   };
 
-  try {
-    console.log(
-      `Attempting to send email to ${to} at ${new Date().toISOString()}`
-    );
-    const startTime = Date.now();
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("SMTP request timed out")), 5000);
-    });
-    const sendPromise = transporter.sendMail(mailOptions);
-    const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log(
-      `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
-    );
-    return info;
-  } catch (error) {
-    console.error(`Email Error to ${to} at ${new Date().toISOString()}:`, {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      response: error.response,
-    });
-    throw new Error(`Failed to send email to ${to}: ${error.message}`);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(
+        `Attempt ${attempt} to send email to ${to} at ${new Date().toISOString()}`
+      );
+      const startTime = Date.now();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("SMTP request timed out")), 10000); // Increased to 10 seconds
+      });
+      const sendPromise = transporter.sendMail(mailOptions);
+      const info = await Promise.race([sendPromise, timeoutPromise]);
+      console.log(
+        `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
+      );
+      return info;
+    } catch (error) {
+      console.error(
+        `Email Error to ${to} (Attempt ${attempt}/${retries}) at ${new Date().toISOString()}:`,
+        {
+          message: error.message,
+          stack: error.stack,
+          code: error.code,
+          response: error.response,
+        }
+      );
+      if (attempt < retries) {
+        console.log(`Retrying email to ${to} after ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw new Error(`Failed to send email to ${to}: ${error.message}`);
+    }
   }
 };
 
@@ -376,8 +396,18 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
 // Authentication Middleware
 const protect = async (req, res, next) => {
   const token = req.cookies.token;
+  const isApiRoute = req.originalUrl.startsWith("/api/");
+
   if (!token) {
-    return res.status(401).json({ message: "No token provided" });
+    if (isApiRoute) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    console.log(
+      `No token provided, redirecting to /signup from ${req.originalUrl}`
+    );
+    return res.redirect(
+      `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
+    );
   }
 
   try {
@@ -387,14 +417,33 @@ const protect = async (req, res, next) => {
     );
     if (!user || !user.isVerified) {
       res.clearCookie("token");
-      return res.status(401).json({ message: "Unauthorized" });
+      if (isApiRoute) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      console.log(
+        `Unauthorized user, redirecting to /signup from ${req.originalUrl}`
+      );
+      return res.redirect(
+        `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
+      );
     }
     req.user = user;
     next();
   } catch (error) {
-    console.error("JWT Verification Error:", error);
+    console.error("JWT Verification Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
     res.clearCookie("token");
-    return res.status(401).json({ message: "Invalid token" });
+    if (isApiRoute) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    console.log(
+      `Invalid token, redirecting to /signup from ${req.originalUrl}`
+    );
+    return res.redirect(
+      `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
+    );
   }
 };
 
@@ -907,33 +956,6 @@ app.get("/api/courses/recommended", protect, async (req, res) => {
   }
 });
 
-app.post(
-  "/api/admin/announcements",
-  protect,
-  restrictToAdmin,
-  async (req, res) => {
-    try {
-      const { title, content } = req.body;
-      if (!title || !content) {
-        return res
-          .status(400)
-          .json({ message: "Title and content are required" });
-      }
-      const announcement = await Announcement.create({
-        title,
-        content,
-        createdBy: req.user._id,
-      });
-      res
-        .status(201)
-        .json({ message: "Announcement posted successfully", announcement });
-    } catch (error) {
-      console.error("Error posting announcement:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
 // Enrollment Route
 app.post(
   "/api/enroll",
@@ -1058,6 +1080,41 @@ app.get("/api/enrollments", protect, async (req, res) => {
   }
 });
 
+app.get("/api/user/enrollment", protect, async (req, res) => {
+  try {
+    const enrollment = await Enrollment.findOne({ email: req.user.email }).sort(
+      { createdAt: -1 }
+    );
+    if (!enrollment) {
+      return res.status(404).json({ message: "No previous enrollment found" });
+    }
+    res.status(200).json({
+      fullName: enrollment.fullName || req.user.name,
+      phone: enrollment.phone ? enrollment.phone.split(" ")[1] || "" : "",
+      isdCode: enrollment.phone ? enrollment.phone.split(" ")[0] || "" : "",
+      age: enrollment.age || "",
+      gender: enrollment.gender || "",
+      education: enrollment.education || "",
+      institution: enrollment.institution || "",
+      guardianName: enrollment.guardianName || "",
+      guardianPhone: enrollment.guardianPhone
+        ? enrollment.guardianPhone.split(" ")[1] || ""
+        : "",
+      guardianIsdCode: enrollment.guardianPhone
+        ? enrollment.guardianPhone.split(" ")[0] || ""
+        : "",
+      country: enrollment.country || "",
+      address: enrollment.address || "",
+    });
+  } catch (error) {
+    console.error("Fetch Enrollment Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Announcement Routes
 app.post(
   "/api/admin/announcements",
@@ -1067,11 +1124,40 @@ app.post(
   async (req, res) => {
     try {
       const { title, content, targetAudience, announcementType } = req.body;
+      console.log("Received announcement data:", {
+        title,
+        content,
+        targetAudience,
+        announcementType,
+      });
+
+      // Validate required fields
       if (!title || !content || !targetAudience || !announcementType) {
         console.log(
-          `Missing announcement fields: title=${title}, targetAudience=${targetAudience}, announcementType=${announcementType}`
+          `Missing announcement fields: title=${title}, content=${content}, targetAudience=${targetAudience}, announcementType=${announcementType}`
         );
         return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Validate targetAudience against schema enum
+      const validAudiences = [
+        "all",
+        "frontend",
+        "backend",
+        "full-stack",
+        "digital-marketing",
+        "data-science",
+      ];
+      if (!validAudiences.includes(targetAudience)) {
+        console.log(`Invalid targetAudience: ${targetAudience}`);
+        return res.status(400).json({ message: "Invalid target audience" });
+      }
+
+      // Validate announcementType against schema enum
+      const validTypes = ["general", "class_schedule", "test", "event"];
+      if (!validTypes.includes(announcementType)) {
+        console.log(`Invalid announcementType: ${announcementType}`);
+        return res.status(400).json({ message: "Invalid announcement type" });
       }
 
       const announcement = await Announcement.create({
@@ -1088,11 +1174,21 @@ app.post(
       if (targetAudience === "all") {
         recipients = await User.find({ isVerified: true }).select("email");
       } else {
-        const enrollments = await Enrollment.find({
-          course: targetAudience,
-          status: "approved",
-        }).select("email");
-        recipients = enrollments;
+        // Map targetAudience to course names for enrollment lookup
+        const audienceToCourseMap = {
+          frontend: "Front End Development",
+          backend: "Back End Development",
+          "full-stack": "Full Stack Development",
+          "digital-marketing": "Digital Marketing",
+          "data-science": "Data Science",
+        };
+        const course = audienceToCourseMap[targetAudience];
+        if (course) {
+          recipients = await Enrollment.find({
+            course,
+            status: "approved",
+          }).select("email");
+        }
       }
 
       try {
@@ -1116,6 +1212,7 @@ app.post(
           message: emailError.message,
           stack: emailError.stack,
         });
+        // Continue responding to client, as email failure is non-critical
       }
 
       res
@@ -1126,7 +1223,7 @@ app.post(
         message: error.message,
         stack: error.stack,
       });
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: error.message || "Server error" });
     }
   }
 );
@@ -1304,7 +1401,11 @@ app.get(
   renderPage("dashboard/studyMaterials")
 );
 app.get("/dashboard/messages", protect, renderPage("dashboard/messages"));
-app.get("/dashboard/announcement", protect, renderPage("dashboard/announcement"));
+app.get(
+  "/dashboard/announcement",
+  protect,
+  renderPage("dashboard/announcement")
+);
 app.get("/dashboard/feedback", protect, renderPage("dashboard/feedback"));
 app.get("/dashboard/feed", protect, renderPage("dashboard/feed"));
 app.get("/digital-marketing", renderPage("courses/digitalMarketing"));

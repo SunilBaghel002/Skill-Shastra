@@ -368,6 +368,17 @@
         display: none;
       }
 
+      .success-message {
+        background: #10b981;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        display: none;
+        font-weight: 500;
+      }
+
       .confirmation-details {
         background: #f8f9ff;
         padding: 1.5rem;
@@ -551,6 +562,7 @@
             <div class="step-title">Payment</div>
           </div>
         </div>
+        <div class="success-message" id="success-message"></div>
         <div class="step-content active" id="step-1">
           <h2>Enter Your Details</h2>
           <form id="student-details-form">
@@ -565,11 +577,11 @@
                   <option value="Full Stack Development">
                     Full Stack Development
                   </option>
-                  <option value="Front End Development">
-                    Front End Development
+                  <option value="Frontend Development">
+                    Frontend Development
                   </option>
-                  <option value="Back End Development">
-                    Back End Development
+                  <option value="Backend Development">
+                    Backend Development
                   </option>
                   <option value="Java Programming">Java Programming</option>
                   <option value="Python Programming">Python Programming</option>
@@ -594,7 +606,8 @@
                   required
                 />
                 <div class="error" id="full-name-error">
-                  Please enter your full name.
+                  Please enter a valid full name (letters and spaces only, min 2
+                  characters).
                 </div>
               </div>
               <div class="form-group">
@@ -631,7 +644,7 @@
                   Please select an ISD code.
                 </div>
                 <div class="error" id="phone-error">
-                  Please enter a valid phone number.
+                  Please enter a valid phone number (10-15 digits).
                 </div>
               </div>
               <div class="form-group">
@@ -641,11 +654,11 @@
                   id="age"
                   name="age"
                   min="15"
-                  max="100"
+                  max="80"
                   required
                 />
                 <div class="error" id="age-error">
-                  Please enter a valid age (15-100).
+                  Please enter a valid age (15-80).
                 </div>
               </div>
               <div class="form-group">
@@ -670,7 +683,7 @@
                   required
                 />
                 <div class="error" id="education-error">
-                  Please enter your current education.
+                  Please enter a valid education (min 3 characters).
                 </div>
               </div>
               <div class="form-group">
@@ -682,7 +695,7 @@
                   required
                 />
                 <div class="error" id="institution-error">
-                  Please enter your institution name.
+                  Please enter a valid institution name (min 3 characters).
                 </div>
               </div>
               <div class="form-group">
@@ -694,7 +707,8 @@
                   required
                 />
                 <div class="error" id="guardian-name-error">
-                  Please enter the guardian's name.
+                  Please enter a valid guardian name (letters and spaces only,
+                  min 2 characters).
                 </div>
               </div>
               <div class="form-group">
@@ -726,7 +740,7 @@
                   Please select an ISD code.
                 </div>
                 <div class="error" id="guardian-phone-error">
-                  Please enter a valid phone number.
+                  Please enter a valid phone number (10-15 digits).
                 </div>
               </div>
               <div class="form-group">
@@ -746,7 +760,7 @@
                 <label for="address">Address</label>
                 <input type="text" id="address" name="address" required />
                 <div class="error" id="address-error">
-                  Please enter your address.
+                  Please enter a valid address (min 5 characters).
                 </div>
               </div>
             </div>
@@ -833,7 +847,7 @@
                   required
                 />
                 <div class="error" id="transaction-id-error">
-                  Please enter the transaction ID.
+                  Please enter a valid transaction ID (min 5 characters).
                 </div>
               </div>
               <div class="form-group">
@@ -938,37 +952,31 @@
         localStorage.setItem("user", JSON.stringify(serverUser));
       }
 
-      // Explicitly call updateNavbar
-      if (typeof updateNavbar === "function") {
-        updateNavbar();
-      } else {
-        console.error(
-          "updateNavbar function not found. Ensure navbar.ejs script is loaded."
-        );
-      }
-
       // Check if user is logged in client-side
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user.name || !user.email) {
         console.log("No user data in localStorage, redirecting to /signup");
         window.location.href = `/signup?redirect=${encodeURIComponent(
-          window.location.pathname
+          window.location.pathname + window.location.search
         )}`;
       }
 
       // Course fee mapping
       const courseFees = {
-        "JavaScript Programming": "₹1,500",
-        "Full Stack Development": "₹3,000",
-        "Front End Development": "₹1,500",
-        "Back End Development": "₹1,500",
-        "Digital Marketing": "₹1,500",
-        "Java Programming": "₹1,500",
-        "Python Programming": "₹1,500",
-        "C++ Programming": "₹1,500",
-        "Programming Fundamentals": "₹1,500",
-        "Gen AI": "₹1,500",
+        "JavaScript Programming": "₹3,000",
+        "Full Stack Development": "₹6,000",
+        "Frontend Development": "₹3,000",
+        "Backend Development": "₹3,000",
+        "Digital Marketing": "₹3,000",
+        "Java Programming": "₹3,000",
+        "Python Programming": "₹3,000",
+        "C++ Programming": "₹3,000",
+        "Programming Fundamentals": "₹3,000",
+        "Gen AI": "₹3,000",
       };
+
+      // Valid courses for validation
+      const validCourses = Object.keys(courseFees);
 
       // Update progress bar
       function updateProgressBar(step) {
@@ -978,11 +986,291 @@
           .style.setProperty("--progress", `${progress}%`);
       }
 
-      function nextStep(currentStep) {
-        if (currentStep === 1) {
-          const form = document.getElementById("student-details-form");
-          if (!validateForm(form)) return;
+      // Show success message
+      function showSuccess(message) {
+        const successMessage = document.getElementById("success-message");
+        successMessage.textContent = message;
+        successMessage.style.display = "block";
+        setTimeout(() => {
+          successMessage.style.display = "none";
+        }, 5000);
+      }
 
+      // Pre-fill course from URL
+      function prefillCourseFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseFromURL = decodeURIComponent(
+          urlParams.get("course") || ""
+        ).replace(/%20/g, " ");
+        console.log("URL course parameter:", courseFromURL); // Debug
+        const courseSelect = document.getElementById("course");
+        const matchingCourse = validCourses.find(
+          (course) => course.toLowerCase() === courseFromURL.toLowerCase()
+        );
+        if (matchingCourse) {
+          courseSelect.value = matchingCourse;
+          console.log("Pre-filled course:", matchingCourse); // Debug
+        } else {
+          console.warn("Course not found in validCourses:", courseFromURL);
+        }
+      }
+
+      // Fetch and pre-fill previous enrollment data
+      async function fetchAndPrefillEnrollmentData() {
+        const loadingOverlay = document.getElementById("loading-overlay");
+        loadingOverlay.style.display = "flex";
+
+        try {
+          const response = await fetch("/api/user/enrollment", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          });
+          const result = await response.json();
+          if (response.ok) {
+            document.getElementById("full-name").value =
+              result.fullName || user.name;
+            document.getElementById("isd-code").value = result.isdCode || "";
+            document.getElementById("phone").value = result.phone || "";
+            document.getElementById("age").value = result.age || "";
+            document.getElementById("gender").value = result.gender || "";
+            document.getElementById("education").value = result.education || "";
+            document.getElementById("institution").value =
+              result.institution || "";
+            document.getElementById("guardian-name").value =
+              result.guardianName || "";
+            document.getElementById("guardian-isd-code").value =
+              result.guardianIsdCode || "";
+            document.getElementById("guardian-phone").value =
+              result.guardianPhone || "";
+            document.getElementById("country").value = result.country || "";
+            document.getElementById("address").value = result.address || "";
+          } else {
+            console.log(
+              "No previous enrollment data found or error:",
+              result.message
+            );
+            document.getElementById("full-name").value = user.name;
+            document.getElementById("email").value = user.email;
+          }
+        } catch (error) {
+          console.error("Fetch Enrollment Data Error:", {
+            message: error.message,
+            stack: error.stack,
+          });
+          document.getElementById("full-name").value = user.name;
+          document.getElementById("email").value = user.email;
+        } finally {
+          loadingOverlay.style.display = "none";
+        }
+      }
+
+      // Form validation (for both real-time and step submission)
+      function validateInput(input, step) {
+        // Skip inputs without an id
+        if (!input.id) {
+          console.warn(
+            `Skipping validation for input without id: type=${input.type}, name=${input.name}`
+          ); // Debug
+          return true;
+        }
+
+        const error = document.getElementById(`${input.id}-error`);
+        if (!error) {
+          console.error(
+            `Error element missing for input: ${input.id}, type: ${input.type}`
+          ); // Enhanced debug logging
+          return false;
+        }
+        error.style.display = "none";
+
+        // Skip validation for payment-proof in validateInput (handled separately)
+        if (input.id === "payment-proof") {
+          return true; // Do not validate file input here
+        }
+
+        const nameRegex = /^[A-Za-z\s]{2,}$/;
+        const phoneRegex = /^\d{10,15}$/;
+        const educationRegex = /^.{3,}$/;
+        const addressRegex = /^.{5,}$/;
+        const transactionIdRegex = /^.{5,}$/;
+
+        if (!input.value.trim() && input.required) {
+          error.textContent = `Please ${
+            input.type === "select-one" ? "select" : "enter"
+          } a valid ${input.name.replace(/([A-Z])/g, " $1").toLowerCase()}.`;
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "course" && !validCourses.includes(input.value)) {
+          error.textContent = "Please select a valid course.";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "full-name" && !nameRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid full name (letters and spaces only, min 2 characters).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "email") {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(input.value)) {
+            error.textContent = "Please enter a valid email address.";
+            error.style.display = "block";
+            return false;
+          }
+        }
+
+        if (input.id === "phone" && !phoneRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid phone number (10-15 digits).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "isd-code" && !input.value) {
+          error.textContent = "Please select an ISD code.";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "age") {
+          const age = parseInt(input.value);
+          if (isNaN(age) || age < 15 || age > 80) {
+            error.textContent = "Please enter a valid age (15-80).";
+            error.style.display = "block";
+            return false;
+          }
+        }
+
+        if (
+          input.id === "gender" &&
+          !["Male", "Female", "Other"].includes(input.value)
+        ) {
+          error.textContent = "Please select a valid gender.";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "education" && !educationRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid education (min 3 characters).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "institution" && !educationRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid institution name (min 3 characters).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "guardian-name" && !nameRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid guardian name (letters and spaces only, min 2 characters).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "guardian-phone" && !phoneRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid phone number (10-15 digits).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "guardian-isd-code" && !input.value) {
+          error.textContent = "Please select an ISD code.";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "country" && !input.value) {
+          error.textContent = "Please select a country.";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "address" && !addressRegex.test(input.value)) {
+          error.textContent =
+            "Please enter a valid address (min 5 characters).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (
+          input.id === "transaction-id" &&
+          !transactionIdRegex.test(input.value)
+        ) {
+          error.textContent =
+            "Please enter a valid transaction ID (min 5 characters).";
+          error.style.display = "block";
+          return false;
+        }
+
+        if (input.id === "payment-date" && !input.value) {
+          error.textContent = "Please select a payment date.";
+          error.style.display = "block";
+          return false;
+        }
+
+        return true;
+      }
+
+      function validateForm(form, step) {
+        let isValid = true;
+        // Exclude payment-proof when validating payment-form in Step 2
+        // const inputs = form.querySelectorAll(
+        //   step === 2
+        //     ? "input[required]:not([type='file']), select[required]"
+        //     : "input[required], select[required]"
+        // );
+        // inputs.forEach((input) => {
+        //   // Log inputs being validated to detect unexpected ones
+        //   console.log(
+        //     `Validating input: id=${input.id}, type=${input.type}, name=${input.name}`
+        //   ); // Debug
+        //   if (!input.id) {
+        //     console.warn(
+        //       `Skipping input without id: type=${input.type}, name=${input.name}`
+        //     ); // Debug
+        //     return; // Skip inputs without id
+        //   }
+        //   if (!validateInput(input, step)) {
+        //     isValid = false;
+        //   }
+        // });
+        // Only validate payment-proof when in step 3 (form submission)
+        if (step === 3) {
+          const paymentProof = document.getElementById("payment-proof");
+          const error = document.getElementById("payment-proof-error");
+          if (!paymentProof || !error) {
+            console.error("Payment proof or error element missing");
+            isValid = false;
+          } else if (paymentProof.files.length === 0) {
+            error.textContent = "Please upload a payment proof file.";
+            error.style.display = "block";
+            isValid = false;
+          }
+        }
+        return isValid;
+      }
+
+      function nextStep(currentStep) {
+        const form =
+          currentStep === 1
+            ? document.getElementById("student-details-form")
+            : document.getElementById("payment-form");
+        if (!validateForm(form, currentStep)) return;
+
+        if (currentStep === 1) {
           const formData = new FormData(form);
           document.getElementById("confirm-course").textContent =
             formData.get("course");
@@ -1013,7 +1301,6 @@
           document.getElementById("confirm-address").textContent =
             formData.get("address");
 
-          // Store form data in sessionStorage
           const studentData = {
             course: formData.get("course"),
             fullName: formData.get("fullName"),
@@ -1042,7 +1329,6 @@
         document
           .getElementsByClassName("step")
           [currentStep - 1].classList.add("completed");
-
         document
           .getElementById(`step-${currentStep + 1}`)
           .classList.add("active");
@@ -1071,176 +1357,58 @@
         document
           .getElementsByClassName("step")
           [currentStep - 1].classList.remove("active");
-
-        document
-          .getElementById(`step-${currentStep - 1}`)
-          .classList.add("active");
         document
           .getElementsByClassName("step")
           [currentStep - 2].classList.add("active");
         document
           .getElementsByClassName("step")
           [currentStep - 2].classList.remove("completed");
+        document
+          .getElementById(`step-${currentStep - 1}`)
+          .classList.add("active");
         updateProgressBar(currentStep - 1);
       }
 
-      function validateForm(form) {
-        let isValid = true;
-        const inputs = form.querySelectorAll(
-          "input[required], select[required]"
-        );
-        inputs.forEach((input) => {
-          const error = document.getElementById(`${input.id}-error`);
-          if (!error) {
-            console.error(`Error element missing for input: ${input.id}`);
-            return;
-          }
-          if (!input.value.trim()) {
-            error.textContent = `Please ${
-              input.type === "select-one" ? "select" : "enter"
-            } a valid ${input.name.replace(/([A-Z])/g, " $1").toLowerCase()}.`;
-            error.style.display = "block";
-            isValid = false;
-          } else {
-            error.style.display = "none";
-          }
-          if (input.type === "email" && input.value.trim()) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(input.value)) {
-              error.textContent = "Please enter a valid email address.";
-              error.style.display = "block";
-              isValid = false;
-            }
-          }
-          if (input.type === "tel" && input.value.trim()) {
-            const phoneRegex = /^\d{7,15}$/;
-            if (!phoneRegex.test(input.value)) {
-              error.textContent =
-                "Please enter a valid phone number (7-15 digits).";
-              error.style.display = "block";
-              isValid = false;
-            }
-          }
-          if (input.id === "age" && input.value.trim()) {
-            const age = parseInt(input.value);
-            if (age < 15 || age > 100) {
-              error.textContent = "Please enter a valid age (15-100).";
-              error.style.display = "block";
-              isValid = false;
-            }
-          }
-          if (input.id === "payment-proof" && input.files.length > 0) {
-            const file = input.files[0];
-            const allowedTypes = ["image/png", "image/jpeg", "application/pdf"];
-            if (!allowedTypes.includes(file.type)) {
-              error.textContent = "Only PNG, JPG, or PDF files are allowed.";
-              error.style.display = "block";
-              isValid = false;
-            } else if (file.size > 5 * 1024 * 1024) {
-              error.textContent = "File size must be less than 5MB.";
-              error.style.display = "block";
-              isValid = false;
-            }
-          } else if (input.id === "payment-proof" && input.files.length === 0) {
-            error.textContent = "Please upload a payment proof file.";
-            error.style.display = "block";
-            isValid = false;
-          }
+      // Auto-move to next input on right arrow key
+      function setupAutoMove() {
+        const forms = [
+          document.getElementById("student-details-form"),
+          document.getElementById("payment-form"),
+        ];
+        forms.forEach((form) => {
+          const inputs = form.querySelectorAll(
+            "input:not([type='file']):not([readonly]), select"
+          );
+          inputs.forEach((input, index) => {
+            input.addEventListener("keydown", (e) => {
+              if (e.key === "ArrowRight" && index < inputs.length - 1) {
+                e.preventDefault();
+                inputs[index + 1].focus();
+              }
+            });
+          });
         });
-        return isValid;
       }
 
-      document
-        .getElementById("payment-form")
-        .addEventListener("submit", async function (e) {
-          e.preventDefault();
-          if (!validateForm(this)) return;
-
-          const submitButton = document.getElementById("submit-enrollment");
-          const loadingOverlay = document.getElementById("loading-overlay");
-
-          // Show loading spinner and disable button
-          submitButton.disabled = true;
-          loadingOverlay.style.display = "flex";
-
-          const user = JSON.parse(localStorage.getItem("user") || "{}");
-          if (!user.name || !user.email) {
-            console.log("No user data in localStorage, redirecting to /signup");
-            loadingOverlay.style.display = "none";
-            submitButton.disabled = false;
-            window.location.href = `/signup?redirect=${encodeURIComponent(
-              window.location.pathname
-            )}`;
-            return;
-          }
-
-          const formData = new FormData(this);
-          const studentData = JSON.parse(
-            sessionStorage.getItem("studentData") || "{}"
+      // Real-time validation for inputs
+      function setupRealTimeValidation() {
+        const forms = [
+          document.getElementById("student-details-form"),
+          document.getElementById("payment-form"),
+        ];
+        forms.forEach((form) => {
+          const inputs = form.querySelectorAll(
+            "input[required]:not([type='file']), select[required]"
           );
-          if (!studentData.course) {
-            loadingOverlay.style.display = "none";
-            submitButton.disabled = false;
-            alert("Student data is missing. Please complete Step 1 again.");
-            document.getElementById("step-3").classList.remove("active");
-            document.getElementById("step-1").classList.add("active");
-            document
-              .getElementsByClassName("step")[2]
-              .classList.remove("active");
-            document.getElementsByClassName("step")[0].classList.add("active");
-            updateProgressBar(1);
-            return;
-          }
-          formData.append("studentData", JSON.stringify(studentData));
-
-          try {
-            const response = await fetch("/api/enroll", {
-              method: "POST",
-              credentials: "include",
-              body: formData,
-            });
-            const result = await response.json();
-            loadingOverlay.style.display = "none";
-            submitButton.disabled = false;
-            if (response.ok) {
-              alert(
-                "Enrollment submitted successfully! Check your email for confirmation."
-              );
-              sessionStorage.removeItem("studentData");
-              window.location.href = "/dashboard";
-            } else {
-              console.error("Enrollment error response:", result);
-              if (
-                result.message === "No token provided" ||
-                result.message === "Invalid token" ||
-                result.message === "Unauthorized"
-              ) {
-                console.log(
-                  `API error: ${result.message}, redirecting to /signup`
-                );
-                localStorage.removeItem("user");
-                window.location.href = `/signup?redirect=${encodeURIComponent(
-                  window.location.pathname
-                )}`;
-              } else {
-                alert(
-                  `Error: ${
-                    result.message ||
-                    "Failed to submit enrollment. Please try again."
-                  }`
-                );
-              }
-            }
-          } catch (error) {
-            console.error("Enrollment submission error:", error);
-            loadingOverlay.style.display = "none";
-            submitButton.disabled = false;
-            alert(
-              "An error occurred while submitting your enrollment. Please check your input and try again."
-            );
-          }
+          inputs.forEach((input) => {
+            input.addEventListener("input", () => validateInput(input));
+            input.addEventListener("change", () => validateInput(input));
+            input.addEventListener("blur", () => validateInput(input));
+          });
         });
+      }
 
+      // Handle payment proof file validation separately
       document
         .getElementById("payment-proof")
         .addEventListener("change", function () {
@@ -1262,13 +1430,115 @@
           } else {
             document.getElementById("file-upload-text").textContent =
               "Click to upload or drag and drop (PNG, JPG, PDF)";
-            error.textContent = "Please upload a payment proof file.";
+            error.textContent =
+              "Please upload a valid payment proof (PNG, JPG, or PDF, max 5MB).";
             error.style.display = "block";
           }
         });
 
-      // Initialize progress bar
-      updateProgressBar(1);
+      document
+        .getElementById("payment-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          if (!validateForm(this, 3)) return;
+
+          const submitButton = document.getElementById("submit-enrollment");
+          const loadingOverlay = document.getElementById("loading-overlay");
+
+          submitButton.disabled = true;
+          loadingOverlay.style.display = "flex";
+
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          if (!user.name || !user.email) {
+            console.log("No user data in localStorage, redirecting to /signup");
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            window.location.href = `/signup?redirect=${encodeURIComponent(
+              window.location.pathname + window.location.search
+            )}`;
+            return;
+          }
+
+          const formData = new FormData(this);
+          const studentData = JSON.parse(
+            sessionStorage.getItem("studentData") || "{}"
+          );
+          if (!studentData.course) {
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            showSuccess(
+              "Student data is missing. Please complete Step 1 again."
+            );
+            document.getElementById("step-3").classList.remove("active");
+            document.getElementById("step-1").classList.add("active");
+            document
+              .getElementsByClassName("step")[2]
+              .classList.remove("active");
+            document.getElementsByClassName("step")[0].classList.add("active");
+            updateProgressBar(1);
+            return;
+          }
+          formData.append("studentData", JSON.stringify(studentData));
+
+          try {
+            const response = await fetch("/api/enroll", {
+              method: "POST",
+              credentials: "include",
+              body: formData,
+            });
+            const result = await response.json();
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            if (response.ok) {
+              showSuccess(
+                "Course purchased successfully! Redirecting to dashboard..."
+              );
+              sessionStorage.removeItem("studentData");
+              setTimeout(() => {
+                window.location.href = "/dashboard";
+              }, 2000);
+            } else {
+              console.error("Enrollment error response:", result);
+              if (
+                result.message === "No token provided" ||
+                result.message === "Invalid token" ||
+                result.message === "Unauthorized"
+              ) {
+                console.log(
+                  `API error: ${result.message}, redirecting to /signup`
+                );
+                localStorage.removeItem("user");
+                window.location.href = `/signup?redirect=${encodeURIComponent(
+                  window.location.pathname + window.location.search
+                )}`;
+              } else {
+                showSuccess(
+                  `Error: ${
+                    result.message ||
+                    "Failed to submit enrollment. Please try again."
+                  }`
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Enrollment submission error:", error);
+            loadingOverlay.style.display = "none";
+            submitButton.disabled = false;
+            showSuccess(
+              "An error occurred while submitting your enrollment. Please check your input and try again."
+            );
+          }
+        });
+
+      // Initialize page
+      document.addEventListener("DOMContentLoaded", () => {
+        updateProgressBar(1);
+        prefillCourseFromURL();
+        fetchAndPrefillEnrollmentData();
+        setupRealTimeValidation();
+        setupAutoMove();
+      });
     </script>
+    <script src="/js/navbar.js"></script>
   </body>
 </html>

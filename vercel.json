@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "signup.js",
+      "src": "index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "signup.js"
+      "dest": "index.js"
     }
   ]
 }
