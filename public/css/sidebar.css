@@ -62,6 +62,7 @@
 }
 .sidebar-nav ul {
   list-style: none;
+  overflow-y: auto;
 }
 .sidebar-nav li {
   margin-bottom: 0.5rem;

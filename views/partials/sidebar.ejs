@@ -7,7 +7,7 @@
       <div class="sidebar-logo">
         <a href="/" class="logo"><img src="/images/Logo.png" alt="Skillshastra Logo" /></a>
       </div>
-      <nav class="sidebar-nav scroll">
+      <nav class="sidebar-nav">
         <ul>
           <li><a href="/" <%= request.path === '/' ? 'class="active"' : '' %>><i class="fas fa-home"></i> Home</a></li>
           <% if (user && user.role !== 'admin') { %>
