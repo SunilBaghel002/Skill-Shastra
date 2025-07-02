@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CodeVerse - Online Compiler</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/edit/matchbrackets.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #e6e6fa;
+        color: #333;
+        line-height: 1.6;
+      }
+      .header {
+        background-color: #6a5acd;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+      }
+      .header p {
+        font-size: 1rem;
+        opacity: 0.9;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 1rem auto;
+        display: flex;
+        gap: 1rem;
+        padding: 0 1rem;
+      }
+      .sidebar {
+        flex: 0 0 250px;
+        background-color: #f8f0ff;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .code-section,
+      .io-section {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+      }
+      .CodeMirror {
+        height: 400px;
+        font-family: "Fira Code", monospace;
+        font-size: 14px;
+        border: 1px solid #d8bfd8;
+        border-radius: 4px;
+        background-color: #f8f9fa;
+      }
+      .io-section {
+        display: flex;
+        gap: 1rem;
+      }
+      .io-section div {
+        flex: 1;
+      }
+      .io-section textarea {
+        height: 150px;
+        font-family: "Fira Code", monospace;
+        font-size: 14px;
+        border: 1px solid #d8bfd8;
+        border-radius: 4px;
+        padding: 10px;
+        resize: vertical;
+        background-color: #f8f9fa;
+      }
+      .io-section pre {
+        height: 150px;
+        border: 1px solid #d8bfd8;
+        border-radius: 4px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        overflow: auto;
+        font-family: "Fira Code", monospace;
+        font-size: 14px;
+      }
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #d8bfd8;
+        border-radius: 4px;
+        font-size: 16px;
+        background-color: white;
+        margin-bottom: 1rem;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        background-color: #6a5acd;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        background-color: #5a4ab8;
+      }
+      button:disabled {
+        background-color: #a9a9a9;
+        cursor: not-allowed;
+      }
+      label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+        color: #4b0082;
+      }
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+        }
+        .sidebar {
+          flex: none;
+        }
+        .io-section {
+          flex-direction: column;
+        }
+        .CodeMirror {
+          height: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>CodeVerse</h1>
+      <p>
+        Compile and run your code in Python, JavaScript, C++, C, Java, and more!
+      </p>
+    </div>
+    <div class="container">
+      <div class="sidebar">
+        <label for="language">Select Language</label>
+        <select id="language">
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="cpp">C++</option>
+          <option value="c">C</option>
+          <option value="java">Java</option>
+        </select>
+        <button id="runBtn">Run Code</button>
+      </div>
+      <div class="main">
+        <div class="code-section">
+          <label for="code">Code Editor</label>
+          <textarea id="code"></textarea>
+        </div>
+        <div class="io-section">
+          <div>
+            <label for="input">Input</label>
+            <textarea
+              id="input"
+              placeholder="Enter input for your program"
+            ></textarea>
+          </div>
+          <div>
+            <label for="output">Output</label>
+            <pre id="output"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const languageDefaults = {
+        python: 'print("Hello, World!")',
+        javascript: 'console.log("Hello, World!");',
+        cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}',
+        c: '#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
+        java: 'import java.util.Scanner;\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String input = scanner.nextLine();\n        System.out.println("You entered: " + input);\n    }\n}',
+      };
+
+      const languageModes = {
+        python: "python",
+        javascript: "javascript",
+        cpp: "text/x-c++src",
+        c: "text/x-csrc",
+        java: "text/x-java",
+      };
+
+      const languageSelect = document.getElementById("language");
+      const codeArea = document.getElementById("code");
+      const inputArea = document.getElementById("input");
+      const outputArea = document.getElementById("output");
+      const runBtn = document.getElementById("runBtn");
+
+      // Initialize CodeMirror
+      const editor = CodeMirror.fromTextArea(codeArea, {
+        lineNumbers: true,
+        mode: languageModes[languageSelect.value],
+        theme: "default",
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        indentWithTabs: false,
+        tabSize: 4,
+        extraKeys: { Tab: "indentMore" },
+        lineWrapping: true,
+      });
+
+      // Set initial code
+      editor.setValue(languageDefaults[languageSelect.value]);
+
+      // Update code and mode when language changes
+      languageSelect.addEventListener("change", () => {
+        editor.setValue(languageDefaults[languageSelect.value] || "");
+        editor.setOption("mode", languageModes[languageSelect.value]);
+      });
+
+      // Run code
+      runBtn.addEventListener("click", async () => {
+        runBtn.disabled = true;
+        runBtn.textContent = "Running...";
+        outputArea.textContent = "";
+
+        const language = languageSelect.value;
+        const code = editor.getValue();
+        const input = inputArea.value.trim();
+
+        try {
+          const response = await fetch("http://localhost:5000/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ language, code, input }),
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          const data = await response.json();
+          outputArea.textContent = data.output || data.error || "No output";
+          if (data.error) {
+            outputArea.textContent += `\nDetails: ${
+              data.details || "No additional details"
+            }`;
+          }
+        } catch (error) {
+          outputArea.textContent = `Error: ${error.message}`;
+        }
+
+        runBtn.disabled = false;
+        runBtn.textContent = "Run Code";
+      });
+    </script>
+  </body>
+</html>
