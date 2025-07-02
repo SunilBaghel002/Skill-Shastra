@@ -555,7 +555,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1hour",
+      expiresIn: "1hr",
     });
 
     res.cookie("token", token, {
