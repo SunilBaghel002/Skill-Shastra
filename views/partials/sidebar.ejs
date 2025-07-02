@@ -19,6 +19,7 @@
             <li><a href="/dashboard/feedback" <%= request.path.includes('/dashboard/feedback') ? 'class="active"' : '' %>><i class="fas fa-comment-dots"></i> Feedback</a></li>
             <li><a href="/dashboard/feed" <%= request.path.includes('/dashboard/feed') ? 'class="active"' : '' %>><i class="fas fa-rss"></i> Feed</a></li>
             <li><a href="/dashboard/announcement" <%= request.path.includes('/dashboard/announcement') ? 'class="active"' : '' %>><i class="fas fa-rss"></i> Announcements</a></li>
+            <li><a href="/dashboard/compiler" <%= request.path.includes('/dashboard/compiler') ? 'class="active"' : '' %>><i class="fas fa-rss"></i> Compiler</a></li>
           <% } %>
           <% if (user && user.role === 'admin') { %>
             <li class="section-title">Admin Panel</li>

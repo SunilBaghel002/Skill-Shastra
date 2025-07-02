@@ -11,6 +11,7 @@ const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 const { v2: cloudinary } = require("cloudinary");
 const rateLimit = require("express-rate-limit");
+const axios = require("axios");
 
 dotenv.config();
 const app = express();
@@ -30,6 +31,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
+
+const JUDGE0_API = "https://judge0-ce.p.rapidapi.com/submissions";
+const API_KEY = process.env.API_KEY;
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -1348,6 +1352,108 @@ app.delete(
   }
 );
 
+const languageConfig = {
+  python: { id: 71, extension: "py" },
+  javascript: { id: 63, extension: "js" },
+  cpp: { id: 54, extension: "cpp" },
+  c: { id: 50, extension: "c" },
+  java: { id: 62, extension: "java" },
+};
+
+// Execute code endpoint
+app.post("/execute", async (req, res) => {
+  const { language, code, input } = req.body;
+
+  // Validate request
+  if (!languageConfig[language]) {
+    return res.status(400).json({ error: "Unsupported language" });
+  }
+  if (!code) {
+    return res.status(400).json({ error: "Code is required" });
+  }
+
+  try {
+    // Submit code to Judge0
+    const submissionResponse = await axios.post(
+      `${JUDGE0_API}?base64_encoded=true`,
+      {
+        source_code: Buffer.from(code).toString("base64"),
+        language_id: languageConfig[language].id,
+        stdin: Buffer.from(input || "").toString("base64"),
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-RapidAPI-Key": API_KEY,
+          "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+        },
+      }
+    );
+
+    const token = submissionResponse.data.token;
+    if (!token) {
+      throw new Error("No submission token received from Judge0");
+    }
+
+    // Poll for execution result (max 20 seconds)
+    let result;
+    for (let i = 0; i < 20; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const statusResponse = await axios.get(
+        `${JUDGE0_API}/${token}?base64_encoded=true`,
+        {
+          headers: {
+            "X-RapidAPI-Key": API_KEY,
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+          },
+        }
+      );
+      result = statusResponse.data;
+      if (result.status && result.status.id > 2) break;
+    }
+
+    // Handle execution result
+    if (!result || !result.status) {
+      throw new Error("No result received from Judge0");
+    }
+
+    let output = "";
+    if (result.status.id === 3) {
+      // Success
+      output = result.stdout
+        ? Buffer.from(result.stdout, "base64").toString()
+        : "No output";
+    } else if (result.status.id === 6) {
+      // Compilation error
+      output = result.compile_output
+        ? Buffer.from(result.compile_output, "base64").toString()
+        : "Compilation error occurred";
+    } else {
+      // Other errors (e.g., runtime error like NoSuchElementException)
+      output = result.stderr
+        ? Buffer.from(result.stderr, "base64").toString()
+        : `Error: ${result.status.description}`;
+      if (output.includes("NoSuchElementException")) {
+        output +=
+          "\nHint: Ensure input is provided in the input field for Scanner.";
+      }
+    }
+
+    res.json({ output });
+  } catch (error) {
+    console.error(
+      "Error executing code:",
+      error.response ? error.response.data : error.message
+    );
+    res.status(500).json({
+      error: "Failed to execute code",
+      details: error.response
+        ? error.response.data.message || error.response.data
+        : error.message,
+    });
+  }
+});
+
 // EJS Setup
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -1430,6 +1536,7 @@ app.get("/practiceProject", renderPage("resources/PracticeProject"));
 app.get("/studyMaterials", renderPage("resources/StudyMaterials"));
 app.get("/expertProfiles", renderPage("team/ExpertProfile"));
 app.get("/meetTeam", renderPage("team/MeetOurTeam"));
+app.get("/dashboard/compiler", renderPage("dashboard/compiler"));
 
 app.get("/payment", protect, (req, res) => {
   res.render("courses/payment2", {
