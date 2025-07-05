@@ -266,50 +266,135 @@ const sendEmail = async (to, subject, html, retries = 3, delay = 2000) => {
 // Email Template Functions
 const getBaseEmailTemplate = (content) => `
   <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Skill Shastra</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background-color: #f8f9ff; color: #1f2937; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #7c3aed; text-align: center; padding: 20px; border-radius: 8px 8px 0 0; }
-        .header img { max-width: 150px; height: auto; }
-        .content { background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        .content h1 { font-size: 24px; color: #7c3aed; margin-bottom: 20px; }
-        .content p { font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
-        .cta-button { display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; margin: 15px 0; }
-        .cta-button:hover { background-color: #a855f7; }
-        .footer { text-align: center; padding: 20px; font-size: 14px; color: #6b7280; }
-        .footer a { color: #7c3aed; text-decoration: none; margin: 0 10px; }
-        .footer a:hover { text-decoration: underline; }
-        @media (max-width: 600px) {
-          .container { padding: 10px; }
-          .content { padding: 20px; }
-          .header img { max-width: 120px; }
-          .content h1 { font-size: 20px; }
-          .content p { font-size: 14px; }
-          .cta-button { padding: 10px 20px; }
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Shastra</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f8f9ff;
+        color: #1f2937;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background-color: #7c3aed;
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px 8px 0 0;
+      }
+      .header img {
+        max-width: 150px;
+        height: auto;
+      }
+      .otp{
+        max-width: 300px;
+        width: 100%;
+        background-color: #7c3aed5b;
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        letter-spacing: 3px;
+        font-weight: 700;
+        margin: auto;
+        font-size: 30px;
+        color: #7c3aed;
+      }
+      .content {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .content h1 {
+        font-size: 24px;
+        color: #7c3aed;
+        margin-bottom: 20px;
+      }
+      .content p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 15px;
+      }
+      .cta-button {
+        display: inline-block;
+        background-color: #7c3aed;
+        color: #ffffff;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 500;
+        margin: 15px 0;
+      }
+      .cta-button:hover {
+        background-color: #a855f7;
+      }
+      .footer {
+        text-align: center;
+        padding: 20px;
+        font-size: 14px;
+        color: #6b7280;
+      }
+      .footer a {
+        color: #7c3aed;
+        text-decoration: none;
+        margin: 0 10px;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      @media (max-width: 600px) {
+        .container {
+          padding: 10px;
         }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <img src="https://res.cloudinary.com/dsk80td7v/image/upload/v1750568168/public/images/logo.png" alt="Skill Shastra Logo" />
-        </div>
-        <div class="content">
-          ${content}
-        </div>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
-          <p><a href="mailto:support@skillshastra.com">support@skillshastra.com</a> | <a href="https://skill-shastra.vercel.app/">skillshastra.com</a></p>
-        </div>
+        .content {
+          padding: 20px;
+        }
+        .header img {
+          max-width: 120px;
+        }
+        .content h1 {
+          font-size: 20px;
+        }
+        .content p {
+          font-size: 14px;
+        }
+        .cta-button {
+          padding: 10px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img
+          src="https://res.cloudinary.com/dsk80td7v/image/upload/v1751718981/public/images/logo.png"
+          alt="Skill Shastra Logo"
+        />
       </div>
-    </body>
-  </html>
+      <div class="content">${content}</div>
+      <div class="footer">
+        <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
+        <p>
+          <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>
+          | <a href="https://skill-shastra.vercel.app/">skillshastra.com</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
+
 `;
 
 const getAnnouncementEmailTemplate = (title, content, announcementType) =>
