@@ -379,7 +379,7 @@ const getBaseEmailTemplate = (content) => `
     <div class="container">
       <div class="header">
         <img
-          src="https://res.cloudinary.com/dsk80td7v/image/upload/v1751718981/public/images/logo.png"
+          src="https://res.cloudinary.com/dsk80td7v/image/upload/v1751719552/public/images/logo.png"
           alt="Skill Shastra Logo"
         />
       </div>
