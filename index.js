@@ -32,6 +32,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Rate Limiting Middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many announcement attempts, please try again after 15 minutes.",
+});
+app.use(limiter);
+
 const JUDGE0_API = "https://judge0-ce.p.rapidapi.com/submissions";
 const API_KEY = process.env.API_KEY;
 
@@ -200,7 +208,7 @@ const multerErrorHandler = (err, req, res, next) => {
   next();
 };
 
-// Nodemailer Setup
+// Nodemailer Setup with Connection Pooling
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
@@ -209,20 +217,42 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000, // 10 seconds
-  socketTimeout: 10000, // 10 seconds
-  tls: {
-    // Ensure compatibility with Gmail's TLS requirements
-    ciphers: "SSLv3",
-    rejectUnauthorized: false, // Allow self-signed certificates (optional, for testing)
-  },
+  pool: true, // Enable connection pooling
+  maxConnections: 5, // Limit concurrent connections
+  maxMessages: 100, // Max messages per connection
+  rateLimit: 14, // Max 14 emails per second (Gmail limit: ~100-150/day)
+  connectionTimeout: 30000, // Increased to 30 seconds
+  greetingTimeout: 30000, // Increased to 30 seconds
+  socketTimeout: 30000, // Increased to 30 seconds
 });
 
-// sendEmail Function with Retry Logic
-const sendEmail = async (to, subject, html, retries = 3, delay = 2000) => {
+// Verify Transporter on Startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP Transporter Verification Failed:", {
+      message: error.message,
+      stack: error.stack,
+    });
+  } else {
+    console.log("SMTP Transporter Ready");
+  }
+});
+
+// Email Validation Function
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Send Email Function with Enhanced Retry Logic
+const sendEmail = async (to, subject, html, retries = 3) => {
+  if (!isValidEmail(to)) {
+    console.error(`Invalid email address: ${to}`);
+    throw new Error(`Invalid email address: ${to}`);
+  }
+
   const mailOptions = {
-    from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
+    from: `"Skill Shastra" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
@@ -235,7 +265,7 @@ const sendEmail = async (to, subject, html, retries = 3, delay = 2000) => {
       );
       const startTime = Date.now();
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("SMTP request timed out")), 10000); // Increased to 10 seconds
+        setTimeout(() => reject(new Error("SMTP request timed out")), 30000);
       });
       const sendPromise = transporter.sendMail(mailOptions);
       const info = await Promise.race([sendPromise, timeoutPromise]);
@@ -251,9 +281,17 @@ const sendEmail = async (to, subject, html, retries = 3, delay = 2000) => {
           stack: error.stack,
           code: error.code,
           response: error.response,
+          responseCode: error.responseCode,
         }
       );
+
+      if (error.responseCode && [550, 551, 553].includes(error.responseCode)) {
+        console.error(`Permanent failure for ${to}, skipping retries`);
+        throw new Error(`Permanent failure: ${error.message}`);
+      }
+
       if (attempt < retries) {
+        const delay = Math.pow(2, attempt) * 2000;
         console.log(`Retrying email to ${to} after ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
@@ -263,7 +301,34 @@ const sendEmail = async (to, subject, html, retries = 3, delay = 2000) => {
   }
 };
 
-// Email Template Functions
+// Throttle Email Sending
+const throttleEmails = async (
+  recipients,
+  subject,
+  html,
+  batchSize = 5,
+  delay = 1000
+) => {
+  const results = [];
+  for (let i = 0; i < recipients.length; i += batchSize) {
+    const batch = recipients.slice(i, i + batchSize);
+    const batchPromises = batch.map(({ email }) =>
+      sendEmail(email, subject, html).then(
+        (info) => ({ email, status: "success", response: info.response }),
+        (error) => ({ email, status: "failed", error: error.message })
+      )
+    );
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults);
+    if (i + batchSize < recipients.length) {
+      console.log(`Waiting ${delay}ms before next batch...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  return results;
+};
+
+// Email Template Functions (Logo Embedded as Base64)
 const getBaseEmailTemplate = (content) => `
   <!DOCTYPE html>
 <html lang="en">
@@ -271,6 +336,11 @@ const getBaseEmailTemplate = (content) => `
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Skill Shastra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         margin: 0;
@@ -278,7 +348,7 @@ const getBaseEmailTemplate = (content) => `
         box-sizing: border-box;
       }
       body {
-        font-family: Arial, sans-serif;
+        font-family: "Poppins", sans-serif;
         background-color: #f8f9ff;
         color: #1f2937;
       }
@@ -297,8 +367,8 @@ const getBaseEmailTemplate = (content) => `
         max-width: 150px;
         height: auto;
       }
-      .otp{
-        max-width: 300px;
+      .otp {
+        max-width: 250px;
         width: 100%;
         background-color: #7c3aed5b;
         text-align: center;
@@ -306,7 +376,7 @@ const getBaseEmailTemplate = (content) => `
         border-radius: 8px;
         letter-spacing: 3px;
         font-weight: 700;
-        margin: auto;
+        margin: 10px auto;
         font-size: 30px;
         color: #7c3aed;
       }
@@ -402,9 +472,9 @@ const getAnnouncementEmailTemplate = (title, content, announcementType) =>
     <h1>New Announcement: ${title}</h1>
     <p>Dear Skill Shastra User,</p>
     <p>We have a new ${announcementType.replace(
-    "_",
-    " "
-  )} announcement for you:</p>
+      "_",
+      " "
+    )} announcement for you:</p>
     <p><strong>${title}</strong></p>
     <p>${content}</p>
     <a href="https://skill-shastra.vercel.app/dashboard/announcements" class="cta-button">View Announcements</a>
@@ -465,7 +535,7 @@ const getEnrollmentConfirmationEmailTemplate = (
       <tr><th>Status</th><td>Pending</td></tr>
     </table>
     <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
-    <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a> if you have any questions.</p>
+    <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
   `);
 
 const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
@@ -473,9 +543,10 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
     <h1>Enrollment Status Update</h1>
     <p>Dear ${fullName},</p>
     <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-    ${status === "approved"
-      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+    ${
+      status === "approved"
+        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
     }
     <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
     <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
@@ -518,10 +589,6 @@ const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error("JWT Verification Error:", {
-      message: error.message,
-      stack: error.stack,
-    });
     res.clearCookie("token");
     if (isApiRoute) {
       return res.status(401).json({ message: "Invalid token" });
@@ -535,6 +602,7 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Admin Middleware
 const restrictToAdmin = async (req, res, next) => {
   const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
   if (!req.user || !adminEmails.includes(req.user.email)) {
@@ -544,14 +612,7 @@ const restrictToAdmin = async (req, res, next) => {
   next();
 };
 
-// Rate Limiting for Announcement Creation
-const announcementLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 announcement creations per window
-  message: "Too many announcement attempts, please try again after 15 minutes.",
-});
-
-// Helper Function
+// Generate OTP
 const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -643,13 +704,13 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "1h",
     });
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 60 * 60 * 1000,
       sameSite: "strict",
     });
 
@@ -718,16 +779,16 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "1h",
     });
 
     res.cookie("token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 60 * 60 * 1000,
       sameSite: "strict",
     });
-
+  
     res.status(200).json({
       user: {
         name: user.name,
@@ -865,7 +926,8 @@ app.patch(
       const user = await User.findById(enrollment.userId);
       await sendEmail(
         enrollment.email,
-        `Skill Shastra Enrollment ${status.charAt(0).toUpperCase() + status.slice(1)
+        `Skill Shastra Enrollment ${
+          status.charAt(0).toUpperCase() + status.slice(1)
         }`,
         getEnrollmentStatusEmailTemplate(
           enrollment.fullName,
@@ -1207,7 +1269,7 @@ app.post(
   "/api/admin/announcements",
   protect,
   restrictToAdmin,
-  announcementLimiter,
+  // announcementLimiter,
   async (req, res) => {
     try {
       const { title, content, targetAudience, announcementType } = req.body;
@@ -1369,7 +1431,7 @@ app.patch(
   "/api/admin/announcements/:id",
   protect,
   restrictToAdmin,
-  announcementLimiter,
+  // announcementLimiter,
   async (req, res) => {
     try {
       const { title, content, targetAudience, announcementType } = req.body;
