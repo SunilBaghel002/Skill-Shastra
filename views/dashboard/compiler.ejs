@@ -20,6 +20,11 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/theme/monokai.min.css"
     />
+    <link
+      rel="shortcut icon"
+      href="/images/Logo_Black_Bg-2.png"
+      type="image/x-icon"
+    />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/python/python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
@@ -59,47 +64,48 @@
 
       body {
         font-family: "Poppins", sans-serif;
-        background: var(--background-dark);
-        color: var(--text-dark);
+        background: var(--background-light);
+        color: var(--text-light);
         min-height: 100vh;
         display: flex;
         margin-left: 280px;
-        transition: margin-left 0.3s ease;
+        transition: all 0.3s ease;
         position: relative;
         flex-direction: column;
         transition: all 0.3s ease;
       }
 
-      body.light-mode {
-        background: var(--background-light);
-        color: var(--text-light);
+      body.dark-mode {
+        background: var(--background-dark);
+        color: var(--text-dark);
       }
 
       .navbar {
-        background: var(--navbar-dark);
+        background: var(--navbar-light);
         backdrop-filter: blur(10px);
-        border-bottom: 1px solid var(--border-dark);
+        border-bottom: 1px solid var(--border-light);
         padding: 1rem 2rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 1rem;
+        position: relative;
       }
 
-      body.light-mode .navbar {
-        background: var(--navbar-light);
-        border-bottom: 1px solid var(--border-light);
+      body.dark-mode .navbar {
+        background: var(--navbar-dark);
+        border-bottom: 1px solid var(--border-dark);
       }
 
       .navbar h2 {
         font-size: 1.8rem;
         font-weight: 600;
-        color: var(--primary-light);
+        color: var(--primary);
       }
 
-      body.light-mode .navbar h2 {
-        color: var(--primary);
+      body.dark-mode .navbar h2 {
+        color: var(--primary-light);
       }
 
       .navbar-right {
@@ -113,6 +119,7 @@
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
+        margin-right: 25px;
       }
 
       .language-option {
@@ -121,38 +128,43 @@
         gap: 0.5rem;
         padding: 0.5rem 1rem;
         background: transparent;
-        color: var(--text-dark);
-        border: 1px solid var(--border-dark);
+        color: var(--text-light);
+        border: 1px solid var(--border-light);
         border-radius: 8px;
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.3s ease;
       }
 
-      body.light-mode .language-option {
-        color: var(--text-light);
-        border: 1px solid var(--border-light);
+      body.dark-mode .language-option {
+        color: var(--text-dark);
+        border: 1px solid var(--border-dark);
       }
 
       .language-option:hover,
       .language-option.active {
-        background: var(--primary-light);
+        background: var(--primary);
         color: white;
         transform: translateY(-2px);
       }
 
-      body.light-mode .language-option:hover,
-      body.light-mode .language-option.active {
-        background: var(--primary);
+      .language-option:hover i,
+      .language-option.active i {
+        color: rgb(189, 188, 188)!important;
+      }
+
+      body.dark-mode .language-option:hover,
+      body.dark-mode .language-option.active {
+        background: var(--primary-light);
       }
 
       .language-option i {
         font-size: 1.1rem;
-        color: var(--primary-light);
+        color: var(--primary);
       }
 
-      body.light-mode .language-option i {
-        color: var(--primary);
+      body.dark-mode .language-option i {
+        color: var(--primary-light);
       }
 
       .main-content {
@@ -165,7 +177,7 @@
 
       .editor-container {
         flex: 1;
-        background: var(--card-dark);
+        background: var(--card-light);
         border-radius: 12px;
         padding: 1rem;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -174,8 +186,8 @@
         position: relative;
       }
 
-      body.light-mode .editor-container {
-        background: var(--card-light);
+      body.dark-mode .editor-container {
+        background: var(--card-dark);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
       }
 
@@ -210,46 +222,46 @@
       .output-section h3 {
         font-size: 1.2rem;
         font-weight: 600;
-        color: var(--primary-light);
+        color: var(--primary);
       }
 
-      body.light-mode .input-section h3,
-      body.light-mode .output-section h3 {
-        color: var(--primary);
+      body.dark-mode .input-section h3,
+      body.dark-mode .output-section h3 {
+        color: var(--primary-light);
       }
 
       textarea {
         flex: 1;
-        background: var(--card-dark);
-        border: 1px solid var(--border-dark);
+        background: var(--card-light);
+        border: 1px solid var(--border-light);
         border-radius: 8px;
         padding: 1rem;
-        color: var(--text-dark);
+        color: var(--text-light);
         font-family: "Monaco", "Consolas", monospace;
         font-size: 0.9rem;
         resize: none;
       }
 
-      body.light-mode textarea {
-        background: var(--card-light);
-        border: 1px solid var(--border-light);
-        color: var(--text-light);
+      body.dark-mode textarea {
+        background: var(--card-dark);
+        border: 1px solid var(--border-dark);
+        color: var(--text-dark);
       }
 
       .output-section textarea {
-        background: var(--output-dark);
+        background: var(--output-light);
       }
 
-      body.light-mode .output-section textarea {
-        background: var(--output-light);
+      body.dark-mode .output-section textarea {
+        background: var(--output-dark);
       }
 
       .run-btn {
         padding: 0.75rem 2rem;
         background: linear-gradient(
           135deg,
-          var(--primary),
-          var(--primary-light)
+          var(--primary-light),
+          var(--primary)
         );
         color: white;
         border: none;
@@ -264,9 +276,9 @@
         position: absolute;
         top: 1rem;
         right: 1rem;
-        position: fixed;
+        /* position: fixed;
         top: 90px;
-        right: 40px;
+        right: 40px; */
       }
 
       .run-btn:hover {
@@ -278,8 +290,12 @@
         color: #f87171;
       }
 
+      .sidebar-background {
+        display: none;
+      }
+
       .theme-toggle {
-        background: var(--primary);
+        background: var(--primary-light);
         color: white;
         border: none;
         border-radius: 50%;
@@ -290,10 +306,13 @@
         justify-content: center;
         cursor: pointer;
         transition: all 0.3s ease;
+        position: absolute;
+        top: 13px;
+        right: 10px;
       }
 
-      body.light-mode .theme-toggle {
-        background: var(--primary-light);
+      body.dark-mode .theme-toggle {
+        background: var(--primary);
       }
 
       .theme-toggle:hover {
@@ -302,7 +321,7 @@
 
       /* Responsive Design */
       @media (max-width: 768px) {
-        body{
+        body {
           margin-left: 0px;
         }
         .navbar {
@@ -329,6 +348,25 @@
         .input-section,
         .output-section {
           height: 150px;
+        }
+        .Compiler-title {
+          margin: auto;
+        }
+
+        .sidebar-background {
+          display: block;
+          position: fixed;
+          top: 16px;
+          left: 9px;
+          background-color: var(--primary);
+          width: 40px;
+          height: 40px;
+          z-index: 1050;
+          border-radius: 8px;
+        }
+
+        body.dark-mode .sidebar-background {
+          background-color: transparent;
         }
       }
 
@@ -371,7 +409,8 @@
   <body>
     <%- include('../partials/sidebar') %>
     <div class="navbar">
-      <h2>Skillshastra</h2>
+      <div class="sidebar-background"></div>
+      <h2 class="Compiler-title">ShastraCode - Compiler</h2>
       <div class="navbar-right">
         <div class="language-list">
           <div class="language-option active" data-lang="python">
@@ -384,14 +423,14 @@
             <i class="fas fa-code"></i> C++
           </div>
           <div class="language-option" data-lang="c">
-            <i class="fas fa-code"></i> C
+            <i class="fas fa-c"></i> C
           </div>
           <div class="language-option" data-lang="java">
             <i class="fab fa-java"></i> Java
           </div>
         </div>
         <button class="theme-toggle" aria-label="Toggle dark/light mode">
-          <i class="fas fa-moon"></i>
+          <i class="fas fa-sun"></i>
         </button>
       </div>
     </div>
@@ -420,7 +459,7 @@
         {
           lineNumbers: true,
           mode: "python",
-          theme: "monokai",
+          theme: "default",
           autoCloseBrackets: true,
           matchBrackets: true,
           indentUnit: 4,
@@ -493,11 +532,11 @@
       // Theme toggle handler
       const themeToggle = document.querySelector(".theme-toggle");
       themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("light-mode");
-        const isLightMode = document.body.classList.contains("light-mode");
-        editor.setOption("theme", isLightMode ? "default" : "monokai");
+        document.body.classList.toggle("dark-mode");
+        const isDarkMode = document.body.classList.contains("dark-mode");
+        editor.setOption("theme", isDarkMode ? "monokai" : "default");
         themeToggle.innerHTML = `<i class="fas fa-${
-          isLightMode ? "sun" : "moon"
+          isDarkMode ? "moon" : "sun"
         }"></i>`;
       });
       document.addEventListener("DOMContentLoaded", () => {

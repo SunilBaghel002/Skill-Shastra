@@ -7,7 +7,7 @@ function initSidebar() {
     sidebar.classList.toggle("hidden");
     sidebar.classList.toggle("active");
     hamburger.innerHTML = sidebar.classList.contains("active")
-      ? '<i class="fas fa-times"></i>'
+      ? '<i class="fas fa-times sidebar-close"></i>'
       : '<i class="fas fa-bars"></i>';
   });
 

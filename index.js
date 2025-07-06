@@ -38,7 +38,7 @@ const limiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   message: "Too many announcement attempts, please try again after 15 minutes.",
 });
-app.use(limiter);
+// app.use(limiter);
 
 const JUDGE0_API = "https://judge0-ce.p.rapidapi.com/submissions";
 const API_KEY = process.env.API_KEY;
@@ -704,13 +704,13 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "7d",
     });
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
 
@@ -779,13 +779,13 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "7d",
     });
 
     res.cookie("token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
   
@@ -1269,7 +1269,7 @@ app.post(
   "/api/admin/announcements",
   protect,
   restrictToAdmin,
-  // announcementLimiter,
+  limiter,
   async (req, res) => {
     try {
       const { title, content, targetAudience, announcementType } = req.body;
@@ -1639,12 +1639,12 @@ app.get("/dashboard/courses", protect, renderPage("dashboard/courses"));
 app.get(
   "/dashboard/coding-Challenge",
   protect,
-  renderPage("dashboard/coding-Challenge")
+  renderPage("dashboard/coding-Challenges")
 );
 app.get(
   "/dashboard/practiceProject",
   protect,
-  renderPage("dashboard/practiceProject")
+  renderPage("dashboard/praticeProject")
 );
 app.get(
   "/dashboard/studyMaterials",
