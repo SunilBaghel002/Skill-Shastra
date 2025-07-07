@@ -2004,7 +2004,7 @@ body {
 .back-to-top {
   position: fixed;
   bottom: 2rem;
-  right: 2rem;
+  right: 50%;
   background: var(--primary);
   color: white;
   width: 50px;
@@ -2018,6 +2018,7 @@ body {
   visibility: hidden;
   transition: all 0.3s ease;
   z-index: 1000;
+  transform: translateX(50%);
 }
 
 .back-to-top.show {

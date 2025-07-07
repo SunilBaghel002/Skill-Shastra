@@ -567,7 +567,8 @@
 .back-to-top {
   position: fixed;
   bottom: 2rem;
-  right: 2rem;
+  right: 50%;
+  transform: translateX(50%);
   background: var(--primary);
   color: white;
   width: 50px;

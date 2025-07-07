@@ -38,7 +38,8 @@
   align-items: center;
   margin-bottom: 2rem;
   position: fixed;
-  width: 220px;
+  width: 260px;
+  height: 60px;
   background-color: rgba(255, 255, 255, 0.829);
 }
 .sidebar-logo .logo img {
