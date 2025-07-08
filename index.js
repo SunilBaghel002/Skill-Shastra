@@ -581,13 +581,13 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "1d",
     });
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge:  24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
 
@@ -656,13 +656,13 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "1d",
     });
 
     res.cookie("token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge:  24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
   
