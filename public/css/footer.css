@@ -232,6 +232,7 @@
   visibility: hidden;
   transition: all 0.3s ease;
   z-index: 1000;
+  border: none !important;
 }
 
 .back-to-top.show {
@@ -240,5 +241,5 @@
 }
 
 .back-to-top:hover {
-  transform: translateY(-5px);
+  background-color: #44299c;
 }

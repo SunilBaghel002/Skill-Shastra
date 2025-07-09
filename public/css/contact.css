@@ -564,7 +564,7 @@
   gap: 1rem;
 }
 
-.back-to-top {
+/* .back-to-top {
   position: fixed;
   bottom: 2rem;
   right: 50%;
@@ -587,11 +587,11 @@
 .back-to-top.show {
   opacity: 1;
   visibility: visible;
-}
+} */
 
-.back-to-top:hover {
+/* .back-to-top:hover {
   transform: translateY(-5px);
-}
+} */
 
 @media (max-width: 768px) {
   .contact-info {

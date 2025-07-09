@@ -2027,5 +2027,5 @@ body {
 }
 
 .back-to-top:hover {
-  transform: translateY(-5px);
+  background-color: #44299c;
 }

@@ -16,7 +16,11 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon">
+    <link
+      rel="shortcut icon"
+      href="/images/Logo_Black_Bg-2.png"
+      type="image/x-icon"
+    />
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/navbar.css" />
     <link rel="stylesheet" href="/css/footer.css" />
@@ -541,20 +545,31 @@
       }
       .back-to-top {
         position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        bottom: 2rem;
+        right: 50%;
+        background: #7c3aed;
         color: white;
-        padding: 0.75rem;
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        display: none;
-        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        visibility: hidden;
         transition: all 0.3s ease;
+        z-index: 1000;
+        transform: translateX(50%);
       }
+
+      .back-to-top.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
       .back-to-top:hover {
-        transform: translateY(-5px);
+        background-color: #44299c;
       }
       @media (max-width: 768px) {
         .hero-container {
