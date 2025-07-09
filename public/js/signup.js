@@ -8,16 +8,41 @@ const redirectUrl = urlParams.get("redirect") || "/";
 window.redirectUrl = redirectUrl;
 
 // Check if user is already logged in
-document.addEventListener("DOMContentLoaded", () => {
-  const user = localStorage.getItem("user");
-  if (user) {
-    showSuccess("You are already logged in. Redirecting to dashboard.");
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1000);
+document.addEventListener("DOMContentLoaded", async () => {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  if (user && user.expiresAt && user.expiresAt < Date.now()) {
+    localStorage.removeItem("user"); // Clear expired user data
+    showError("Session expired. Please log in again.");
+    showLogin();
     return;
   }
-  showLogin(); // Initialize with login form
+
+  if (user.name && user.email) {
+    try {
+      const response = await fetch(`${API_URL}/validate-session`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        showSuccess("You are already logged in. Redirecting to dashboard.");
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
+      } else {
+        localStorage.removeItem("user");
+        showError("Session expired. Please log in again.");
+        showLogin();
+      }
+    } catch (error) {
+      console.error("Session Validation Error:", error);
+      localStorage.removeItem("user");
+      showError("Network error. Please log in again.");
+      showLogin();
+    }
+  } else {
+    showLogin();
+  }
 });
 
 function showLogin() {
@@ -268,14 +293,19 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
 
     const data = await response.json();
 
+    // In the OTP verification handler
     if (response.ok) {
-      localStorage.setItem("user", JSON.stringify(data.user)); // Store user data
+      const userData = {
+        ...data.user,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Set expiration to 1 day
+      };
+      localStorage.setItem("user", JSON.stringify(userData)); // Store user data with expiration
       showSuccess("OTP verified successfully!");
       setTimeout(() => {
         const url =
           data.redirect ||
           (data.user.role === "admin" ? "/admin" : "/dashboard");
-        window.location.href = url; // Force reload
+        window.location.href = url;
       }, 1000);
     } else {
       showError(data.message || "Invalid OTP. Please try again.");
@@ -350,13 +380,17 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const data = await response.json();
 
     if (response.ok) {
-      localStorage.setItem("user", JSON.stringify(data.user)); // Store user data
+      const userData = {
+        ...data.user,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Set expiration to 1 day
+      };
+      localStorage.setItem("user", JSON.stringify(userData)); // Store user data with expiration
       showSuccess("Login successful!");
       setTimeout(() => {
         const url =
           data.redirect ||
           (data.user.role === "admin" ? "/admin" : "/dashboard");
-        window.location.href = url; // Force reload
+        window.location.href = url;
       }, 1000);
     } else if (data.message === "User already logged in") {
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -512,3 +546,25 @@ document
 document.getElementById("newPassword")?.addEventListener("input", function () {
   checkPasswordStrength(this.value, "newPasswordStrength");
 });
+
+async function logout() {
+  try {
+    const response = await fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      localStorage.removeItem("user");
+      showSuccess("Logged out successfully.");
+      setTimeout(() => {
+        window.location.href = "/signup";
+      }, 1000);
+    } else {
+      showError("Failed to log out. Please try again.");
+    }
+  } catch (error) {
+    showError("Network error during logout.");
+    console.error("Logout Error:", error);
+  }
+}

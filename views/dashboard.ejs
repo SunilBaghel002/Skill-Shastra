@@ -12,7 +12,11 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon">
+    <link
+      rel="shortcut icon"
+      href="/images/Logo_Black_Bg-2.png"
+      type="image/x-icon"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -143,10 +147,10 @@
         cursor: pointer;
         transition: all 0.3s ease;
       }
-      .section-title a{
+      .section-title a {
         text-decoration: none;
       }
-      .buy-btn{
+      .buy-btn {
         background: linear-gradient(135deg, #7c3aed, #a855f7);
         color: white;
         padding: 0.6rem 1.2rem;
@@ -302,34 +306,45 @@
         const loadingOverlay = document.getElementById("loading-overlay");
         if (loadingOverlay) loadingOverlay.style.display = "flex";
 
-        // Update main content margin
-        const sidebar = document.querySelector(".sidebar");
-        const mainContent = document.querySelector(".main-content");
-        if (sidebar && mainContent) {
-          if (sidebar.classList.contains("hidden")) {
-            mainContent.classList.add("full");
-          }
-          sidebar.addEventListener("transitionend", () => {
-            mainContent.classList.toggle(
-              "full",
-              sidebar.classList.contains("hidden")
-            );
-          });
-        }
-
-        // Function to map course titles to slugs
-        function getCourseSlug(title) {
-          const courseMap = {
-            "Frontend Development": "frontend",
-            "Backend Development": "backend",
-            "Full Stack Development": "full-stack",
-            "Digital Marketing": "digital-marketing",
-            "Data Science": "data-science",
-          };
-          return courseMap[title] || title.toLowerCase().replace(/\s+/g, "-");
-        }
-
         try {
+          // Validate session
+          const sessionRes = await fetch("/api/auth/validate-session", {
+            credentials: "include",
+          });
+
+          if (!sessionRes.ok) {
+            localStorage.removeItem("user");
+            alert("Session expired. Please log in again.");
+            window.location.href = "/signup?redirect=/dashboard";
+            return;
+          }
+
+          // Update main content margin
+          const sidebar = document.querySelector(".sidebar");
+          const mainContent = document.querySelector(".main-content");
+          if (sidebar && mainContent) {
+            if (sidebar.classList.contains("hidden")) {
+              mainContent.classList.add("full");
+            }
+            sidebar.addEventListener("transitionend", () => {
+              mainContent.classList.toggle(
+                "full",
+                sidebar.classList.contains("hidden")
+              );
+            });
+          }
+
+          function getCourseSlug(title) {
+            const courseMap = {
+              "Frontend Development": "frontend",
+              "Backend Development": "backend",
+              "Full Stack Development": "full-stack",
+              "Digital Marketing": "digital-marketing",
+              "Data Science": "data-science",
+            };
+            return courseMap[title] || title.toLowerCase().replace(/\s+/g, "-");
+          }
+
           // Fetch purchased and recommended courses concurrently
           const [enrollmentsRes, recommendedRes] = await Promise.all([
             fetch("/api/enrollments", { credentials: "include" }),
@@ -352,21 +367,21 @@
               purchasedCourses.innerHTML = enrollments
                 .map(
                   (enrollment) => `
-                   <div class="course-card-2">
-                     <h4>${enrollment.course}</h4>
-                     <p>Status: <span class="status-${enrollment.status.toLowerCase()}">${
+             <div class="course-card-2">
+               <h4>${enrollment.course}</h4>
+               <p>Status: <span class="status-${enrollment.status.toLowerCase()}">${
                     enrollment.status
                   }</span></p>
-                     <div class="progress-bar">
-                       <div class="progress-fill" style="width: ${Math.floor(
-                         Math.random() * 50
-                       )}%"></div>
-                     </div>
-                     <a href="/${getCourseSlug(
-                       enrollment.course
-                     )}" class="course-btn">View Course</a>
-                   </div>
-                 `
+               <div class="progress-bar">
+                 <div class="progress-fill" style="width: ${Math.floor(
+                   Math.random() * 50
+                 )}%"></div>
+               </div>
+               <a href="/${getCourseSlug(
+                 enrollment.course
+               )}" class="course-btn">View Course</a>
+             </div>
+           `
                 )
                 .join("");
               activeCourses.textContent = enrollments.filter(
@@ -395,14 +410,13 @@
               ? courses
                   .map(
                     (course) => `
-                 <div class="course-card-2">
-                   <h4>${course.title}</h4>
-                   <p>${course.description}</p>
-                   <p>Duration: ${course.duration}>
-                     </p>
-                     <a href="/${course.slug}" class="course-btn">View Course</a>
-                   </div>
-                 `
+           <div class="course-card-2">
+             <h4>${course.title}</h4>
+             <p>${course.description}</p>
+             <p>Duration: ${course.duration}</p>
+             <a href="/${course.slug}" class="course-btn">View Course</a>
+           </div>
+         `
                   )
                   .join("")
               : "<p>No recommended courses available.</p>";
@@ -426,6 +440,25 @@
           if (loadingOverlay) loadingOverlay.style.display = "none";
         }
       });
+      async function logout() {
+        try {
+          const response = await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+
+          if (response.ok) {
+            localStorage.removeItem("user");
+            alert("Logged out successfully.");
+            window.location.href = "/signup";
+          } else {
+            alert("Failed to log out. Please try again.");
+          }
+        } catch (error) {
+          console.error("Logout Error:", error);
+          alert("Network error during logout.");
+        }
+      }
     </script>
     <script src="/js/sidebar.js"></script>
   </body>

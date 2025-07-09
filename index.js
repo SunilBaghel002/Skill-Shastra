@@ -433,10 +433,14 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
 const protect = async (req, res, next) => {
   const token = req.cookies.token;
   const isApiRoute = req.originalUrl.startsWith("/api/");
+  const isSignupRoute = req.originalUrl.startsWith("/signup");
 
   if (!token) {
     if (isApiRoute) {
       return res.status(401).json({ message: "No token provided" });
+    }
+    if (isSignupRoute) {
+      return next(); // Avoid redirect loop
     }
     console.log(
       `No token provided, redirecting to /signup from ${req.originalUrl}`
@@ -456,6 +460,9 @@ const protect = async (req, res, next) => {
       if (isApiRoute) {
         return res.status(401).json({ message: "Unauthorized" });
       }
+      if (isSignupRoute) {
+        return next(); // Avoid redirect loop
+      }
       console.log(
         `Unauthorized user, redirecting to /signup from ${req.originalUrl}`
       );
@@ -469,6 +476,9 @@ const protect = async (req, res, next) => {
     res.clearCookie("token");
     if (isApiRoute) {
       return res.status(401).json({ message: "Invalid token" });
+    }
+    if (isSignupRoute) {
+      return next(); // Avoid redirect loop
     }
     console.log(
       `Invalid token, redirecting to /signup from ${req.originalUrl}`
@@ -587,7 +597,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge:  24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
 
@@ -662,10 +672,10 @@ app.post("/api/auth/login", async (req, res) => {
     res.cookie("token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge:  24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
-  
+
     res.status(200).json({
       user: {
         name: user.name,
@@ -747,6 +757,24 @@ app.post("/api/auth/reset-password", async (req, res) => {
   } catch (error) {
     console.error("Reset Password Error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Add this route after other auth routes
+app.get("/api/auth/validate-session", protect, async (req, res) => {
+  try {
+    res.status(200).json({
+      message: "Session is valid",
+      user: {
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        profileImage: req.user.profileImage,
+      },
+    });
+  } catch (error) {
+    console.error("Session Validation Error:", error);
+    res.status(401).json({ message: "Invalid or expired session" });
   }
 });
 
