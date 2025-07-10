@@ -200,10 +200,36 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        position: relative;
       }
       .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
+      }
+      .btn:disabled {
+        background: #a3a3a3;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      .btn .spinner {
+        display: none;
+        border: 2px solid #ffffff;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .btn.loading .spinner {
+        display: inline-block;
+      }
+      .btn.loading span {
+        visibility: hidden;
       }
       .error-message,
       .success-message {
@@ -244,6 +270,7 @@
         font-size: 0.9rem;
         color: #6b7280;
         margin-bottom: 0.5rem;
+        white-space: pre-wrap; /* Preserve whitespace and line breaks */
       }
       .announcement-card .actions {
         margin-top: 1rem;
@@ -260,6 +287,34 @@
       }
       .btn-delete:hover {
         box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+      }
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+      }
+      .loading-overlay .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #7c3aed;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
       @media (max-width: 768px) {
         body {
@@ -280,6 +335,9 @@
   </head>
   <body>
     <%- include('../partials/sidebar') %>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="spinner"></div>
+    </div>
     <main class="main-content" id="main-content">
       <!-- Hero Section -->
       <section class="hero-section">
@@ -339,7 +397,10 @@
                 <option value="event">Event</option>
               </select>
             </div>
-            <button type="submit" class="btn">Post Announcement</button>
+            <button type="submit" class="btn" id="submitButton">
+              <span>Post Announcement</span>
+              <div class="spinner"></div>
+            </button>
           </form>
         </div>
       </section>
@@ -355,8 +416,15 @@
       <%- include('../partials/footer') %>
     </main>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user && user.expiresAt && user.expiresAt < Date.now()) {
+          localStorage.removeItem("user");
+          alert("Session expired. Please log in again.");
+          window.location.href = "/signup?redirect=/admin/announcements";
+          return;
+        }
+
         if (!user.name || !user.email) {
           alert("Please log in to access this page.");
           window.location.href =
@@ -364,18 +432,45 @@
           return;
         }
 
-        const sidebar = document.querySelector(".sidebar");
-        const mainContent = document.querySelector(".main-content");
-        if (sidebar && mainContent) {
-          if (sidebar.classList.contains("hidden")) {
-            mainContent.classList.add("full");
-          }
-          sidebar.addEventListener("transitionend", () => {
-            mainContent.classList.toggle(
-              "full",
-              sidebar.classList.contains("hidden")
-            );
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) loadingOverlay.style.display = "flex";
+
+        try {
+          // Validate session
+          const sessionRes = await fetch("/api/auth/validate-session", {
+            credentials: "include",
           });
+
+          if (!sessionRes.ok) {
+            localStorage.removeItem("user");
+            alert("Session expired. Please log in again.");
+            window.location.href =
+              "/signup?redirect=" +
+              encodeURIComponent(window.location.pathname);
+            return;
+          }
+
+          const sidebar = document.querySelector(".sidebar");
+          const mainContent = document.querySelector(".main-content");
+          if (sidebar && mainContent) {
+            if (sidebar.classList.contains("hidden")) {
+              mainContent.classList.add("full");
+            }
+            sidebar.addEventListener("transitionend", () => {
+              mainContent.classList.toggle(
+                "full",
+                sidebar.classList.contains("hidden")
+              );
+            });
+          }
+        } catch (error) {
+          console.error("Session Validation Error:", error);
+          localStorage.removeItem("user");
+          alert("Network error. Please log in again.");
+          window.location.href =
+            "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+        } finally {
+          if (loadingOverlay) loadingOverlay.style.display = "none";
         }
       });
     </script>
@@ -383,3 +478,4 @@
     <script src="/js/announcements.js"></script>
   </body>
 </html>
+

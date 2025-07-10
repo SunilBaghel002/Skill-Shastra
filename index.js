@@ -1122,14 +1122,16 @@ app.post(
 // Get Enrollments Route
 app.get("/api/enrollments", protect, async (req, res) => {
   try {
-    const enrollments = await Enrollment.find({ userId: req.user._id }).select(
-      "course status paymentProof"
-    );
-    res
-      .status(200)
-      .json({ message: "Enrollments fetched successfully", enrollments });
+    const enrollments = await Enrollment.find({
+      userId: req.user._id,
+      status: "approved",
+    }).select("course").lean();
+    res.status(200).json({ message: "Enrollments fetched successfully", enrollments });
   } catch (error) {
-    console.error("Error fetching enrollments:", error);
+    console.error("Fetch Enrollments Error:", {
+      message: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: "Server error" });
   }
 });

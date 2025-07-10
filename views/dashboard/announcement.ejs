@@ -188,6 +188,35 @@
         font-size: 0.9rem;
         color: #6b7280;
         margin-bottom: 0.5rem;
+        white-space: pre-wrap; /* Preserve whitespace and line breaks */
+      }
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+      }
+      .loading-overlay .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #7c3aed;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
       @media (max-width: 768px) {
         body {
@@ -207,6 +236,9 @@
   </head>
   <body>
     <%- include('../partials/sidebar') %>
+    <div class="loading-overlay" id="loading-overlay">
+      <div class="spinner"></div>
+    </div>
     <main class="main-content" id="main-content">
       <!-- Hero Section -->
       <section class="hero-section">
@@ -229,8 +261,15 @@
       <%- include('../partials/footer') %>
     </main>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user && user.expiresAt && user.expiresAt < Date.now()) {
+          localStorage.removeItem("user");
+          alert("Session expired. Please log in again.");
+          window.location.href = "/signup?redirect=/dashboard/announcement";
+          return;
+        }
+
         if (!user.name || !user.email) {
           alert("Please log in to access this page.");
           window.location.href =
@@ -238,22 +277,49 @@
           return;
         }
 
-        const sidebar = document.querySelector(".sidebar");
-        const mainContent = document.querySelector(".main-content");
-        if (sidebar && mainContent) {
-          if (sidebar.classList.contains("hidden")) {
-            mainContent.classList.add("full");
-          }
-          sidebar.addEventListener("transitionend", () => {
-            mainContent.classList.toggle(
-              "full",
-              sidebar.classList.contains("hidden")
-            );
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) loadingOverlay.style.display = "flex";
+
+        try {
+          // Validate session
+          const sessionRes = await fetch("/api/auth/validate-session", {
+            credentials: "include",
           });
+
+          if (!sessionRes.ok) {
+            localStorage.removeItem("user");
+            alert("Session expired. Please log in again.");
+            window.location.href =
+              "/signup?redirect=" +
+              encodeURIComponent(window.location.pathname);
+            return;
+          }
+
+          const sidebar = document.querySelector(".sidebar");
+          const mainContent = document.querySelector(".main-content");
+          if (sidebar && mainContent) {
+            if (sidebar.classList.contains("hidden")) {
+              mainContent.classList.add("full");
+            }
+            sidebar.addEventListener("transitionend", () => {
+              mainContent.classList.toggle(
+                "full",
+                sidebar.classList.contains("hidden")
+              );
+            });
+          }
+        } catch (error) {
+          console.error("Session Validation Error:", error);
+          localStorage.removeItem("user");
+          alert("Network error. Please log in again.");
+          window.location.href =
+            "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+        } finally {
+          if (loadingOverlay) loadingOverlay.style.display = "none";
         }
       });
     </script>
     <script src="/js/sidebar.js"></script>
-    <script src="/js/announcements.js"></script>
+    <script src="/js/user-announcements.js"></script>
   </body>
 </html>
