@@ -11,7 +11,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     "Backend Development": "Backend Development",
     "Full Stack Development": "Full Stack Development",
     "Digital Marketing": "Digital Marketing",
-    "Data Science": "Data Science",
+    "JavaScript Programming": "JavaScript Programming",
+    "Java Programming": "Java Programming",
+    "Python Programming": "Python Programming",
+    "C++ Programming": "C++ Programming",
+    "Programming Fundamentals": "Programming Fundamentals",
+    "Gen AI": "Gen AI",
   };
 
   // Map announcement types to display names

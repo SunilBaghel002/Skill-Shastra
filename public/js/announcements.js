@@ -9,11 +9,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Map targetAudience values to display names
   const audienceDisplayMap = {
     all: "All Users",
-    frontend: "Frontend Development",
-    backend: "Backend Development",
-    "full-stack": "Full Stack Development",
-    "digital-marketing": "Digital Marketing",
-    "data-science": "Data Science",
+    "Frontend Development": "Frontend Development",
+    "Backend Development": "Backend Development",
+    "Full Stack Development": "Full Stack Development",
+    "Digital Marketing": "Digital Marketing",
+    "JavaScript Programming": "JavaScript Programming",
+    "Java Programming": "Java Programming",
+    "Python Programming": "Python Programming",
+    "C++ Programming": "C++ Programming",
+    "Programming Fundamentals": "Programming Fundamentals",
+    "Gen AI": "Gen AI",
   };
 
   // Map announcement types to display names

@@ -161,11 +161,16 @@ const announcementSchema = new mongoose.Schema({
     required: true,
     enum: [
       "all",
-      "frontend",
-      "backend",
-      "full-stack",
-      "digital-marketing",
-      "data-science",
+      "Frontend Development",
+      "Backend Development",
+      "Full Stack Development",
+      "Digital Marketing",
+      "JavaScript Programming",
+      "Java Programming",
+      "Python Programming",
+      "C++ Programming",
+      "Programming Fundamentals",
+      "Gen AI",
     ],
   },
   announcementType: {
@@ -996,12 +1001,6 @@ app.get("/api/courses/recommended", protect, async (req, res) => {
         duration: "4 weeks",
         slug: "digital-marketing",
       },
-      {
-        title: "Data Science",
-        description: "Explore Python, Pandas, and ML.",
-        duration: "8 weeks",
-        slug: "data-science",
-      },
     ];
     res.status(200).json({ courses: recommendedCourses });
   } catch (error) {
@@ -1196,11 +1195,16 @@ app.post(
       // Validate targetAudience against schema enum
       const validAudiences = [
         "all",
-        "frontend",
-        "backend",
-        "full-stack",
-        "digital-marketing",
-        "data-science",
+        "Frontend Development",
+        "Backend Development",
+        "Full Stack Development",
+        "Digital Marketing",
+        "JavaScript Programming",
+        "Java Programming",
+        "Python Programming",
+        "C++ Programming",
+        "Programming Fundamentals",
+        "Gen AI",
       ];
       if (!validAudiences.includes(targetAudience)) {
         console.log(`Invalid targetAudience: ${targetAudience}`);
@@ -1230,11 +1234,17 @@ app.post(
       } else {
         // Map targetAudience to course names for enrollment lookup
         const audienceToCourseMap = {
-          frontend: "Front End Development",
-          backend: "Back End Development",
-          "full-stack": "Full Stack Development",
-          "digital-marketing": "Digital Marketing",
-          "data-science": "Data Science",
+          all: "All Users",
+          "Frontend Development": "Frontend Development",
+          "Backend Development": "Backend Development",
+          "Full Stack Development": "Full Stack Development",
+          "Digital Marketing": "Digital Marketing",
+          "JavaScript Programming": "JavaScript Programming",
+          "Java Programming": "Java Programming",
+          "Python Programming": "Python Programming",
+          "C++ Programming": "C++ Programming",
+          "Programming Fundamentals": "Programming Fundamentals",
+          "Gen AI": "Gen AI",
         };
         const course = audienceToCourseMap[targetAudience];
         if (course) {
