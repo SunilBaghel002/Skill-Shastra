@@ -5,14 +5,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Messages | Skill Shastra</title>
-  <meta name="description" content="Manage and send messages to users and admins at Skill Shastra." />
+  <meta name="description" content="Admin messaging interface for Skill Shastra." />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon" />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/sidebar.css" />
-  <link rel="stylesheet" href="/css/footer.css" />
   <style>
     * {
       margin: 0;
@@ -25,26 +24,47 @@
       background: #f3f4f6;
       margin-left: 280px;
       transition: margin-left 0.3s ease;
-      min-height: 100vh;
+      max-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       overflow-x: hidden;
     }
 
-    .main-content.full {
+    .main-content {
       margin-left: 0;
+      width: 100%;
+      animation: ColorChanger 10s ease-in 0s infinite alternate;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    @keyframes ColorChanger {
+      0% {
+        background-color: #7c3aed;
+      }
+
+      20% {
+        background-color: #a855f7;
+      }
+
+      50% {
+        background-color: #ec4899;
+      }
+
+      100% {
+        background-color: #f472b6;
+      }
     }
 
     .chat-container {
       width: 100%;
-      max-width: 1024px;
-      margin: 2rem auto;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 0px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
       display: flex;
-      height: 700px;
+      height: 100%;
+      max-height: 100vh;
     }
 
     .user-list-container {
@@ -65,6 +85,24 @@
       font-size: 1.5rem;
       font-weight: 700;
       color: #1f2937;
+    }
+
+    .search-container {
+      padding: 0.5rem 1.5rem;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px #818cf8;
     }
 
     .category-tabs {
@@ -137,8 +175,14 @@
       color: #6b7280;
     }
 
-    .user-item .unread-count {
+    .user-item .message-time {
+      font-size: 0.75rem;
+      color: #6b7280;
       margin-left: auto;
+    }
+
+    .user-item .unread-count {
+      margin-left: 0.5rem;
       background: #3b82f6;
       color: #ffffff;
       font-size: 0.75rem;
@@ -189,26 +233,66 @@
     }
 
     .chat-header .actions {
-      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .chat-header .actions button {
-      color: #6b7280;
-      background: none;
+    .action-button {
+      background: #4f46e5;
+      color: #ffffff;
       border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      font-size: 1.5rem;
-      margin-left: 0.5rem;
+      transition: background 0.2s;
     }
 
-    .chat-header .actions button:hover {
-      color: #374151;
+    .action-button:hover {
+      background: #4338ca;
+    }
+
+    .action-button.back-button {
+      background: #6b7280;
+      display: none;
+    }
+
+    .action-button.back-button:hover {
+      background: #4b5563;
+    }
+
+    .search-bar {
+      display: none;
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50%;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 9999px;
+      padding: 0.5rem 1rem;
+    }
+
+    .search-bar.active {
+      display: block;
+    }
+
+    .search-bar input {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 0.875rem;
     }
 
     .dropdown-menu {
       position: absolute;
-      top: 2.5rem;
-      right: 0;
+      top: 3rem;
+      right: 1rem;
       background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 8px;
@@ -241,26 +325,29 @@
       flex: 1;
       padding: 1.5rem;
       background: #f9fafb;
+      background-image: url('/images/chat-background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       overflow-y: auto;
     }
 
     .date-header {
       text-align: center;
-      margin: 1rem 0;
+      margin: 1rem auto;
       font-size: 0.875rem;
       color: #6b7280;
       background: #ffffff;
       padding: 0.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      position: sticky;
-      top: 0;
-      z-index: 1;
+      width: fit-content;
     }
 
     .message {
       margin-bottom: 1rem;
       display: flex;
+      position: relative;
     }
 
     .message.sent {
@@ -275,6 +362,7 @@
       max-width: 300px;
       padding: 0.75rem;
       border-radius: 8px;
+      position: relative;
     }
 
     .message.sent .message-content {
@@ -297,6 +385,12 @@
       cursor: pointer;
     }
 
+    .message-content audio {
+      width: 100%;
+      max-width: 200px;
+      margin-top: 0.5rem;
+    }
+
     .message-content .timestamp {
       font-size: 0.75rem;
       margin-top: 0.25rem;
@@ -311,16 +405,39 @@
       color: #6b7280;
     }
 
+    .read-receipt {
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.5rem;
+      display: flex;
+      gap: 2px;
+    }
+
+    .read-receipt .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+
+    .read-receipt.read .dot {
+      background: #4f46e5;
+    }
+
     .message-input-container {
       padding: 1rem;
       background: #ffffff;
       border-top: 1px solid #e5e7eb;
       border-radius: 0 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .message-input-container .input-wrapper {
       display: flex;
       align-items: center;
+      flex: 1;
     }
 
     .message-input {
@@ -337,32 +454,34 @@
       box-shadow: 0 0 0 2px #818cf8;
     }
 
-    .attach-button {
-      margin-left: 0.5rem;
-      background: none;
-      border: none;
-      color: #6b7280;
-      font-size: 1.5rem;
-      cursor: pointer;
-    }
-
-    .attach-button:hover {
-      color: #374151;
-    }
-
+    .attach-button,
+    .voice-button,
     .send-button {
-      margin-left: 0.5rem;
       background: #4f46e5;
       color: #ffffff;
-      padding: 0.75rem;
-      border-radius: 9999px;
       border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
       transition: background 0.2s;
     }
 
+    .voice-button.recording {
+      background: #ef4444;
+    }
+
+    .attach-button:hover,
+    .voice-button:hover,
     .send-button:hover {
       background: #4338ca;
+    }
+
+    .voice-button.recording:hover {
+      background: #dc2626;
     }
 
     .toast {
@@ -458,18 +577,43 @@
       .chat-container {
         flex-direction: column;
         height: auto;
-        margin: 1rem;
+        margin: 0;
       }
 
       .user-list-container {
         width: 100%;
         border-right: none;
-        border-bottom: 1px solid #e5e7eb;
-        border-radius: 16px 16px 0 0;
+        border-bottom: none;
+        border-radius: 0;
+        display: block;
       }
 
       .chat-window-container {
         width: 100%;
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: #ffffff;
+      }
+
+      .chat-window-container.active {
+        display: flex;
+      }
+
+      .action-button.back-button {
+        display: flex;
+      }
+    }
+
+    @media (min-width: 769px) {
+      .chat-window-container {
+        display: flex;
+      }
+
+      .user-list-container {
+        display: flex;
       }
     }
   </style>
@@ -479,9 +623,12 @@
   <%- include('../partials/sidebar') %>
     <main class="main-content" id="main-content">
       <div class="chat-container">
-        <div class="user-list-container">
+        <div class="user-list-container" id="userListContainer">
           <div class="user-list-header">
-            <h2>Messages</h2>
+            <h2>Messages (Admin)</h2>
+          </div>
+          <div class="search-container">
+            <input type="text" id="searchUsersInput" class="search-input" placeholder="Search users..." />
           </div>
           <div class="category-tabs">
             <div class="category-tab active" data-category="all">All</div>
@@ -490,9 +637,12 @@
           </div>
           <div class="user-list" id="userList"></div>
         </div>
-        <div class="chat-window-container">
+        <div class="chat-window-container" id="chatWindowContainer">
           <div class="chat-header">
             <div class="user-info" id="chatHeaderUser">
+              <button class="action-button back-button" id="backButton">
+                <span class="material-icons">arrow_back</span>
+              </button>
               <img src="https://www.gravatar.com/avatar/?d=retro" alt="User avatar" id="chatHeaderAvatar" />
               <div>
                 <h3 id="chatHeaderName">Select a user</h3>
@@ -500,8 +650,15 @@
               </div>
             </div>
             <div class="actions">
-              <button><span class="material-icons">search</span></button>
-              <button id="moreOptions" class="more-options"><span class="material-icons">more_vert</span></button>
+              <button class="action-button" id="searchButton">
+                <span class="material-icons">search</span>
+              </button>
+              <div class="search-bar" id="searchMessagesBar">
+                <input type="text" id="searchMessagesInput" placeholder="Search messages..." />
+              </div>
+              <button class="action-button" id="moreOptions">
+                <span class="material-icons">more_vert</span>
+              </button>
               <div class="dropdown-menu" id="dropdownMenu">
                 <button id="toggleFavoriteBtn">Add to Favorites</button>
                 <button id="clearChatsBtn">Clear Chats</button>
@@ -511,29 +668,35 @@
           </div>
           <div class="chat-body" id="chatWindow"></div>
           <div class="message-input-container">
+            <button class="attach-button" id="attachButton">
+              <span class="material-icons">attach_file</span>
+            </button>
+            <input type="file" id="imageInput" accept="image/png,image/jpeg" style="display: none;" />
+            <input type="file" id="audioInput" accept="audio/mpeg,audio/wav,audio/webm" style="display: none;" />
+            <button class="voice-button" id="voiceButton">
+              <span class="material-icons">mic</span>
+            </button>
             <div class="input-wrapper">
-              <button class="attach-button" id="attachButton"><span class="material-icons">attach_file</span></button>
-              <input type="file" id="imageInput" accept="image/png,image/jpeg" style="display: none;" />
               <input type="text" id="messageInput" class="message-input" placeholder="Type your message..." />
-              <button id="sendButton" class="send-button"><span class="material-icons">send</span></button>
             </div>
+            <button id="sendButton" class="send-button">
+              <span class="material-icons">send</span>
+            </button>
           </div>
         </div>
-      </div>
-      <div id="toast" class="toast"></div>
-      <div id="profileModal" class="modal">
-        <div class="modal-content">
-          <img id="modalAvatar" src="https://www.gravatar.com/avatar/?d=retro" alt="User avatar" />
-          <h2 id="modalName"></h2>
-          <p id="modalEmail"></p>
-          <p id="modalRole"></p>
-          <button id="closeModal">Close</button>
+        <div id="toast" class="toast"></div>
+        <div id="profileModal" class="modal">
+          <div class="modal-content">
+            <img id="modalAvatar" src="https://www.gravatar.com/avatar/?d=retro" alt="User avatar" />
+            <h2 id="modalName"></h2>
+            <p id="modalEmail"></p>
+            <p id="modalRole"></p>
+            <button id="closeModal">Close</button>
+          </div>
         </div>
-      </div>
-      <div id="imageModal" class="image-modal">
-        <img id="enlargedImage" src="" alt="Enlarged image" />
-      </div>
-      <%- include('../partials/footer') %>
+        <div id="imageModal" class="image-modal">
+          <img id="enlargedImage" src="" alt="Enlarged image" />
+        </div>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
@@ -548,6 +711,13 @@
           showToast("Please log in to access this page.");
           setTimeout(() => {
             window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+          }, 1000);
+          return;
+        }
+        if (user.role !== "admin") {
+          showToast("This page is for admins only.");
+          setTimeout(() => {
+            window.location.href = "/";
           }, 1000);
           return;
         }
@@ -569,7 +739,7 @@
           reconnection: true,
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,
-          maxHttpBufferSize: 10 * 1024 * 1024, // Increased to 10MB for base64 images
+          maxHttpBufferSize: 10 * 1024 * 1024,
         });
 
         const userList = document.getElementById("userList");
@@ -577,7 +747,9 @@
         const messageInput = document.getElementById("messageInput");
         const sendButton = document.getElementById("sendButton");
         const attachButton = document.getElementById("attachButton");
+        const voiceButton = document.getElementById("voiceButton");
         const imageInput = document.getElementById("imageInput");
+        const audioInput = document.getElementById("audioInput");
         const chatHeaderName = document.getElementById("chatHeaderName");
         const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
         const moreOptions = document.getElementById("moreOptions");
@@ -589,10 +761,21 @@
         const closeModal = document.getElementById("closeModal");
         const imageModal = document.getElementById("imageModal");
         const enlargedImage = document.getElementById("enlargedImage");
+        const userListContainer = document.getElementById("userListContainer");
+        const chatWindowContainer = document.getElementById("chatWindowContainer");
+        const backButton = document.getElementById("backButton");
+        const searchButton = document.getElementById("searchButton");
+        const searchMessagesBar = document.getElementById("searchMessagesBar");
+        const searchMessagesInput = document.getElementById("searchMessagesInput");
+        const searchUsersInput = document.getElementById("searchUsersInput");
         let selectedUserId = localStorage.getItem("selectedUserId") || null;
         let currentCategory = "all";
-        let pendingMessages = [];
         let isFavorite = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let sentMessageIds = new Set(); // Track sent message IDs to prevent duplicates
+        let isSending = false; // Prevent concurrent sends
+        let currentMessages = []; // Store messages for search
 
         function showToast(message) {
           const toast = document.getElementById("toast");
@@ -601,43 +784,174 @@
           setTimeout(() => (toast.style.display = "none"), 3000);
         }
 
-        function sendMessage(content, messageType = "text", retryCount = 0) {
+        function formatMessageTime(timestamp) {
+          const now = new Date();
+          const messageDate = new Date(timestamp);
+          const diffDays = Math.floor((now - messageDate) / (1000 * 60 * 60 * 24));
+          const isSameWeek = Math.floor((now.getDay() + 6) / 7) === Math.floor((messageDate.getDay() + 6) / 7);
+
+          if (diffDays === 0) {
+            return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          } else if (diffDays === 1) {
+            return "Yesterday";
+          } else if (isSameWeek) {
+            return messageDate.toLocaleString('en-US', { weekday: 'long' });
+          } else {
+            return messageDate.toLocaleDateString();
+          }
+        }
+
+        function debounce(func, wait) {
+          let timeout;
+          return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+          };
+        }
+
+        function appendMessage(isSent, senderName, content, timestamp, messageId, messageType, isRead, fileMetadata) {
+          if (document.getElementById(`message-${messageId}`)) {
+            console.log("Message already exists, skipping:", messageId);
+            return;
+          }
+          const messageDate = new Date(timestamp);
+          const lastDate = chatWindow.dataset.lastDate ? new Date(chatWindow.dataset.lastDate) : null;
+          const dateString = messageDate.toDateString();
+          if (!lastDate || lastDate.toDateString() !== dateString) {
+            const dateHeader = document.createElement("div");
+            dateHeader.className = "date-header";
+            dateHeader.textContent = formatMessageTime(timestamp);
+            chatWindow.appendChild(dateHeader);
+            chatWindow.dataset.lastDate = messageDate;
+          }
+
+          const messageDiv = document.createElement("div");
+          messageDiv.className = `message ${isSent ? "sent" : "received"}`;
+          messageDiv.id = `message-${messageId}`;
+          let contentHtml;
+          if (messageType === "image" || content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".jpg") || content.endsWith(".png") || content.endsWith(".jpeg"))) {
+            contentHtml = `<img src="${DOMPurify.sanitize(content)}" alt="Image message" />`;
+          } else if (messageType === "audio" || content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".mp3") || content.endsWith(".wav") || content.endsWith(".webm"))) {
+            contentHtml = `<audio controls><source src="${DOMPurify.sanitize(content)}" type="${fileMetadata?.fileType || 'audio/webm'}"></audio>`;
+          } else {
+            contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
+          }
+          messageDiv.innerHTML = `
+            <div class="message-content">
+              ${contentHtml}
+              <span class="timestamp">${formatMessageTime(timestamp)}</span>
+              ${isSent ? `<div class="read-receipt ${isRead ? 'read' : ''}"><span class="dot"></span><span class="dot"></span></div>` : ''}
+            </div>
+          `;
+          chatWindow.appendChild(messageDiv);
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function displayMessages(messages) {
+          chatWindow.innerHTML = "";
+          chatWindow.dataset.lastDate = null;
+          messages.forEach(msg => {
+            appendMessage(
+              msg.sender._id === userId,
+              msg.sender.name,
+              msg.content,
+              msg.createdAt,
+              msg._id,
+              msg.messageType || "text",
+              msg.isRead,
+              msg.fileMetadata
+            );
+          });
+        }
+
+        function sendMessage(content, messageType = "text", fileMetadata = {}, retryCount = 0) {
           if (!selectedUserId || !content) {
-            showToast("Please select a user and enter a message or select an image.");
+            showToast("Please select a user and enter a message or select a file.");
             console.log("Send failed: selectedUserId =", selectedUserId, "content =", content);
             return;
           }
-
-          if (messageType === "image") {
-            const base64Size = (content.length * 3) / 4 / 1024 / 1024; // Approximate MB
-            console.log(`Image base64 size: ${base64Size.toFixed(2)}MB, Type: ${messageType}`);
-            if (base64Size > 5) {
-              showToast("Image size exceeds 5MB after encoding.");
-              console.log("Image too large after encoding:", base64Size.toFixed(2), "MB");
-              return;
-            }
+          if (isSending) {
+            console.log("Send skipped: Another message is being sent");
+            return;
           }
+          isSending = true;
 
-          console.log(`Sending message to ${selectedUserId}, Type: ${messageType}, Content length: ${content.length}, Retry: ${retryCount}`);
-          socket.emit("sendMessage", { receiverId: selectedUserId, content, messageType }, (response) => {
+          const tempMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          if (sentMessageIds.has(tempMessageId)) {
+            console.log("Send skipped: Message already sent", tempMessageId);
+            isSending = false;
+            return;
+          }
+          sentMessageIds.add(tempMessageId);
+
+          socket.emit("getUsers", (response) => {
             if (response.status === "success") {
-              messageInput.value = "";
-              imageInput.value = "";
-              console.log(`Message sent successfully: ${messageType}, ID: ${response.messageId}`);
-            } else {
-              console.error("Send message failed:", response.message, "Response:", response);
-              showToast(`Failed to send ${messageType}: ${response.message}`);
-              if (retryCount < 2 && messageType === "image") {
-                console.log(`Retrying image send, attempt ${retryCount + 1}`);
-                setTimeout(() => sendMessage(content, messageType, retryCount + 1), 2000);
+              const selectedUser = response.users.find(u => u._id === selectedUserId);
+              if (selectedUser) {
+                if (messageType === "image" || messageType === "audio") {
+                  const base64Size = (content.length * 3) / 4 / 1024 / 1024;
+                  console.log(`File base64 size: ${base64Size.toFixed(2)}MB, Type: ${messageType}, File: ${fileMetadata.fileName}`);
+                  if (base64Size > 5) {
+                    showToast(`${messageType} size exceeds 5MB after encoding.`);
+                    console.log(`${messageType} too large after encoding:`, base64Size.toFixed(2), "MB");
+                    sentMessageIds.delete(tempMessageId);
+                    isSending = false;
+                    return;
+                  }
+                }
+
+                console.log(`Sending ${messageType} to ${selectedUserId}, Content length: ${content.length}, Temp ID: ${tempMessageId}`);
+                socket.emit("sendMessage", {
+                  receiverId: selectedUserId,
+                  content,
+                  messageType,
+                  fileName: fileMetadata.fileName || "file",
+                  fileSize: fileMetadata.fileSize || 0,
+                  fileType: fileMetadata.fileType || "",
+                }, (response) => {
+                  isSending = false;
+                  if (response.status === "success") {
+                    messageInput.value = "";
+                    imageInput.value = "";
+                    audioInput.value = "";
+                    console.log(`${messageType} sent successfully: ID: ${response.messageId}`);
+                    sentMessageIds.delete(tempMessageId);
+                    socket.emit("getMessages", { userId: selectedUserId }, (msgResponse) => {
+                      if (msgResponse.status === "success") {
+                        displayMessages(msgResponse.messages);
+                      } else {
+                        showToast("Failed to refresh messages: " + msgResponse.message);
+                        console.error("Refresh messages failed:", msgResponse.message);
+                      }
+                    });
+                  } else {
+                    console.error(`Send ${messageType} failed:`, response.message, "Response:", response);
+                    showToast(`Failed to send ${messageType}: ${response.message}`);
+                    sentMessageIds.delete(tempMessageId);
+                    if (retryCount < 2 && (messageType === "image" || messageType === "audio")) {
+                      console.log(`Retrying ${messageType} send, attempt ${retryCount + 1}`);
+                      setTimeout(() => sendMessage(content, messageType, fileMetadata, retryCount + 1), 2000);
+                    } else {
+                      showToast(`Failed to send ${messageType} after ${retryCount + 1} attempts: ${response.message}`);
+                    }
+                  }
+                });
               } else {
-                showToast(`Failed to send ${messageType} after ${retryCount + 1} attempts: ${response.message}`);
+                showToast("Selected user not found.");
+                console.error("Send failed: selected user not found");
+                sentMessageIds.delete(tempMessageId);
+                isSending = false;
               }
+            } else {
+              showToast("Failed to verify user: " + response.message);
+              console.error("Verify user failed:", response.message);
+              sentMessageIds.delete(tempMessageId);
+              isSending = false;
             }
           });
         }
 
-        sendButton.addEventListener("click", () => sendMessage(messageInput.value.trim()));
+        sendButton.addEventListener("click", debounce(() => sendMessage(messageInput.value.trim()), 300));
 
         messageInput.addEventListener("keypress", (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -646,7 +960,16 @@
           }
         });
 
-        attachButton.addEventListener("click", () => imageInput.click());
+        attachButton.addEventListener("click", () => {
+          const fileType = prompt("Select file type: 'image' or 'audio'");
+          if (fileType === "image") {
+            imageInput.click();
+          } else if (fileType === "audio") {
+            audioInput.click();
+          } else {
+            showToast("Invalid file type selected.");
+          }
+        });
 
         imageInput.addEventListener("change", () => {
           const file = imageInput.files[0];
@@ -665,13 +988,118 @@
             const reader = new FileReader();
             reader.onload = () => {
               const base64 = reader.result;
-              sendMessage(base64, "image");
+              sendMessage(base64, "image", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+              });
             };
             reader.onerror = () => {
               showToast("Failed to read image file.");
               console.error("FileReader error:", reader.error);
             };
             reader.readAsDataURL(file);
+          }
+        });
+
+        audioInput.addEventListener("change", () => {
+          const file = audioInput.files[0];
+          if (file) {
+            if (!["audio/mpeg", "audio/wav", "audio/webm"].includes(file.type)) {
+              showToast("Only MP3, WAV, and WebM audio files are allowed.");
+              console.log("Invalid file type:", file.type);
+              return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Audio size must be less than 5MB.");
+              console.log("File too large:", file.size / 1024 / 1024, "MB");
+              return;
+            }
+            console.log(`Selected audio: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "audio", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+              });
+            };
+            reader.onerror = () => {
+              showToast("Failed to read audio file.");
+              console.error("FileReader error:", reader.error);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        voiceButton.addEventListener("mousedown", () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Voice recording is not supported in this browser.");
+            console.error("Voice recording not supported");
+            return;
+          }
+          navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+              mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+              audioChunks = [];
+              mediaRecorder.start();
+              voiceButton.classList.add("recording");
+              console.log("Started recording audio/webm;codecs=opus");
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                  audioChunks.push(e.data);
+                }
+              };
+              mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                if (audioBlob.size > 5 * 1024 * 1024) {
+                  showToast("Voice message size must be less than 5MB.");
+                  console.log("Audio too large:", audioBlob.size / 1024 / 1024, "MB");
+                  stream.getTracks().forEach(track => track.stop());
+                  voiceButton.classList.remove("recording");
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const base64 = reader.result;
+                  sendMessage(base64, "audio", {
+                    fileName: `voice_${Date.now()}.webm`,
+                    fileSize: audioBlob.size,
+                    fileType: "audio/webm",
+                  });
+                };
+                reader.onerror = () => {
+                  showToast("Failed to process voice message.");
+                  console.error("FileReader error:", reader.error);
+                };
+                reader.readAsDataURL(audioBlob);
+                stream.getTracks().forEach(track => track.stop());
+                voiceButton.classList.remove("recording");
+                console.log("Stopped recording");
+              };
+              mediaRecorder.onerror = (e) => {
+                showToast("Error recording audio: " + e.error);
+                console.error("MediaRecorder error:", e.error);
+                stream.getTracks().forEach(track => track.stop());
+                voiceButton.classList.remove("recording");
+              };
+            })
+            .catch(err => {
+              showToast("Failed to access microphone: " + err.message);
+              console.error("Microphone access error:", err);
+            });
+        });
+
+        voiceButton.addEventListener("mouseup", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+        });
+
+        voiceButton.addEventListener("mouseleave", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
           }
         });
 
@@ -693,10 +1121,20 @@
                 toggleFavoriteBtn.textContent = isFavorite ? "Remove from Favorites" : "Add to Favorites";
                 showToast(isFavorite ? "Added to Favorites" : "Removed from Favorites");
                 socket.emit("getUsers", (res) => {
-                  if (res.status === "success") updateUserList(res.users);
+                  if (res.status === "success") {
+                    updateUserList(res.users);
+                    if (selectedUserId) {
+                      const user = res.users.find(u => u._id === selectedUserId);
+                      if (user) selectUser(user);
+                    }
+                  } else {
+                    showToast("Failed to refresh user list: " + res.message);
+                    console.error("Refresh user list failed:", res.message);
+                  }
                 });
               } else {
                 showToast("Failed to toggle favorite: " + response.message);
+                console.error("Toggle favorite failed:", response.message);
               }
             });
           } else {
@@ -714,6 +1152,7 @@
                   chatWindow.dataset.lastDate = null;
                 } else {
                   showToast("Failed to clear chats: " + response.message);
+                  console.error("Clear chats failed:", response.message);
                 }
               });
             }
@@ -733,6 +1172,7 @@
                 profileModal.style.display = "flex";
               } else {
                 showToast("Failed to fetch profile: " + response.message);
+                console.error("Fetch profile failed:", response.message);
               }
             });
           } else {
@@ -755,6 +1195,59 @@
           }
         });
 
+        backButton.addEventListener("click", () => {
+          chatWindowContainer.classList.remove("active");
+          userListContainer.style.display = "block";
+          searchMessagesBar.classList.remove("active");
+        });
+
+        searchButton.addEventListener("click", () => {
+          searchMessagesBar.classList.toggle("active");
+          if (searchMessagesBar.classList.contains("active")) {
+            searchMessagesInput.focus();
+          } else {
+            searchMessagesInput.value = "";
+            displayMessages(currentMessages);
+          }
+        });
+
+        searchMessagesInput.addEventListener("input", debounce(() => {
+          const query = searchMessagesInput.value.trim().toLowerCase();
+          if (query) {
+            const filteredMessages = currentMessages.filter(msg =>
+              msg.content.toLowerCase().includes(query) ||
+              msg.sender.name.toLowerCase().includes(query)
+            );
+            displayMessages(filteredMessages);
+          } else {
+            displayMessages(currentMessages);
+          }
+        }, 300));
+
+        searchUsersInput.addEventListener("input", debounce(() => {
+          socket.emit("getUsers", (response) => {
+            if (response.status === "success") {
+              const query = searchUsersInput.value.trim().toLowerCase();
+              let filteredUsers = response.users;
+              if (query) {
+                filteredUsers = response.users.filter(user =>
+                  user.name.toLowerCase().includes(query) ||
+                  user.email.toLowerCase().includes(query)
+                );
+              }
+              if (currentCategory === "unread") {
+                filteredUsers = filteredUsers.filter(u => u.unreadCount > 0);
+              } else if (currentCategory === "favorites") {
+                filteredUsers = filteredUsers.filter(u => u.isFavorite);
+              }
+              updateUserList(filteredUsers);
+            } else {
+              showToast("Failed to fetch users: " + response.message);
+              console.error("Fetch users failed:", response.message);
+            }
+          });
+        }, 300));
+
         socket.emit("getUsers", (response) => {
           if (response.status === "success") {
             console.log("Received users:", response.users);
@@ -763,9 +1256,17 @@
               const user = response.users.find(u => u._id === selectedUserId);
               if (user) {
                 selectUser(user);
+                if (window.innerWidth <= 768) {
+                  userListContainer.style.display = "none";
+                  chatWindowContainer.classList.add("active");
+                }
               } else {
                 selectedUserId = null;
                 localStorage.removeItem("selectedUserId");
+                if (window.innerWidth <= 768) {
+                  userListContainer.style.display = "block";
+                  chatWindowContainer.classList.remove("active");
+                }
               }
             }
           } else {
@@ -782,7 +1283,20 @@
             console.log("Switched to category:", currentCategory);
             socket.emit("getUsers", (response) => {
               if (response.status === "success") {
-                updateUserList(response.users);
+                const query = searchUsersInput.value.trim().toLowerCase();
+                let filteredUsers = response.users;
+                if (query) {
+                  filteredUsers = response.users.filter(user =>
+                    user.name.toLowerCase().includes(query) ||
+                    user.email.toLowerCase().includes(query)
+                  );
+                }
+                if (currentCategory === "unread") {
+                  filteredUsers = filteredUsers.filter(u => u.unreadCount > 0);
+                } else if (currentCategory === "favorites") {
+                  filteredUsers = filteredUsers.filter(u => u.isFavorite);
+                }
+                updateUserList(filteredUsers);
               }
             });
           });
@@ -801,18 +1315,23 @@
             userItem.className = `user-item${u._id === selectedUserId ? " selected" : ""}`;
             userItem.dataset.userId = u._id;
             userItem.innerHTML = `
-            <img src="${DOMPurify.sanitize(u.profileImage || 'https://www.gravatar.com/avatar/?d=retro')}" alt="User avatar" />
-            <div class="user-info">
-              <h3>${DOMPurify.sanitize(u.name)}</h3>
-              <p>${DOMPurify.sanitize(u.role)}</p>
-            </div>
-            ${u.unreadCount > 0 ? `<span class="unread-count">${u.unreadCount}</span>` : ""}
-          `;
+              <img src="${DOMPurify.sanitize(u.profileImage || 'https://www.gravatar.com/avatar/?d=retro')}" alt="User avatar" />
+              <div class="user-info">
+                <h3>${DOMPurify.sanitize(u.name)}</h3>
+                <p>${DOMPurify.sanitize(u.role)}</p>
+              </div>
+              <span class="message-time">${u.lastMessageTime ? formatMessageTime(u.lastMessageTime) : ''}</span>
+              ${u.unreadCount > 0 ? `<span class="unread-count">${u.unreadCount}</span>` : ""}
+            `;
             userItem.addEventListener("click", () => {
               selectedUserId = u._id;
               localStorage.setItem("selectedUserId", selectedUserId);
               console.log("Selected user ID:", selectedUserId);
               selectUser(u);
+              if (window.innerWidth <= 768) {
+                userListContainer.style.display = "none";
+                chatWindowContainer.classList.add("active");
+              }
             });
             userList.appendChild(userItem);
           });
@@ -830,25 +1349,14 @@
           chatWindow.dataset.lastDate = null;
           socket.emit("getMessages", { userId: user._id }, (response) => {
             if (response.status === "success") {
-              console.log("Received messages:", response.messages);
+              console.log("Received messages:", response.messages.map(m => ({
+                id: m._id,
+                messageType: m.messageType,
+                content: m.content,
+                fileMetadata: m.fileMetadata,
+              })));
+              currentMessages = response.messages;
               displayMessages(response.messages);
-              pendingMessages = pendingMessages.filter(msg => {
-                if (
-                  (msg.sender.id === user._id && msg.receiver.id === userId) ||
-                  (msg.sender.id === userId && msg.receiver.id === user._id)
-                ) {
-                  appendMessage(
-                    msg.sender.id === userId,
-                    msg.sender.name,
-                    msg.content,
-                    msg.createdAt,
-                    msg.messageId,
-                    msg.messageType
-                  );
-                  return false;
-                }
-                return true;
-              });
             } else {
               showToast("Failed to fetch messages: " + response.message);
               console.error("Fetch messages failed:", response.message);
@@ -858,9 +1366,17 @@
 
         socket.on("updateUsers", (response) => {
           console.log("Updating user list:", response.users);
-          updateUserList(response.users);
+          const query = searchUsersInput.value.trim().toLowerCase();
+          let filteredUsers = response.users;
+          if (query) {
+            filteredUsers = response.users.filter(user =>
+              user.name.toLowerCase().includes(query) ||
+              user.email.toLowerCase().includes(query)
+            );
+          }
+          updateUserList(filteredUsers);
           if (selectedUserId) {
-            const user = response.users.find(u => u._id === selectedUserId);
+            const user = filteredUsers.find(u => u._id === selectedUserId);
             if (user) {
               document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
               const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
@@ -873,17 +1389,36 @@
               chatHeaderName.textContent = "Select a user";
               chatHeaderAvatar.src = "https://www.gravatar.com/avatar/?d=retro";
               chatWindow.innerHTML = "";
+              if (window.innerWidth <= 768) {
+                chatWindowContainer.classList.remove("active");
+                userListContainer.style.display = "block";
+              }
             }
           }
         });
 
         socket.on("updateMessages", (response) => {
-          console.log("Updating messages:", response.messages);
+          console.log("Updating messages:", response.messages.map(m => ({
+            id: m._id,
+            messageType: m.messageType,
+            content: m.content,
+            fileMetadata: m.fileMetadata,
+          })));
+          currentMessages = response.messages;
           displayMessages(response.messages);
         });
 
         socket.on("receiveMessage", (msg) => {
-          console.log("Received message:", msg, "Current selectedUserId:", selectedUserId, "userId:", userId);
+          console.log("Received message:", {
+            messageId: msg.messageId,
+            messageType: msg.messageType,
+            content: msg.content,
+            fileMetadata: msg.fileMetadata,
+            senderId: msg.sender.id,
+            receiverId: msg.receiver.id,
+            selectedUserId,
+            userId,
+          });
           if (
             (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
             (msg.sender.id === userId && msg.receiver.id === selectedUserId)
@@ -894,129 +1429,37 @@
               msg.content,
               msg.createdAt,
               msg.messageId,
-              msg.messageType
+              msg.messageType || "text",
+              msg.isRead,
+              msg.fileMetadata
             );
-          } else {
-            console.log("Queuing message for later:", msg);
-            pendingMessages.push(msg);
-          }
-        });
-
-        function displayMessages(messages, append = false) {
-          if (!append) {
-            chatWindow.innerHTML = "";
-            chatWindow.dataset.lastDate = null;
-          }
-          let lastDate = chatWindow.dataset.lastDate || null;
-          messages.forEach((msg) => {
-            const messageDate = new Date(msg.createdAt).toLocaleDateString();
-            if (messageDate !== lastDate) {
-              const dateHeader = document.createElement("div");
-              dateHeader.className = "date-header";
-              dateHeader.textContent = messageDate;
-              chatWindow.appendChild(dateHeader);
-              lastDate = messageDate;
-            }
-            appendMessage(
-              msg.sender._id === userId,
-              msg.sender.name,
-              msg.content,
-              msg.createdAt,
-              msg._id || msg.messageId,
-              msg.messageType
-            );
-          });
-          chatWindow.dataset.lastDate = lastDate;
-          chatWindow.scrollTop = chatWindow.scrollHeight;
-          console.log("Messages displayed:", messages.length);
-        }
-
-        function appendMessage(isSent, senderName, content, timestamp, messageId, messageType) {
-          if (document.querySelector(`.message[data-message-id="${messageId}"]`)) {
-            console.log("Skipping duplicate message:", messageId);
-            return;
-          }
-          const messageDate = new Date(timestamp).toLocaleDateString();
-          const lastDate = chatWindow.dataset.lastDate || null;
-          if (messageDate !== lastDate) {
-            const dateHeader = document.createElement("div");
-            dateHeader.className = "date-header";
-            dateHeader.textContent = messageDate;
-            chatWindow.appendChild(dateHeader);
-            chatWindow.dataset.lastDate = messageDate;
-          }
-          const messageDiv = document.createElement("div");
-          messageDiv.className = `message ${isSent ? "sent" : "received"}`;
-          messageDiv.dataset.messageId = messageId;
-          const messageContent = document.createElement("div");
-          messageContent.className = "message-content";
-          if (messageType === "image") {
-            messageContent.innerHTML = `
-            <img src="${DOMPurify.sanitize(content)}" alt="Shared image" />
-            <span class="timestamp">${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          `;
-          } else {
-            messageContent.innerHTML = `
-            <p>${DOMPurify.sanitize(content)}</p>
-            <span class="timestamp">${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          `;
-          }
-          messageDiv.appendChild(messageContent);
-          chatWindow.appendChild(messageDiv);
-          chatWindow.scrollTop = chatWindow.scrollHeight;
-          console.log("Message appended:", { isSent, senderName, messageType, messageId });
-        }
-
-        setInterval(() => {
-          if (selectedUserId) {
-            socket.emit("getMessages", { userId: selectedUserId }, (response) => {
+            socket.emit("getUsers", (response) => {
               if (response.status === "success") {
-                console.log("Periodic message check:", response.messages.length);
-                displayMessages(response.messages);
+                updateUserList(response.users);
               }
             });
           }
-        }, 10000);
+        });
 
-        socket.on("connect_error", (error) => {
-          console.error("Socket.IO connection error:", error);
-          showToast("Connection error: " + error.message);
-          if (error.message.includes("Authentication error")) {
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            localStorage.removeItem("selectedUserId");
-            setTimeout(() => {
-              window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
-            }, 1000);
+        socket.on("updateMessageStatus", (msg) => {
+          const messageElement = document.getElementById(`message-${msg.messageId}`);
+          if (messageElement) {
+            const readReceipt = messageElement.querySelector(".read-receipt");
+            if (readReceipt) {
+              readReceipt.classList.toggle("read", msg.isRead);
+            }
           }
         });
 
-        socket.on("connect", () => {
-          console.log("Socket.IO connected");
-          socket.emit("rejoinRooms");
-          socket.emit("getUsers", (response) => {
-            if (response.status === "success") {
-              updateUserList(response.users);
-              if (selectedUserId) {
-                const user = response.users.find(u => u._id === selectedUserId);
-                if (user) selectUser(user);
-              }
-            }
-          });
+        socket.on("connect_error", (error) => {
+          console.error("Socket connection error:", error);
+          showToast("Connection error. Retrying...");
+          setTimeout(() => socket.connect(), 3000);
         });
 
-        socket.on("reconnect", (attempt) => {
-          console.log(`Socket.IO reconnected after ${attempt} attempts`);
+        socket.on("disconnect", () => {
+          console.log("Socket disconnected");
           socket.emit("rejoinRooms");
-          socket.emit("getUsers", (response) => {
-            if (response.status === "success") {
-              updateUserList(response.users);
-              if (selectedUserId) {
-                const user = response.users.find(u => u._id === selectedUserId);
-                if (user) selectUser(user);
-              }
-            }
-          });
         });
       });
     </script>
