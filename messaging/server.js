@@ -17,17 +17,41 @@ const initializeMessaging = (httpServer) => {
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
+      console.error("Socket.IO Auth Error: No token provided");
       return next(new Error("Authentication error: No token provided"));
     }
     try {
+      console.log("Socket.IO Token:", token); // Log token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select("name email role");
-      if (!user || !user.isVerified) {
-        return next(new Error("Authentication error: Invalid or unverified user"));
+      console.log("Decoded JWT:", decoded); // Log decoded payload
+      const user = await User.findById(decoded.id).select(
+        "name email role isVerified"
+      );
+      if (!user) {
+        console.error(
+          "Socket.IO Auth Error: User not found for ID:",
+          decoded.id
+        );
+        return next(
+          new Error("Authentication error: Invalid or unverified user")
+        );
       }
-      socket.user = { id: user._id, name: user.name, email: user.email, role: user.role };
+      if (!user.isVerified) {
+        console.error("Socket.IO Auth Error: User not verified:", user.email);
+        return next(
+          new Error("Authentication error: Invalid or unverified user")
+        );
+      }
+      socket.user = {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      };
+      console.log("Socket.IO Auth Success: User:", socket.user.email);
       next();
     } catch (error) {
+      console.error("Socket.IO Auth Error:", error.message, { token });
       return next(new Error("Authentication error: Invalid token"));
     }
   });
@@ -42,9 +66,13 @@ const initializeMessaging = (httpServer) => {
       try {
         let users;
         if (socket.user.role === "admin") {
-          users = await User.find({ isVerified: true }).select("name email role").lean();
+          users = await User.find({ isVerified: true })
+            .select("name email role")
+            .lean();
         } else {
-          users = await User.find({ role: "admin", isVerified: true }).select("name email role").lean();
+          users = await User.find({ role: "admin", isVerified: true })
+            .select("name email role")
+            .lean();
         }
         callback({ status: "success", users });
       } catch (error) {
@@ -57,7 +85,10 @@ const initializeMessaging = (httpServer) => {
     socket.on("sendMessage", async ({ receiverId, content }, callback) => {
       try {
         if (!receiverId || !content) {
-          return callback({ status: "error", message: "Receiver ID and content are required" });
+          return callback({
+            status: "error",
+            message: "Receiver ID and content are required",
+          });
         }
         // Validate receiver exists
         const receiver = await User.findById(receiverId);
@@ -66,7 +97,10 @@ const initializeMessaging = (httpServer) => {
         }
         // Restrict students to messaging admins only
         if (socket.user.role === "user" && receiver.role !== "admin") {
-          return callback({ status: "error", message: "Students can only message admins" });
+          return callback({
+            status: "error",
+            message: "Students can only message admins",
+          });
         }
         // Save message to database
         const message = new Message({
@@ -79,7 +113,11 @@ const initializeMessaging = (httpServer) => {
         await message.save();
         // Emit message to receiver
         io.to(receiverId).emit("receiveMessage", {
-          sender: { id: socket.user.id, name: socket.user.name, email: socket.user.email },
+          sender: {
+            id: socket.user.id,
+            name: socket.user.name,
+            email: socket.user.email,
+          },
           content,
           createdAt: message.createdAt,
           messageId: message._id,
@@ -130,7 +168,9 @@ const initializeMessaging = (httpServer) => {
         .populate("receiver", "name email role")
         .sort({ createdAt: -1 })
         .lean();
-      res.status(200).json({ message: "Messages fetched successfully", messages });
+      res
+        .status(200)
+        .json({ message: "Messages fetched successfully", messages });
     } catch (error) {
       console.error("Error fetching messages:", error);
       res.status(500).json({ message: "Server error" });

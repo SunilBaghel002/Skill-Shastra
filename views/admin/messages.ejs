@@ -185,7 +185,8 @@
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
-        if (!user.name || !user.email) {
+        const token = localStorage.getItem("token");
+        if (!user.name || !user.email || !token) {
           alert("Please log in to access this page.");
           window.location.href =
             "/signup?redirect=" + encodeURIComponent(window.location.pathname);
@@ -209,7 +210,7 @@
 
         // Socket.IO connection
         const socket = io("http://localhost:5000", {
-          auth: { token: localStorage.getItem("token") },
+          auth: { token },
         });
 
         const userSelect = document.getElementById("userSelect");
@@ -301,6 +302,13 @@
         socket.on("connect_error", (error) => {
           console.error("Socket.IO connection error:", error);
           alert("Connection error: " + error.message);
+          if (error.message.includes("Authentication error")) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href =
+              "/signup?redirect=" +
+              encodeURIComponent(window.location.pathname);
+          }
         });
       });
     </script>
