@@ -59,16 +59,17 @@
 
     .chat-container {
       width: 100%;
+      height: 100vh;
       background: #ffffff;
       border-radius: 0px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
       display: flex;
-      height: 100%;
-      max-height: 100vh;
+      flex-direction: row;
     }
 
     .user-list-container {
       width: 33.33%;
+      height: 100%;
       background: #f9fafb;
       border-right: 1px solid #e5e7eb;
       border-radius: 16px 0 0 16px;
@@ -133,6 +134,7 @@
 
     .user-list {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
     }
 
@@ -197,6 +199,7 @@
 
     .chat-window-container {
       width: 66.67%;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }
@@ -323,6 +326,7 @@
 
     .chat-body {
       flex: 1;
+      min-height: 0;
       padding: 1.5rem;
       background: #f9fafb;
       background-image: url('/images/chat-background.png');
@@ -375,6 +379,10 @@
       color: #1f2937;
     }
 
+    .message.pending .message-content {
+      opacity: 0.5;
+    }
+
     .message-content p {
       margin: 0;
     }
@@ -385,10 +393,172 @@
       cursor: pointer;
     }
 
-    .message-content audio {
-      width: 100%;
-      max-width: 200px;
-      margin-top: 0.5rem;
+    .message-content .audio-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 100%;
+    }
+
+    .message-content .audio-container .play-pause-btn {
+      background: #4f46e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .message-content .audio-container .play-pause-btn:hover {
+      background: #4338ca;
+    }
+
+    .message-content .audio-container .progress-bar {
+      flex: 1;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: #f3f4f6;
+      border-radius: 4px;
+      padding: 0 5px;
+      overflow: hidden;
+    }
+
+    .message-content .audio-container .progress-bar .bar {
+      width: 4px;
+      height: 20px;
+      background: #6b7280;
+      transition: height 0.3s ease, background 0.3s ease;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar {
+      animation: wave 0.6s ease-in-out infinite alternate;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar.active {
+      background: #4f46e5;
+    }
+
+    @keyframes wave {
+      0% {
+        height: 10px;
+      }
+
+      100% {
+        height: 30px;
+      }
+    }
+
+    /* Add staggered animation delay for each bar */
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(2) {
+      animation-delay: 0.03s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(3) {
+      animation-delay: 0.06s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(4) {
+      animation-delay: 0.09s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(5) {
+      animation-delay: 0.12s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(6) {
+      animation-delay: 0.15s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(7) {
+      animation-delay: 0.18s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(8) {
+      animation-delay: 0.21s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(9) {
+      animation-delay: 0.24s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(10) {
+      animation-delay: 0.27s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(11) {
+      animation-delay: 0.30s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(12) {
+      animation-delay: 0.33s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(13) {
+      animation-delay: 0.36s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(14) {
+      animation-delay: 0.39s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(15) {
+      animation-delay: 0.42s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(16) {
+      animation-delay: 0.45s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(17) {
+      animation-delay: 0.48s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(18) {
+      animation-delay: 0.51s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(19) {
+      animation-delay: 0.54s;
+    }
+
+    .message-content .audio-container.playing .progress-bar .bar:nth-child(20) {
+      animation-delay: 0.57s;
+    }
+
+    .message-content .audio-container .speed-btn {
+      background: #6b7280;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .message-content .audio-container .speed-btn:hover {
+      background: #4338ca;
+    }
+
+    .message-content .document-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .message-content .document-link i {
+      font-size: 1rem;
     }
 
     .message-content .timestamp {
@@ -424,6 +594,18 @@
       background: #4f46e5;
     }
 
+    .read-receipt.pending {
+      display: none;
+    }
+
+    .read-receipt.failed::before {
+      content: "\f017";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
     .message-input-container {
       padding: 1rem;
       background: #ffffff;
@@ -432,6 +614,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
     }
 
     .message-input-container .input-wrapper {
@@ -456,6 +639,7 @@
 
     .attach-button,
     .voice-button,
+    .camera-button,
     .send-button {
       background: #4f46e5;
       color: #ffffff;
@@ -476,12 +660,122 @@
 
     .attach-button:hover,
     .voice-button:hover,
+    .camera-button:hover,
     .send-button:hover {
       background: #4338ca;
     }
 
     .voice-button.recording:hover {
       background: #dc2626;
+    }
+
+    .file-menu {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 1rem;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      display: none;
+      flex-direction: column;
+      width: 150px;
+      z-index: 10;
+      animation: fadeIn 0.2s ease-in;
+    }
+
+    .file-menu.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .file-menu button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: none;
+      border: none;
+      font-size: 0.875rem;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .file-menu button:hover {
+      background: #f3f4f6;
+    }
+
+    .file-menu button i {
+      font-size: 1rem;
+    }
+
+    .camera-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .camera-modal-content {
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .camera-modal-content video,
+    .camera-modal-content img {
+      width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .camera-modal-content .button-container {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .camera-modal-content button {
+      background: #4f46e5;
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+
+    .camera-modal-content button:hover {
+      background: #4338ca;
+    }
+
+    .camera-modal-content button.cancel {
+      background: #6b7280;
+    }
+
+    .camera-modal-content button.cancel:hover {
+      background: #4b5563;
     }
 
     .toast {
@@ -576,12 +870,13 @@
 
       .chat-container {
         flex-direction: column;
-        height: auto;
+        height: 100vh;
         margin: 0;
       }
 
       .user-list-container {
         width: 100%;
+        height: 100%;
         border-right: none;
         border-bottom: none;
         border-radius: 0;
@@ -590,11 +885,11 @@
 
       .chat-window-container {
         width: 100%;
+        height: 100%;
         display: none;
         position: absolute;
         top: 0;
         left: 0;
-        height: 100%;
         background: #ffffff;
       }
 
@@ -604,6 +899,20 @@
 
       .action-button.back-button {
         display: flex;
+      }
+
+      .message-content .audio-container {
+        max-width: 200px;
+      }
+
+      .file-menu {
+        width: 120px;
+        bottom: 4rem;
+      }
+
+      .camera-modal-content {
+        width: 95%;
+        max-width: 350px;
       }
     }
 
@@ -625,7 +934,7 @@
       <div class="chat-container">
         <div class="user-list-container" id="userListContainer">
           <div class="user-list-header">
-            <h2>Messages (Admin)</h2>
+            <h2>Messages</h2>
           </div>
           <div class="search-container">
             <input type="text" id="searchUsersInput" class="search-input" placeholder="Search users..." />
@@ -633,7 +942,6 @@
           <div class="category-tabs">
             <div class="category-tab active" data-category="all">All</div>
             <div class="category-tab" data-category="unread">Unread</div>
-            <div class="category-tab" data-category="favorites">Favorites</div>
           </div>
           <div class="user-list" id="userList"></div>
         </div>
@@ -660,7 +968,6 @@
                 <span class="material-icons">more_vert</span>
               </button>
               <div class="dropdown-menu" id="dropdownMenu">
-                <button id="toggleFavoriteBtn">Add to Favorites</button>
                 <button id="clearChatsBtn">Clear Chats</button>
                 <button id="viewProfileBtn">View Profile</button>
               </div>
@@ -671,8 +978,17 @@
             <button class="attach-button" id="attachButton">
               <span class="material-icons">attach_file</span>
             </button>
+            <div class="file-menu" id="fileMenu">
+              <button id="photoOption"><i class="fas fa-image" aria-hidden="true"></i> Photos</button>
+              <button id="documentOption"><i class="fas fa-file" aria-hidden="true"></i> Documents</button>
+              <button id="audioOption"><i class="fas fa-file-audio" aria-hidden="true"></i> Audio</button>
+            </div>
             <input type="file" id="imageInput" accept="image/png,image/jpeg" style="display: none;" />
             <input type="file" id="audioInput" accept="audio/mpeg,audio/wav,audio/webm" style="display: none;" />
+            <input type="file" id="documentInput" accept=".pdf,.doc,.docx" style="display: none;" />
+            <button class="camera-button" id="cameraButton">
+              <span class="material-icons">camera_alt</span>
+            </button>
             <button class="voice-button" id="voiceButton">
               <span class="material-icons">mic</span>
             </button>
@@ -684,19 +1000,32 @@
             </button>
           </div>
         </div>
-        <div id="toast" class="toast"></div>
-        <div id="profileModal" class="modal">
-          <div class="modal-content">
-            <img id="modalAvatar" src="https://www.gravatar.com/avatar/?d=retro" alt="User avatar" />
-            <h2 id="modalName"></h2>
-            <p id="modalEmail"></p>
-            <p id="modalRole"></p>
-            <button id="closeModal">Close</button>
+      </div>
+      <div id="toast" class="toast"></div>
+      <div id="profileModal" class="modal">
+        <div class="modal-content">
+          <img id="modalAvatar" src="https://www.gravatar.com/avatar/?d=retro" alt="User avatar" />
+          <h2 id="modalName"></h2>
+          <p id="modalEmail"></p>
+          <p id="modalRole"></p>
+          <button id="closeModal">Close</button>
+        </div>
+      </div>
+      <div id="imageModal" class="image-modal">
+        <img id="enlargedImage" src="" alt="Enlarged image" />
+      </div>
+      <div id="cameraModal" class="camera-modal">
+        <div class="camera-modal-content">
+          <video id="cameraStream" autoplay playsinline style="display: none;"></video>
+          <img id="cameraPreview" style="display: none;" alt="Captured photo preview" />
+          <canvas id="cameraCanvas" style="display: none;"></canvas>
+          <div class="button-container">
+            <button id="capturePhoto">Capture</button>
+            <button id="sendPhoto" style="display: none;">Send</button>
+            <button id="cancelCamera" class="cancel">Cancel</button>
           </div>
         </div>
-        <div id="imageModal" class="image-modal">
-          <img id="enlargedImage" src="" alt="Enlarged image" />
-        </div>
+      </div>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
@@ -747,14 +1076,19 @@
         const messageInput = document.getElementById("messageInput");
         const sendButton = document.getElementById("sendButton");
         const attachButton = document.getElementById("attachButton");
-        const voiceButton = document.getElementById("voiceButton");
+        const fileMenu = document.getElementById("fileMenu");
+        const photoOption = document.getElementById("photoOption");
+        const documentOption = document.getElementById("documentOption");
+        const audioOption = document.getElementById("audioOption");
+        const cameraButton = document.getElementById("cameraButton");
         const imageInput = document.getElementById("imageInput");
         const audioInput = document.getElementById("audioInput");
+        const documentInput = document.getElementById("documentInput");
+        const voiceButton = document.getElementById("voiceButton");
         const chatHeaderName = document.getElementById("chatHeaderName");
         const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
         const moreOptions = document.getElementById("moreOptions");
         const dropdownMenu = document.getElementById("dropdownMenu");
-        const toggleFavoriteBtn = document.getElementById("toggleFavoriteBtn");
         const clearChatsBtn = document.getElementById("clearChatsBtn");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
         const profileModal = document.getElementById("profileModal");
@@ -768,14 +1102,22 @@
         const searchMessagesBar = document.getElementById("searchMessagesBar");
         const searchMessagesInput = document.getElementById("searchMessagesInput");
         const searchUsersInput = document.getElementById("searchUsersInput");
+        const cameraModal = document.getElementById("cameraModal");
+        const cameraStream = document.getElementById("cameraStream");
+        const cameraPreview = document.getElementById("cameraPreview");
+        const cameraCanvas = document.getElementById("cameraCanvas");
+        const capturePhoto = document.getElementById("capturePhoto");
+        const sendPhoto = document.getElementById("sendPhoto");
+        const cancelCamera = document.getElementById("cancelCamera");
         let selectedUserId = localStorage.getItem("selectedUserId") || null;
         let currentCategory = "all";
-        let isFavorite = false;
         let mediaRecorder = null;
         let audioChunks = [];
-        let sentMessageIds = new Set(); // Track sent message IDs to prevent duplicates
-        let isSending = false; // Prevent concurrent sends
-        let currentMessages = []; // Store messages for search
+        let sentMessageIds = new Set();
+        let isSending = false;
+        let currentMessages = [];
+        let audioElements = new Map();
+        const speedOptions = [1, 1.2, 1.5, 2];
 
         function showToast(message) {
           const toast = document.getElementById("toast");
@@ -809,7 +1151,7 @@
           };
         }
 
-        function appendMessage(isSent, senderName, content, timestamp, messageId, messageType, isRead, fileMetadata) {
+        function appendMessage(isSent, senderName, content, timestamp, messageId, messageType, isRead, fileMetadata, status = 'pending') {
           if (document.getElementById(`message-${messageId}`)) {
             console.log("Message already exists, skipping:", messageId);
             return;
@@ -826,13 +1168,29 @@
           }
 
           const messageDiv = document.createElement("div");
-          messageDiv.className = `message ${isSent ? "sent" : "received"}`;
+          messageDiv.className = `message ${isSent ? "sent" : "received"} ${status === 'pending' ? 'pending' : ''}`;
           messageDiv.id = `message-${messageId}`;
           let contentHtml;
-          if (messageType === "image" || content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".jpg") || content.endsWith(".png") || content.endsWith(".jpeg"))) {
+          if (messageType === "image" || (content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".jpg") || content.endsWith(".png") || content.endsWith(".jpeg")))) {
             contentHtml = `<img src="${DOMPurify.sanitize(content)}" alt="Image message" />`;
-          } else if (messageType === "audio" || content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".mp3") || content.endsWith(".wav") || content.endsWith(".webm"))) {
-            contentHtml = `<audio controls><source src="${DOMPurify.sanitize(content)}" type="${fileMetadata?.fileType || 'audio/webm'}"></audio>`;
+          } else if (messageType === "audio" || (content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".mp3") || content.endsWith(".wav") || content.endsWith(".webm")))) {
+            contentHtml = `
+              <div class="audio-container" data-message-id="${messageId}">
+                <button class="play-pause-btn" data-message-id="${messageId}">
+                  <i class="fas fa-play" aria-hidden="true"></i>
+                </button>
+                <div class="progress-bar" id="progress-bar-${messageId}">
+                  ${Array(20).fill().map((_, i) => `<div class="bar" data-index="${i}"></div>`).join('')}
+                </div>
+                <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
+              </div>
+            `;
+          } else if (messageType === "document" || (content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".pdf") || content.endsWith(".doc") || content.endsWith(".docx")))) {
+            contentHtml = `
+              <a href="${DOMPurify.sanitize(content)}" target="_blank" class="document-link">
+                <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(fileMetadata?.fileName || "Document")}
+              </a>
+            `;
           } else {
             contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
           }
@@ -840,16 +1198,90 @@
             <div class="message-content">
               ${contentHtml}
               <span class="timestamp">${formatMessageTime(timestamp)}</span>
-              ${isSent ? `<div class="read-receipt ${isRead ? 'read' : ''}"><span class="dot"></span><span class="dot"></span></div>` : ''}
+              ${isSent ? `<div class="read-receipt ${status === 'delivered' ? (isRead ? 'read' : '') : status}"><span class="dot"></span><span class="dot"></span></div>` : ''}
             </div>
           `;
           chatWindow.appendChild(messageDiv);
           chatWindow.scrollTop = chatWindow.scrollHeight;
+
+          if (messageType === "audio" || (content.startsWith("https://res.cloudinary.com/") && (content.endsWith(".mp3") || content.endsWith(".wav") || content.endsWith(".webm")))) {
+            const audio = new Audio(DOMPurify.sanitize(content));
+            audioElements.set(messageId, audio);
+
+            const playPauseBtn = messageDiv.querySelector(`.play-pause-btn[data-message-id="${messageId}"]`);
+            const progressBar = messageDiv.querySelector(`#progress-bar-${messageId}`);
+            const bars = progressBar.querySelectorAll('.bar');
+            playPauseBtn.addEventListener("click", () => {
+              if (audio.paused) {
+                audio.play();
+                messageDiv.querySelector('.audio-container').classList.add('playing');
+                playPauseBtn.querySelector('i').classList.replace('fa-play', 'fa-pause');
+                updateProgressBar(audio, bars, messageId);
+              } else {
+                audio.pause();
+                messageDiv.querySelector('.audio-container').classList.remove('playing');
+                playPauseBtn.querySelector('i').classList.replace('fa-pause', 'fa-play');
+                bars.forEach(bar => bar.classList.remove('active'));
+              }
+            });
+
+            audio.addEventListener('ended', () => {
+              messageDiv.querySelector('.audio-container').classList.remove('playing');
+              playPauseBtn.querySelector('i').classList.replace('fa-pause', 'fa-play');
+              bars.forEach(bar => bar.classList.remove('active'));
+            });
+
+            const speedBtn = messageDiv.querySelector(`.speed-btn[data-message-id="${messageId}"]`);
+            speedBtn.addEventListener("click", () => {
+              let currentIndex = parseInt(speedBtn.dataset.speedIndex);
+              currentIndex = (currentIndex + 1) % speedOptions.length;
+              const newSpeed = speedOptions[currentIndex];
+              audio.playbackRate = newSpeed;
+              speedBtn.dataset.speedIndex = currentIndex;
+              speedBtn.textContent = `${newSpeed}x`;
+            });
+          }
+        }
+
+        function updateProgressBar(audio, bars, messageId) {
+          const update = () => {
+            if (!audio.paused && !audio.ended) {
+              const progress = audio.currentTime / audio.duration;
+              const activeBars = Math.floor(progress * bars.length);
+              bars.forEach((bar, index) => {
+                const isActive = index < activeBars;
+                bar.classList.toggle('active', isActive);
+                // Reset animation for active bars to ensure continuous flow
+                if (isActive) {
+                  bar.style.animation = 'none';
+                  bar.offsetHeight; // Trigger reflow
+                  bar.style.animation = null;
+                }
+              });
+              requestAnimationFrame(update);
+            }
+          };
+          update();
+        }
+
+        function updateMessageStatus(messageId, status, isRead = false) {
+          const messageElement = document.getElementById(`message-${messageId}`);
+          if (messageElement) {
+            const readReceipt = messageElement.querySelector('.read-receipt');
+            if (readReceipt) {
+              readReceipt.className = `read-receipt ${status === 'delivered' ? (isRead ? 'read' : '') : status}`;
+            }
+            if (status === 'delivered') {
+              messageElement.classList.remove('pending');
+            }
+          }
         }
 
         function displayMessages(messages) {
           chatWindow.innerHTML = "";
           chatWindow.dataset.lastDate = null;
+          audioElements.forEach((audio) => audio.pause());
+          audioElements.clear();
           messages.forEach(msg => {
             appendMessage(
               msg.sender._id === userId,
@@ -859,7 +1291,8 @@
               msg._id,
               msg.messageType || "text",
               msg.isRead,
-              msg.fileMetadata
+              msg.fileMetadata,
+              'delivered'
             );
           });
         }
@@ -877,18 +1310,15 @@
           isSending = true;
 
           const tempMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          if (sentMessageIds.has(tempMessageId)) {
-            console.log("Send skipped: Message already sent", tempMessageId);
-            isSending = false;
-            return;
-          }
           sentMessageIds.add(tempMessageId);
+
+          appendMessage(true, userName, content, new Date(), tempMessageId, messageType, false, fileMetadata, 'pending');
 
           socket.emit("getUsers", (response) => {
             if (response.status === "success") {
               const selectedUser = response.users.find(u => u._id === selectedUserId);
               if (selectedUser) {
-                if (messageType === "image" || messageType === "audio") {
+                if (messageType === "image" || messageType === "audio" || messageType === "document") {
                   const base64Size = (content.length * 3) / 4 / 1024 / 1024;
                   console.log(`File base64 size: ${base64Size.toFixed(2)}MB, Type: ${messageType}, File: ${fileMetadata.fileName}`);
                   if (base64Size > 5) {
@@ -896,6 +1326,8 @@
                     console.log(`${messageType} too large after encoding:`, base64Size.toFixed(2), "MB");
                     sentMessageIds.delete(tempMessageId);
                     isSending = false;
+                    const tempMessage = document.getElementById(`message-${tempMessageId}`);
+                    if (tempMessage) tempMessage.remove();
                     return;
                   }
                 }
@@ -914,8 +1346,11 @@
                     messageInput.value = "";
                     imageInput.value = "";
                     audioInput.value = "";
+                    documentInput.value = "";
                     console.log(`${messageType} sent successfully: ID: ${response.messageId}`);
                     sentMessageIds.delete(tempMessageId);
+                    const tempMessage = document.getElementById(`message-${tempMessageId}`);
+                    if (tempMessage) tempMessage.remove();
                     socket.emit("getMessages", { userId: selectedUserId }, (msgResponse) => {
                       if (msgResponse.status === "success") {
                         displayMessages(msgResponse.messages);
@@ -927,8 +1362,8 @@
                   } else {
                     console.error(`Send ${messageType} failed:`, response.message, "Response:", response);
                     showToast(`Failed to send ${messageType}: ${response.message}`);
-                    sentMessageIds.delete(tempMessageId);
-                    if (retryCount < 2 && (messageType === "image" || messageType === "audio")) {
+                    updateMessageStatus(tempMessageId, 'failed');
+                    if (retryCount < 2 && (messageType === "image" || messageType === "audio" || messageType === "document")) {
                       console.log(`Retrying ${messageType} send, attempt ${retryCount + 1}`);
                       setTimeout(() => sendMessage(content, messageType, fileMetadata, retryCount + 1), 2000);
                     } else {
@@ -941,12 +1376,14 @@
                 console.error("Send failed: selected user not found");
                 sentMessageIds.delete(tempMessageId);
                 isSending = false;
+                updateMessageStatus(tempMessageId, 'failed');
               }
             } else {
               showToast("Failed to verify user: " + response.message);
               console.error("Verify user failed:", response.message);
               sentMessageIds.delete(tempMessageId);
               isSending = false;
+              updateMessageStatus(tempMessageId, 'failed');
             }
           });
         }
@@ -961,15 +1398,95 @@
         });
 
         attachButton.addEventListener("click", () => {
-          const fileType = prompt("Select file type: 'image' or 'audio'");
-          if (fileType === "image") {
-            imageInput.click();
-          } else if (fileType === "audio") {
-            audioInput.click();
-          } else {
-            showToast("Invalid file type selected.");
+          fileMenu.classList.toggle("active");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!fileMenu.contains(e.target) && !attachButton.contains(e.target)) {
+            fileMenu.classList.remove("active");
+          }
+          if (!cameraModal.contains(e.target) && !cameraButton.contains(e.target) && cameraModal.style.display === "flex") {
+            closeCameraModal();
           }
         });
+
+        photoOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          imageInput.click();
+        });
+
+        documentOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          documentInput.click();
+        });
+
+        audioOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          audioInput.click();
+        });
+
+        function closeCameraModal() {
+          if (cameraStreamObj) {
+            cameraStreamObj.getTracks().forEach(track => track.stop());
+            cameraStreamObj = null;
+          }
+          cameraStream.style.display = "none";
+          cameraPreview.style.display = "none";
+          cameraPreview.src = "";
+          capturePhoto.style.display = "block";
+          sendPhoto.style.display = "none";
+          cancelCamera.style.display = "block";
+          cameraModal.style.display = "none";
+        }
+
+        cameraButton.addEventListener("click", () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Camera is not supported in this browser.");
+            console.error("Camera not supported");
+            return;
+          }
+          navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          }).then(stream => {
+            cameraStreamObj = stream;
+            cameraStream.srcObject = stream;
+            cameraStream.style.display = "block";
+            cameraPreview.style.display = "none";
+            capturePhoto.style.display = "block";
+            sendPhoto.style.display = "none";
+            cancelCamera.style.display = "block";
+            cameraModal.style.display = "flex";
+          }).catch(err => {
+            showToast("Failed to access camera: " + err.message);
+            console.error("Camera access error:", err);
+          });
+        });
+
+        capturePhoto.addEventListener("click", () => {
+          const context = cameraCanvas.getContext("2d");
+          cameraCanvas.width = cameraStream.videoWidth;
+          cameraCanvas.height = cameraStream.videoHeight;
+          context.drawImage(cameraStream, 0, 0, cameraCanvas.width, cameraCanvas.height);
+          cameraPreview.src = cameraCanvas.toDataURL("image/jpeg", 0.8);
+          cameraStream.style.display = "none";
+          cameraPreview.style.display = "block";
+          capturePhoto.style.display = "none";
+          sendPhoto.style.display = "block";
+          cancelCamera.style.display = "block";
+        });
+
+        sendPhoto.addEventListener("click", () => {
+          const base64 = cameraPreview.src;
+          const fileSize = (base64.length * 3) / 4;
+          sendMessage(base64, "image", {
+            fileName: `photo_${Date.now()}.jpg`,
+            fileSize: fileSize,
+            fileType: "image/jpeg"
+          });
+          closeCameraModal();
+        });
+
+        cancelCamera.addEventListener("click", closeCameraModal);
 
         imageInput.addEventListener("change", () => {
           const file = imageInput.files[0];
@@ -1027,6 +1544,37 @@
             };
             reader.onerror = () => {
               showToast("Failed to read audio file.");
+              console.error("FileReader error:", reader.error);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        documentInput.addEventListener("change", () => {
+          const file = documentInput.files[0];
+          if (file) {
+            if (!["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(file.type)) {
+              showToast("Only PDF, DOC, and DOCX files are allowed.");
+              console.log("Invalid file type:", file.type);
+              return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Document size must be less than 5MB.");
+              console.log("File too large:", file.size / 1024 / 1024, "MB");
+              return;
+            }
+            console.log(`Selected document: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "document", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+              });
+            };
+            reader.onerror = () => {
+              showToast("Failed to read document file.");
               console.error("FileReader error:", reader.error);
             };
             reader.readAsDataURL(file);
@@ -1113,35 +1661,6 @@
           }
         });
 
-        toggleFavoriteBtn.addEventListener("click", () => {
-          if (selectedUserId) {
-            socket.emit("toggleFavorite", { userId: selectedUserId }, (response) => {
-              if (response.status === "success") {
-                isFavorite = response.isFavorite;
-                toggleFavoriteBtn.textContent = isFavorite ? "Remove from Favorites" : "Add to Favorites";
-                showToast(isFavorite ? "Added to Favorites" : "Removed from Favorites");
-                socket.emit("getUsers", (res) => {
-                  if (res.status === "success") {
-                    updateUserList(res.users);
-                    if (selectedUserId) {
-                      const user = res.users.find(u => u._id === selectedUserId);
-                      if (user) selectUser(user);
-                    }
-                  } else {
-                    showToast("Failed to refresh user list: " + res.message);
-                    console.error("Refresh user list failed:", res.message);
-                  }
-                });
-              } else {
-                showToast("Failed to toggle favorite: " + response.message);
-                console.error("Toggle favorite failed:", response.message);
-              }
-            });
-          } else {
-            showToast("Please select a user.");
-          }
-        });
-
         clearChatsBtn.addEventListener("click", () => {
           if (selectedUserId) {
             if (confirm("Are you sure you want to clear chats with this user?")) {
@@ -1189,7 +1708,7 @@
         });
 
         chatWindow.addEventListener("click", (e) => {
-          if (e.target.tagName === "IMG") {
+          if (e.target.tagName === "IMG" && !e.target.closest(".audio-container")) {
             enlargedImage.src = DOMPurify.sanitize(e.target.src);
             imageModal.style.display = "flex";
           }
@@ -1237,8 +1756,6 @@
               }
               if (currentCategory === "unread") {
                 filteredUsers = filteredUsers.filter(u => u.unreadCount > 0);
-              } else if (currentCategory === "favorites") {
-                filteredUsers = filteredUsers.filter(u => u.isFavorite);
               }
               updateUserList(filteredUsers);
             } else {
@@ -1293,8 +1810,6 @@
                 }
                 if (currentCategory === "unread") {
                   filteredUsers = filteredUsers.filter(u => u.unreadCount > 0);
-                } else if (currentCategory === "favorites") {
-                  filteredUsers = filteredUsers.filter(u => u.isFavorite);
                 }
                 updateUserList(filteredUsers);
               }
@@ -1307,8 +1822,6 @@
           let filteredUsers = users;
           if (currentCategory === "unread") {
             filteredUsers = users.filter(u => u.unreadCount > 0);
-          } else if (currentCategory === "favorites") {
-            filteredUsers = users.filter(u => u.isFavorite);
           }
           filteredUsers.forEach((u) => {
             const userItem = document.createElement("div");
@@ -1343,8 +1856,6 @@
           if (userItem) userItem.classList.add("selected");
           chatHeaderName.textContent = DOMPurify.sanitize(user.name);
           chatHeaderAvatar.src = DOMPurify.sanitize(user.profileImage || 'https://www.gravatar.com/avatar/?d=retro');
-          toggleFavoriteBtn.textContent = user.isFavorite ? "Remove from Favorites" : "Add to Favorites";
-          isFavorite = user.isFavorite;
           chatWindow.innerHTML = "";
           chatWindow.dataset.lastDate = null;
           socket.emit("getMessages", { userId: user._id }, (response) => {
@@ -1381,8 +1892,6 @@
               document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
               const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
               if (userItem) userItem.classList.add("selected");
-              toggleFavoriteBtn.textContent = user.isFavorite ? "Remove from Favorites" : "Add to Favorites";
-              isFavorite = user.isFavorite;
             } else {
               selectedUserId = null;
               localStorage.removeItem("selectedUserId");
@@ -1431,7 +1940,8 @@
               msg.messageId,
               msg.messageType || "text",
               msg.isRead,
-              msg.fileMetadata
+              msg.fileMetadata,
+              'delivered'
             );
             socket.emit("getUsers", (response) => {
               if (response.status === "success") {
