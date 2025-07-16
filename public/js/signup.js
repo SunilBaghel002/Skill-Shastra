@@ -299,6 +299,7 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
         ...data.user,
         expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Set expiration to 1 day
       };
+      localStorage.setItem('token', data.token);
       localStorage.setItem("user", JSON.stringify(userData)); // Store user data with expiration
       showSuccess("OTP verified successfully!");
       setTimeout(() => {
@@ -384,6 +385,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         ...data.user,
         expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Set expiration to 1 day
       };
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(userData)); // Store user data with expiration
       showSuccess("Login successful!");
       setTimeout(() => {

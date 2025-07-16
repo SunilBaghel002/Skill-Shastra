@@ -12,6 +12,7 @@ const crypto = require("crypto");
 const { v2: cloudinary } = require("cloudinary");
 const rateLimit = require("express-rate-limit");
 const axios = require("axios");
+const http = require("http");
 
 dotenv.config();
 const app = express();
@@ -24,9 +25,7 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(
-  cors({ origin: "https://skill-shastra.vercel.app/", credentials: true })
-);
+app.use(cors({ origin: "http://localhost:5000", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -141,15 +140,20 @@ const feedbackSchema = new mongoose.Schema({
 
 const Feedback = mongoose.model("Feedback", feedbackSchema);
 
-// Message Schema
 const messageSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  userName: { type: String, required: true },
-  userEmail: { type: String, required: true },
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   content: { type: String, required: true, maxlength: 1000 },
   createdAt: { type: Date, default: Date.now },
+  isRead: { type: Boolean, default: false },
+  // Keep these for backward compatibility with existing messages
+  userName: { type: String, required: false },
+  userEmail: { type: String, required: false },
 });
-
 const Message = mongoose.model("Message", messageSchema);
 
 // Announcement Schema
@@ -598,7 +602,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-
+    
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -619,6 +623,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
       },
+      token, // Add token to response
       redirect,
     });
   } catch (error) {
@@ -688,6 +693,7 @@ app.post("/api/auth/login", async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
       },
+      token: newToken, // Add token to response
       redirect,
     });
   } catch (error) {
@@ -951,10 +957,13 @@ app.get(
   }
 );
 
-// Messages Route
 app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
   try {
-    const messages = await Message.find().lean();
+    const messages = await Message.find()
+      .populate("sender", "name email role")
+      .populate("receiver", "name email role")
+      .sort({ createdAt: -1 })
+      .lean();
     res
       .status(200)
       .json({ message: "Messages fetched successfully", messages });
@@ -1612,5 +1621,9 @@ app.get("/payment", protect, (req, res) => {
 // Start Server
 connectDB().then(() => {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const server = http.createServer(app); // Create HTTP server
+  const messaging = require("./messaging/server"); // Import messaging module
+  const { io, router } = messaging(server); // Initialize messaging
+  app.use("/api/messaging", router); // Mount messaging routes
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
