@@ -331,7 +331,11 @@
 
       // Socket.IO connection
       const socket = io(window.location.origin, {
-        auth: { token }
+        auth: { token },
+        transports: ["websocket"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
 
       const userList = document.getElementById("userList");
@@ -340,50 +344,30 @@
       const sendButton = document.getElementById("sendButton");
       const chatHeaderName = document.getElementById("chatHeaderName");
       const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
+      let selectedUserId = localStorage.getItem("selectedUserId") || null;
 
       // Fetch users
       socket.emit("getUsers", (response) => {
         if (response.status === "success") {
-          userList.innerHTML = "";
-          response.users.forEach((u) => {
-            const userItem = document.createElement("div");
-            userItem.className = "user-item";
-            userItem.dataset.userId = u._id;
-            userItem.innerHTML = `
-              <img src="${DOMPurify.sanitize(u.profileImage || 'https://www.gravatar.com/avatar/?d=retro')}" alt="User avatar" />
-              <div>
-                <h3>${DOMPurify.sanitize(u.name)}</h3>
-                <p>${DOMPurify.sanitize(u.role)}</p>
-              </div>
-              ${u.unreadCount > 0 ? `<span class="unread-count">${u.unreadCount}</span>` : ""}
-            `;
-            userItem.addEventListener("click", () => {
-              document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
-              userItem.classList.add("selected");
-              chatHeaderName.textContent = u.name;
-              chatHeaderAvatar.src = u.profileImage || 'https://www.gravatar.com/avatar/?d=retro';
-              chatWindow.innerHTML = "";
-              socket.emit("getMessages", { userId: u._id }, (response) => {
-                if (response.status === "success") {
-                  displayMessages(response.messages);
-                } else {
-                  showToast("Failed to fetch messages: " + response.message);
-                }
-              });
-            });
-            userList.appendChild(userItem);
-          });
+          console.log("Received users:", response.users);
+          updateUserList(response.users);
+          if (selectedUserId) {
+            const user = response.users.find(u => u._id === selectedUserId);
+            if (user) {
+              selectUser(user);
+            }
+          }
         } else {
           showToast("Failed to fetch users: " + response.message);
         }
       });
 
-      // Update user list with unread counts
-      socket.on("updateUsers", (response) => {
+      // Update user list
+      function updateUserList(users) {
         userList.innerHTML = "";
-        response.users.forEach((u) => {
+        users.forEach((u) => {
           const userItem = document.createElement("div");
-          userItem.className = `user-item${u._id === document.querySelector(".user-item.selected")?.dataset.userId ? " selected" : ""}`;
+          userItem.className = `user-item${u._id === selectedUserId ? " selected" : ""}`;
           userItem.dataset.userId = u._id;
           userItem.innerHTML = `
             <img src="${DOMPurify.sanitize(u.profileImage || 'https://www.gravatar.com/avatar/?d=retro')}" alt="User avatar" />
@@ -394,29 +378,54 @@
             ${u.unreadCount > 0 ? `<span class="unread-count">${u.unreadCount}</span>` : ""}
           `;
           userItem.addEventListener("click", () => {
-            document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
-            userItem.classList.add("selected");
-            chatHeaderName.textContent = u.name;
-            chatHeaderAvatar.src = u.profileImage || 'https://www.gravatar.com/avatar/?d=retro';
-            chatWindow.innerHTML = "";
-            socket.emit("getMessages", { userId: u._id }, (response) => {
-              if (response.status === "success") {
-                displayMessages(response.messages);
-              } else {
-                showToast("Failed to fetch messages: " + response.message);
-              }
-            });
+            selectedUserId = u._id;
+            localStorage.setItem("selectedUserId", selectedUserId);
+            console.log("Selected user ID:", selectedUserId);
+            selectUser(u);
           });
           userList.appendChild(userItem);
         });
+      }
+
+      // Select user
+      function selectUser(user) {
+        document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
+        const userItem = document.querySelector(`.user-item[data-user-id="${user._id}"]`);
+        if (userItem) userItem.classList.add("selected");
+        chatHeaderName.textContent = user.name;
+        chatHeaderAvatar.src = user.profileImage || 'https://www.gravatar.com/avatar/?d=retro';
+        chatWindow.innerHTML = "";
+        socket.emit("getMessages", { userId: user._id }, (response) => {
+          if (response.status === "success") {
+            console.log("Received messages:", response.messages);
+            displayMessages(response.messages);
+          } else {
+            showToast("Failed to fetch messages: " + response.message);
+          }
+        });
+      }
+
+      // Update user list with unread counts and sorting
+      socket.on("updateUsers", (response) => {
+        console.log("Updating user list:", response.users);
+        updateUserList(response.users);
+        // Re-select user if still in the list to maintain chat context
+        if (selectedUserId) {
+          const user = response.users.find(u => u._id === selectedUserId);
+          if (user) {
+            document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
+            const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
+            if (userItem) userItem.classList.add("selected");
+          }
+        }
       });
 
       // Send message
       sendButton.addEventListener("click", () => {
-        const receiverId = document.querySelector(".user-item.selected")?.dataset.userId;
         const content = messageInput.value.trim();
-        if (receiverId && content) {
-          socket.emit("sendMessage", { receiverId, content }, (response) => {
+        if (selectedUserId && content) {
+          console.log("Sending message to:", selectedUserId, "Content:", content);
+          socket.emit("sendMessage", { receiverId: selectedUserId, content }, (response) => {
             if (response.status === "success") {
               messageInput.value = "";
             } else {
@@ -425,26 +434,34 @@
           });
         } else {
           showToast("Please select a user and enter a message.");
+          console.log("Send failed: selectedUserId =", selectedUserId, "content =", content);
         }
       });
 
       // Receive real-time messages
       socket.on("receiveMessage", (msg) => {
-        const selectedUserId = document.querySelector(".user-item.selected")?.dataset.userId;
-        if (msg.sender.id === selectedUserId || msg.sender.id === userId) {
+        console.log("Received message:", msg);
+        // Check if message is for the current chat
+        if (
+          (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
+          (msg.sender.id === userId && msg.receiver.id === selectedUserId)
+        ) {
           appendMessage(
             msg.sender.id === userId,
             msg.sender.name,
             msg.content,
-            msg.createdAt
+            msg.createdAt,
+            msg.messageId
           );
         }
       });
 
       // Display messages with date grouping
-      function displayMessages(messages) {
-        chatWindow.innerHTML = "";
-        let lastDate = null;
+      function displayMessages(messages, append = false) {
+        if (!append) {
+          chatWindow.innerHTML = "";
+        }
+        let lastDate = append ? chatWindow.dataset.lastDate || null : null;
         messages.forEach((msg) => {
           const messageDate = new Date(msg.createdAt).toLocaleDateString();
           if (messageDate !== lastDate) {
@@ -458,15 +475,30 @@
             msg.sender._id === userId,
             msg.sender.name,
             msg.content,
-            msg.createdAt
+            msg.createdAt,
+            msg._id
           );
         });
+        chatWindow.dataset.lastDate = lastDate;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
       }
 
       // Append message to chat window
-      function appendMessage(isSent, senderName, content, timestamp) {
+      function appendMessage(isSent, senderName, content, timestamp, messageId) {
+        // Prevent duplicate messages
+        if (document.querySelector(`.message[data-message-id="${messageId}"]`)) return;
+        const messageDate = new Date(timestamp).toLocaleDateString();
+        const lastDate = chatWindow.dataset.lastDate || null;
+        if (messageDate !== lastDate) {
+          const dateHeader = document.createElement("div");
+          dateHeader.className = "date-header";
+          dateHeader.textContent = messageDate;
+          chatWindow.appendChild(dateHeader);
+          chatWindow.dataset.lastDate = messageDate;
+        }
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${isSent ? "sent" : "received"}`;
+        messageDiv.dataset.messageId = messageId;
         const messageContent = document.createElement("div");
         messageContent.className = "message-content";
         messageContent.innerHTML = `
@@ -485,8 +517,29 @@
         if (error.message.includes("Authentication error")) {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
+          localStorage.removeItem("selectedUserId");
           window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
         }
+      });
+
+      // Handle Socket.IO connection
+      socket.on("connect", () => {
+        console.log("Socket.IO connected");
+      });
+
+      // Handle reconnection
+      socket.on("reconnect", (attempt) => {
+        console.log(`Socket.IO reconnected after ${attempt} attempts`);
+        // Re-fetch users to ensure up-to-date list
+        socket.emit("getUsers", (response) => {
+          if (response.status === "success") {
+            updateUserList(response.users);
+            if (selectedUserId) {
+              const user = response.users.find(u => u._id === selectedUserId);
+              if (user) selectUser(user);
+            }
+          }
+        });
       });
 
       // Toast notification
