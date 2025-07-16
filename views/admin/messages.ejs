@@ -25,26 +25,44 @@
       background: #f3f4f6;
       margin-left: 280px;
       transition: margin-left 0.3s ease;
-      min-height: 100vh;
+      max-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       overflow-x: hidden;
     }
 
-    .main-content.full {
+    .main-content {
       margin-left: 0;
+      width: 100%;
+      animation: ColorChanger 10s ease-in 0s infinite alternate;
+      overflow-y: auto;
+      max-height: 100vh;
+      /* animation: name duration timing-function delay iteration-count direction fill-mode; */
+    }
+    @keyframes ColorChanger{
+      0%{
+        background-color: #7c3aed;
+      }
+      20%{
+        background-color: #a855f7;
+      }
+      50%{
+        background-color: #ec4899;
+      }
+      100%{
+        background-color: #f472b6;
+      }
     }
 
     .chat-container {
       width: 100%;
-      max-width: 1024px;
-      margin: 2rem auto;
       background: #ffffff;
-      border-radius: 16px;
+      border-radius: 0px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
       display: flex;
-      height: 700px;
+      height: 100%;
+      max-height: 100vh;
     }
 
     .user-list-container {
@@ -174,18 +192,23 @@
       flex: 1;
       padding: 1.5rem;
       background: #f9fafb;
+      background-image: url('/images/chat-background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       overflow-y: auto;
     }
 
     .date-header {
       text-align: center;
-      margin: 1rem 0;
+      margin: 1rem auto;
       font-size: 0.875rem;
       color: #6b7280;
       background: #ffffff;
       padding: 0.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: fit-content;
     }
 
     .message {
@@ -347,7 +370,6 @@
         </div>
       </div>
       <div id="toast" class="toast"></div>
-      <%- include('../partials/footer') %>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
