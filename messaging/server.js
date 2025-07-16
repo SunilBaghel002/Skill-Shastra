@@ -47,7 +47,7 @@ const initializeMessaging = (httpServer) => {
     console.log(`User connected: ${socket.user.email} (${socket.user.role})`);
     socket.join(socket.user.id);
 
-    // Fetch user list with unread message counts
+    // Fetch user list with unread message counts and sort by recent messages
     socket.on("getUsers", async (callback) => {
       try {
         let users;
@@ -56,16 +56,30 @@ const initializeMessaging = (httpServer) => {
         } else {
           users = await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
         }
-        const usersWithUnread = await Promise.all(users.map(async (user) => {
+        const usersWithDetails = await Promise.all(users.map(async (user) => {
           const unreadCount = await Message.countDocuments({
             sender: user._id,
             receiver: socket.user.id,
             isRead: false
           });
-          return { ...user, _id: user._id.toString(), unreadCount };
+          const latestMessage = await Message.findOne({
+            $or: [
+              { sender: socket.user.id, receiver: user._id },
+              { sender: user._id, receiver: socket.user.id }
+            ]
+          })
+            .sort({ createdAt: -1 })
+            .lean();
+          return {
+            ...user,
+            _id: user._id.toString(),
+            unreadCount,
+            lastMessageTime: latestMessage ? latestMessage.createdAt : new Date(0)
+          };
         }));
-        console.log("Sending users to client:", usersWithUnread.map(u => ({ id: u._id, name: u.name, unreadCount: u.unreadCount })));
-        callback({ status: "success", users: usersWithUnread });
+        usersWithDetails.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+        console.log("Sending users to client:", usersWithDetails.map(u => ({ id: u._id, name: u.name, unreadCount: u.unreadCount, lastMessageTime: u.lastMessageTime })));
+        callback({ status: "success", users: usersWithDetails });
       } catch (error) {
         console.error("Error fetching users:", error);
         callback({ status: "error", message: "Failed to fetch users" });
@@ -82,9 +96,8 @@ const initializeMessaging = (httpServer) => {
         if (!receiver || !receiver.isVerified) {
           return callback({ status: "error", message: "Receiver not found or not verified" });
         }
-        // Allow admins to message anyone; users can only message admins
         if (socket.user.role === "user" && receiver.role !== "admin") {
-          return callback({ status: "error", message: "Students can only message admins" });
+          return callback({ status: "error", message: "Users can only message admins" });
         }
         const message = new Message({
           sender: socket.user.id,
@@ -111,7 +124,6 @@ const initializeMessaging = (httpServer) => {
           createdAt: message.createdAt,
           messageId: message._id.toString(),
         };
-        // Emit to receiver and sender
         io.to(receiverId).emit("receiveMessage", messageData);
         io.to(socket.user.id).emit("receiveMessage", messageData);
         console.log(`Message sent from ${socket.user.id} to ${receiverId}: ${content}`);
@@ -120,15 +132,29 @@ const initializeMessaging = (httpServer) => {
           const users = socket.user.role === "admin"
             ? await User.find({ isVerified: true }).select("name email role profileImage").lean()
             : await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
-          const usersWithUnread = await Promise.all(users.map(async (user) => {
+          const usersWithDetails = await Promise.all(users.map(async (user) => {
             const unreadCount = await Message.countDocuments({
               sender: user._id,
               receiver: userId,
               isRead: false
             });
-            return { ...user, _id: user._id.toString(), unreadCount };
+            const latestMessage = await Message.findOne({
+              $or: [
+                { sender: userId, receiver: user._id },
+                { sender: user._id, receiver: userId }
+              ]
+            })
+              .sort({ createdAt: -1 })
+              .lean();
+            return {
+              ...user,
+              _id: user._id.toString(),
+              unreadCount,
+              lastMessageTime: latestMessage ? latestMessage.createdAt : new Date(0)
+            };
           }));
-          io.to(userId).emit("updateUsers", { users: usersWithUnread });
+          usersWithDetails.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+          io.to(userId).emit("updateUsers", { users: usersWithDetails });
           console.log(`Updated user list for ${userId}`);
         };
         await updateUsers(socket.user.id);
@@ -153,25 +179,37 @@ const initializeMessaging = (httpServer) => {
           .populate("receiver", "name email profileImage")
           .sort({ createdAt: 1 })
           .lean();
-        // Mark messages as read
         await Message.updateMany(
           { receiver: socket.user.id, sender: userId, isRead: false },
           { isRead: true }
         );
-        // Update user lists for both users
         const updateUsers = async (targetUserId) => {
           const users = socket.user.role === "admin"
             ? await User.find({ isVerified: true }).select("name email role profileImage").lean()
             : await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
-          const usersWithUnread = await Promise.all(users.map(async (user) => {
+          const usersWithDetails = await Promise.all(users.map(async (user) => {
             const unreadCount = await Message.countDocuments({
               sender: user._id,
               receiver: targetUserId,
               isRead: false
             });
-            return { ...user, _id: user._id.toString(), unreadCount };
+            const latestMessage = await Message.findOne({
+              $or: [
+                { sender: targetUserId, receiver: user._id },
+                { sender: user._id, receiver: targetUserId }
+              ]
+            })
+              .sort({ createdAt: -1 })
+              .lean();
+            return {
+              ...user,
+              _id: user._id.toString(),
+              unreadCount,
+              lastMessageTime: latestMessage ? latestMessage.createdAt : new Date(0)
+            };
           }));
-          io.to(targetUserId).emit("updateUsers", { users: usersWithUnread });
+          usersWithDetails.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+          io.to(targetUserId).emit("updateUsers", { users: usersWithDetails });
           console.log(`Updated user list for ${targetUserId}`);
         };
         await updateUsers(socket.user.id);
