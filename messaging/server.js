@@ -28,7 +28,7 @@ const initializeMessaging = (httpServer) => {
         return next(new Error("Authentication error: Invalid or unverified user"));
       }
       socket.user = {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
@@ -45,7 +45,7 @@ const initializeMessaging = (httpServer) => {
   // Handle Socket.IO Connections
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.user.email} (${socket.user.role})`);
-    socket.join(socket.user.id.toString());
+    socket.join(socket.user.id);
 
     // Fetch user list with unread message counts
     socket.on("getUsers", async (callback) => {
@@ -56,15 +56,15 @@ const initializeMessaging = (httpServer) => {
         } else {
           users = await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
         }
-        // Add unread message count for each user
         const usersWithUnread = await Promise.all(users.map(async (user) => {
           const unreadCount = await Message.countDocuments({
             sender: user._id,
             receiver: socket.user.id,
             isRead: false
           });
-          return { ...user, unreadCount };
+          return { ...user, _id: user._id.toString(), unreadCount };
         }));
+        console.log("Sending users to client:", usersWithUnread.map(u => ({ id: u._id, name: u.name, unreadCount: u.unreadCount })));
         callback({ status: "success", users: usersWithUnread });
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -82,6 +82,7 @@ const initializeMessaging = (httpServer) => {
         if (!receiver || !receiver.isVerified) {
           return callback({ status: "error", message: "Receiver not found or not verified" });
         }
+        // Allow admins to message anyone; users can only message admins
         if (socket.user.role === "user" && receiver.role !== "admin") {
           return callback({ status: "error", message: "Students can only message admins" });
         }
@@ -93,29 +94,45 @@ const initializeMessaging = (httpServer) => {
           isRead: false,
         });
         await message.save();
-        io.to(receiverId).emit("receiveMessage", {
+        const messageData = {
           sender: {
             id: socket.user.id,
             name: socket.user.name,
             email: socket.user.email,
             profileImage: socket.user.profileImage,
           },
-          content,
-          createdAt: message.createdAt,
-          messageId: message._id,
-        });
-        // Emit to sender to update their own chat
-        io.to(socket.user.id).emit("receiveMessage", {
-          sender: {
-            id: socket.user.id,
-            name: socket.user.name,
-            email: socket.user.email,
-            profileImage: socket.user.profileImage,
+          receiver: {
+            id: receiver._id.toString(),
+            name: receiver.name,
+            email: receiver.email,
+            profileImage: receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
           },
           content,
           createdAt: message.createdAt,
-          messageId: message._id,
-        });
+          messageId: message._id.toString(),
+        };
+        // Emit to receiver and sender
+        io.to(receiverId).emit("receiveMessage", messageData);
+        io.to(socket.user.id).emit("receiveMessage", messageData);
+        console.log(`Message sent from ${socket.user.id} to ${receiverId}: ${content}`);
+        // Update user lists for both sender and receiver
+        const updateUsers = async (userId) => {
+          const users = socket.user.role === "admin"
+            ? await User.find({ isVerified: true }).select("name email role profileImage").lean()
+            : await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
+          const usersWithUnread = await Promise.all(users.map(async (user) => {
+            const unreadCount = await Message.countDocuments({
+              sender: user._id,
+              receiver: userId,
+              isRead: false
+            });
+            return { ...user, _id: user._id.toString(), unreadCount };
+          }));
+          io.to(userId).emit("updateUsers", { users: usersWithUnread });
+          console.log(`Updated user list for ${userId}`);
+        };
+        await updateUsers(socket.user.id);
+        await updateUsers(receiverId);
         callback({ status: "success", message: "Message sent" });
       } catch (error) {
         console.error("Error sending message:", error);
@@ -141,32 +158,29 @@ const initializeMessaging = (httpServer) => {
           { receiver: socket.user.id, sender: userId, isRead: false },
           { isRead: true }
         );
-        // Notify sender to update unread counts
-        io.to(userId).emit("messagesRead", { receiverId: socket.user.id });
+        // Update user lists for both users
+        const updateUsers = async (targetUserId) => {
+          const users = socket.user.role === "admin"
+            ? await User.find({ isVerified: true }).select("name email role profileImage").lean()
+            : await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
+          const usersWithUnread = await Promise.all(users.map(async (user) => {
+            const unreadCount = await Message.countDocuments({
+              sender: user._id,
+              receiver: targetUserId,
+              isRead: false
+            });
+            return { ...user, _id: user._id.toString(), unreadCount };
+          }));
+          io.to(targetUserId).emit("updateUsers", { users: usersWithUnread });
+          console.log(`Updated user list for ${targetUserId}`);
+        };
+        await updateUsers(socket.user.id);
+        await updateUsers(userId);
+        console.log(`Fetched ${messages.length} messages for user ${userId}`);
         callback({ status: "success", messages });
       } catch (error) {
         console.error("Error fetching messages:", error);
         callback({ status: "error", message: "Failed to fetch messages" });
-      }
-    });
-
-    // Update unread counts when messages are read
-    socket.on("messagesRead", async ({ receiverId }) => {
-      try {
-        const users = socket.user.role === "admin"
-          ? await User.find({ isVerified: true }).select("name email role profileImage").lean()
-          : await User.find({ role: "admin", isVerified: true }).select("name email role profileImage").lean();
-        const usersWithUnread = await Promise.all(users.map(async (user) => {
-          const unreadCount = await Message.countDocuments({
-            sender: user._id,
-            receiver: socket.user.id,
-            isRead: false
-          });
-          return { ...user, unreadCount };
-        }));
-        socket.emit("updateUsers", { users: usersWithUnread });
-      } catch (error) {
-        console.error("Error updating users:", error);
       }
     });
 
@@ -178,10 +192,6 @@ const initializeMessaging = (httpServer) => {
   const router = require("express").Router();
   router.get("/messages", async (req, res) => {
     try {
-      const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
-      if (!req.user || !adminEmails.includes(req.user.email)) {
-        return res.status(403).json({ message: "Access denied. Admin only." });
-      }
       const messages = await Message.find()
         .populate("sender", "name email role profileImage")
         .populate("receiver", "name email role profileImage")
