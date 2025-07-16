@@ -67,6 +67,32 @@
       color: #1f2937;
     }
 
+    .category-tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0.5rem 1.5rem;
+    }
+
+    .category-tab {
+      flex: 1;
+      text-align: center;
+      padding: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .category-tab.active {
+      color: #4f46e5;
+      border-bottom: 2px solid #4f46e5;
+    }
+
+    .category-tab:hover {
+      color: #4338ca;
+    }
+
     .user-list {
       flex: 1;
       overflow-y: auto;
@@ -94,6 +120,10 @@
       height: 48px;
       border-radius: 50%;
       margin-right: 1rem;
+    }
+
+    .user-item .user-info {
+      flex: 1;
     }
 
     .user-item h3 {
@@ -158,16 +188,53 @@
       color: #22c55e;
     }
 
+    .chat-header .actions {
+      position: relative;
+    }
+
     .chat-header .actions button {
       color: #6b7280;
-      transition: color 0.2s;
       background: none;
       border: none;
       cursor: pointer;
+      font-size: 1.5rem;
+      margin-left: 0.5rem;
     }
 
     .chat-header .actions button:hover {
       color: #374151;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 2.5rem;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      display: none;
+    }
+
+    .dropdown-menu.active {
+      display: block;
+    }
+
+    .dropdown-menu button {
+      display: block;
+      width: 100%;
+      padding: 0.5rem 1rem;
+      background: none;
+      border: none;
+      text-align: left;
+      font-size: 0.875rem;
+      color: #1f2937;
+      cursor: pointer;
+    }
+
+    .dropdown-menu button:hover {
+      background: #f3f4f6;
     }
 
     .chat-body {
@@ -186,6 +253,9 @@
       padding: 0.5rem;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     .message {
@@ -219,6 +289,12 @@
 
     .message-content p {
       margin: 0;
+    }
+
+    .message-content img {
+      max-width: 100%;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     .message-content .timestamp {
@@ -261,8 +337,21 @@
       box-shadow: 0 0 0 2px #818cf8;
     }
 
+    .attach-button {
+      margin-left: 0.5rem;
+      background: none;
+      border: none;
+      color: #6b7280;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .attach-button:hover {
+      color: #374151;
+    }
+
     .send-button {
-      margin-left: 1rem;
+      margin-left: 0.5rem;
       background: #4f46e5;
       color: #ffffff;
       padding: 0.75rem;
@@ -286,6 +375,79 @@
       border-radius: 5px;
       display: none;
       z-index: 1000;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      padding: 2rem;
+      border-radius: 8px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .modal-content img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      margin-bottom: 1rem;
+    }
+
+    .modal-content h2 {
+      font-size: 1.5rem;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-content p {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-bottom: 1rem;
+    }
+
+    .modal-content button {
+      background: #4f46e5;
+      color: #ffffff;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .modal-content button:hover {
+      background: #4338ca;
+    }
+
+    .image-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .image-modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 8px;
     }
 
     @media (max-width: 768px) {
@@ -321,6 +483,11 @@
           <div class="user-list-header">
             <h2>Messages</h2>
           </div>
+          <div class="category-tabs">
+            <div class="category-tab active" data-category="all">All</div>
+            <div class="category-tab" data-category="unread">Unread</div>
+            <div class="category-tab" data-category="favorites">Favorites</div>
+          </div>
           <div class="user-list" id="userList"></div>
         </div>
         <div class="chat-window-container">
@@ -334,12 +501,19 @@
             </div>
             <div class="actions">
               <button><span class="material-icons">search</span></button>
-              <button><span class="material-icons">more_vert</span></button>
+              <button id="moreOptions" class="more-options"><span class="material-icons">more_vert</span></button>
+              <div class="dropdown-menu" id="dropdownMenu">
+                <button id="toggleFavoriteBtn">Add to Favorites</button>
+                <button id="clearChatsBtn">Clear Chats</button>
+                <button id="viewProfileBtn">View Profile</button>
+              </div>
             </div>
           </div>
           <div class="chat-body" id="chatWindow"></div>
           <div class="message-input-container">
             <div class="input-wrapper">
+              <button class="attach-button" id="attachButton"><span class="material-icons">attach_file</span></button>
+              <input type="file" id="imageInput" accept="image/png,image/jpeg" style="display: none;" />
               <input type="text" id="messageInput" class="message-input" placeholder="Type your message..." />
               <button id="sendButton" class="send-button"><span class="material-icons">send</span></button>
             </div>
@@ -347,6 +521,18 @@
         </div>
       </div>
       <div id="toast" class="toast"></div>
+      <div id="profileModal" class="modal">
+        <div class="modal-content">
+          <img id="modalAvatar" src="https://www.gravatar.com/avatar/?d=retro" alt="Admin avatar" />
+          <h2 id="modalName"></h2>
+          <p id="modalEmail"></p>
+          <p id="modalRole"></p>
+          <button id="closeModal">Close</button>
+        </div>
+      </div>
+      <div id="imageModal" class="image-modal">
+        <img id="enlargedImage" src="" alt="Enlarged image" />
+      </div>
       <%- include('../partials/footer') %>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
@@ -360,16 +546,19 @@
         const userName = "<%= user.name || '' %>";
         if (!user.name || !user.email || !token || !userId || !userName) {
           showToast("Please log in to access this page.");
-          window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+          setTimeout(() => {
+            window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+          }, 1000);
           return;
         }
         if (user.role !== "user") {
           showToast("This page is for users only.");
-          window.location.href = "/";
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 1000);
           return;
         }
 
-        // Update main content margin
         const sidebar = document.querySelector(".sidebar");
         const mainContent = document.querySelector(".main-content");
         if (sidebar && mainContent) {
@@ -381,126 +570,305 @@
           });
         }
 
-        // Socket.IO connection
         const socket = io(window.location.origin, {
           auth: { token },
-          transports: ["websocket"],
+          transports: ["websocket", "polling"],
           reconnection: true,
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,
+          maxHttpBufferSize: 10 * 1024 * 1024, // Increased to 10MB for base64 images
         });
 
         const userList = document.getElementById("userList");
         const chatWindow = document.getElementById("chatWindow");
         const messageInput = document.getElementById("messageInput");
         const sendButton = document.getElementById("sendButton");
+        const attachButton = document.getElementById("attachButton");
+        const imageInput = document.getElementById("imageInput");
         const chatHeaderName = document.getElementById("chatHeaderName");
         const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
+        const moreOptions = document.getElementById("moreOptions");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+        const toggleFavoriteBtn = document.getElementById("toggleFavoriteBtn");
+        const clearChatsBtn = document.getElementById("clearChatsBtn");
+        const viewProfileBtn = document.getElementById("viewProfileBtn");
+        const profileModal = document.getElementById("profileModal");
+        const closeModal = document.getElementById("closeModal");
+        const imageModal = document.getElementById("imageModal");
+        const enlargedImage = document.getElementById("enlargedImage");
         let selectedUserId = localStorage.getItem("selectedUserId") || null;
+        let currentCategory = "all";
+        let pendingMessages = [];
+        let isFavorite = false;
 
-        // Send message function
-        function sendMessage() {
-          const content = messageInput.value.trim();
-          if (selectedUserId && content) {
-            socket.emit("getUsers", (response) => {
-              if (response.status === "success") {
-                const selectedUser = response.users.find(u => u._id === selectedUserId);
-                if (selectedUser && selectedUser.role === "admin") {
-                  console.log("Sending message to:", selectedUserId, "Content:", content);
-                  socket.emit("sendMessage", { receiverId: selectedUserId, content }, (response) => {
-                    if (response.status === "success") {
-                      messageInput.value = "";
-                    } else {
-                      showToast("Failed to send message: " + response.message);
-                      console.error("Send message failed:", response.message);
-                    }
-                  });
-                } else {
-                  showToast("You can only message admins.");
-                  console.error("Send failed: selected user is not an admin");
-                }
-              } else {
-                showToast("Failed to verify admin: " + response.message);
-                console.error("Verify admin failed:", response.message);
-              }
-            });
-          } else {
-            showToast("Please select an admin and enter a message.");
-            console.log("Send failed: selectedUserId =", selectedUserId, "content =", content);
-          }
+        function showToast(message) {
+          const toast = document.getElementById("toast");
+          toast.textContent = message;
+          toast.style.display = "block";
+          setTimeout(() => (toast.style.display = "none"), 3000);
         }
 
-        // Send message on button click
-        sendButton.addEventListener("click", sendMessage);
+        function sendMessage(content, messageType = "text", retryCount = 0) {
+          if (!selectedUserId || !content) {
+            showToast("Please select an admin and enter a message or select an image.");
+            console.log("Send failed: selectedUserId =", selectedUserId, "content =", content);
+            return;
+          }
 
-        // Send message on Enter key
+          socket.emit("getUsers", (response) => {
+            if (response.status === "success") {
+              const selectedUser = response.users.find(u => u._id === selectedUserId);
+              if (selectedUser && selectedUser.role === "admin") {
+                if (messageType === "image") {
+                  const base64Size = (content.length * 3) / 4 / 1024 / 1024; // Approximate MB
+                  console.log(`Image base64 size: ${base64Size.toFixed(2)}MB, Type: ${messageType}`);
+                  if (base64Size > 5) {
+                    showToast("Image size exceeds 5MB after encoding.");
+                    console.log("Image too large after encoding:", base64Size.toFixed(2), "MB");
+                    return;
+                  }
+                }
+
+                console.log(`Sending message to ${selectedUserId}, Type: ${messageType}, Content length: ${content.length}, Retry: ${retryCount}`);
+                socket.emit("sendMessage", { receiverId: selectedUserId, content, messageType }, (response) => {
+                  if (response.status === "success") {
+                    messageInput.value = "";
+                    imageInput.value = "";
+                    console.log(`Message sent successfully: ${messageType}, ID: ${response.messageId}`);
+                  } else {
+                    console.error("Send message failed:", response.message, "Response:", response);
+                    showToast(`Failed to send ${messageType}: ${response.message}`);
+                    if (retryCount < 2 && messageType === "image") {
+                      console.log(`Retrying image send, attempt ${retryCount + 1}`);
+                      setTimeout(() => sendMessage(content, messageType, retryCount + 1), 2000);
+                    } else {
+                      showToast(`Failed to send ${messageType} after ${retryCount + 1} attempts: ${response.message}`);
+                    }
+                  }
+                });
+              } else {
+                showToast("You can only message admins.");
+                console.error("Send failed: selected user is not an admin");
+              }
+            } else {
+              showToast("Failed to verify admin: " + response.message);
+              console.error("Verify admin failed:", response.message);
+            }
+          });
+        }
+
+        sendButton.addEventListener("click", () => sendMessage(messageInput.value.trim()));
+
         messageInput.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
+          if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            sendMessage();
+            sendMessage(messageInput.value.trim());
           }
         });
 
-        // Fetch admins
+        attachButton.addEventListener("click", () => imageInput.click());
+
+        imageInput.addEventListener("change", () => {
+          const file = imageInput.files[0];
+          if (file) {
+            if (!["image/png", "image/jpeg"].includes(file.type)) {
+              showToast("Only PNG and JPEG images are allowed.");
+              console.log("Invalid file type:", file.type);
+              return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Image size must be less than 5MB.");
+              console.log("File too large:", file.size / 1024 / 1024, "MB");
+              return;
+            }
+            console.log(`Selected image: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "image");
+            };
+            reader.onerror = () => {
+              showToast("Failed to read image file.");
+              console.error("FileReader error:", reader.error);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        moreOptions.addEventListener("click", () => {
+          dropdownMenu.classList.toggle("active");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!dropdownMenu.contains(e.target) && !moreOptions.contains(e.target)) {
+            dropdownMenu.classList.remove("active");
+          }
+        });
+
+        toggleFavoriteBtn.addEventListener("click", () => {
+          if (selectedUserId) {
+            socket.emit("toggleFavorite", { userId: selectedUserId }, (response) => {
+              if (response.status === "success") {
+                isFavorite = response.isFavorite;
+                toggleFavoriteBtn.textContent = isFavorite ? "Remove from Favorites" : "Add to Favorites";
+                showToast(isFavorite ? "Added to Favorites" : "Removed from Favorites");
+                socket.emit("getUsers", (res) => {
+                  if (res.status === "success") updateUserList(res.users);
+                });
+              } else {
+                showToast("Failed to toggle favorite: " + response.message);
+              }
+            });
+          } else {
+            showToast("Please select an admin.");
+          }
+        });
+
+        clearChatsBtn.addEventListener("click", () => {
+          if (selectedUserId) {
+            if (confirm("Are you sure you want to clear chats with this admin?")) {
+              socket.emit("clearChats", { userId: selectedUserId }, (response) => {
+                if (response.status === "success") {
+                  showToast("Chats cleared successfully");
+                  chatWindow.innerHTML = "";
+                  chatWindow.dataset.lastDate = null;
+                } else {
+                  showToast("Failed to clear chats: " + response.message);
+                }
+              });
+            }
+          } else {
+            showToast("Please select an admin.");
+          }
+        });
+
+        viewProfileBtn.addEventListener("click", () => {
+          if (selectedUserId) {
+            socket.emit("getUserProfile", { userId: selectedUserId }, (response) => {
+              if (response.status === "success") {
+                document.getElementById("modalAvatar").src = DOMPurify.sanitize(response.user.profileImage);
+                document.getElementById("modalName").textContent = DOMPurify.sanitize(response.user.name);
+                document.getElementById("modalEmail").textContent = DOMPurify.sanitize(response.user.email);
+                document.getElementById("modalRole").textContent = DOMPurify.sanitize(response.user.role.charAt(0).toUpperCase() + response.user.role.slice(1));
+                profileModal.style.display = "flex";
+              } else {
+                showToast("Failed to fetch profile: " + response.message);
+              }
+            });
+          } else {
+            showToast("Please select an admin.");
+          }
+        });
+
+        closeModal.addEventListener("click", () => {
+          profileModal.style.display = "none";
+        });
+
+        imageModal.addEventListener("click", () => {
+          imageModal.style.display = "none";
+        });
+
+        chatWindow.addEventListener("click", (e) => {
+          if (e.target.tagName === "IMG") {
+            enlargedImage.src = DOMPurify.sanitize(e.target.src);
+            imageModal.style.display = "flex";
+          }
+        });
+
         socket.emit("getUsers", (response) => {
           if (response.status === "success") {
-            console.log("Received admins:", response.users);
+            console.log("Received users:", response.users);
             updateUserList(response.users);
             if (selectedUserId) {
               const user = response.users.find(u => u._id === selectedUserId);
               if (user) {
                 selectUser(user);
+              } else {
+                selectedUserId = null;
+                localStorage.removeItem("selectedUserId");
               }
             }
           } else {
             showToast("Failed to fetch admins: " + response.message);
-            console.error("Fetch admins failed:", response.message);
+            console.error("Fetch users failed:", response.message);
           }
         });
 
-        // Update user list
+        document.querySelectorAll(".category-tab").forEach(tab => {
+          tab.addEventListener("click", () => {
+            document.querySelectorAll(".category-tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            currentCategory = tab.dataset.category;
+            console.log("Switched to category:", currentCategory);
+            socket.emit("getUsers", (response) => {
+              if (response.status === "success") {
+                updateUserList(response.users);
+              }
+            });
+          });
+        });
+
         function updateUserList(users) {
           userList.innerHTML = "";
-          users.forEach((u) => {
-            if (u.role !== "admin") return;
+          let filteredUsers = users;
+          if (currentCategory === "unread") {
+            filteredUsers = users.filter(u => u.unreadCount > 0);
+          } else if (currentCategory === "favorites") {
+            filteredUsers = users.filter(u => u.isFavorite);
+          }
+          filteredUsers.forEach((u) => {
             const userItem = document.createElement("div");
             userItem.className = `user-item${u._id === selectedUserId ? " selected" : ""}`;
             userItem.dataset.userId = u._id;
             userItem.innerHTML = `
             <img src="${DOMPurify.sanitize(u.profileImage || 'https://www.gravatar.com/avatar/?d=retro')}" alt="Admin avatar" />
-            <div>
+            <div class="user-info">
               <h3>${DOMPurify.sanitize(u.name)}</h3>
-              <p>Admin</p>
+              <p>${DOMPurify.sanitize(u.role)}</p>
             </div>
             ${u.unreadCount > 0 ? `<span class="unread-count">${u.unreadCount}</span>` : ""}
           `;
             userItem.addEventListener("click", () => {
               selectedUserId = u._id;
               localStorage.setItem("selectedUserId", selectedUserId);
-              console.log("Selected admin ID:", selectedUserId);
+              console.log("Selected user ID:", selectedUserId);
               selectUser(u);
             });
             userList.appendChild(userItem);
           });
         }
 
-        // Select admin
         function selectUser(user) {
-          if (user.role !== "admin") {
-            showToast("You can only message admins.");
-            console.error("Select failed: user is not an admin", user);
-            return;
-          }
           document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
           const userItem = document.querySelector(`.user-item[data-user-id="${user._id}"]`);
           if (userItem) userItem.classList.add("selected");
-          chatHeaderName.textContent = user.name;
-          chatHeaderAvatar.src = user.profileImage || 'https://www.gravatar.com/avatar/?d=retro';
+          chatHeaderName.textContent = DOMPurify.sanitize(user.name);
+          chatHeaderAvatar.src = DOMPurify.sanitize(user.profileImage || 'https://www.gravatar.com/avatar/?d=retro');
+          toggleFavoriteBtn.textContent = user.isFavorite ? "Remove from Favorites" : "Add to Favorites";
+          isFavorite = user.isFavorite;
           chatWindow.innerHTML = "";
+          chatWindow.dataset.lastDate = null;
           socket.emit("getMessages", { userId: user._id }, (response) => {
             if (response.status === "success") {
               console.log("Received messages:", response.messages);
               displayMessages(response.messages);
+              pendingMessages = pendingMessages.filter(msg => {
+                if (
+                  (msg.sender.id === user._id && msg.receiver.id === userId) ||
+                  (msg.sender.id === userId && msg.receiver.id === user._id)
+                ) {
+                  appendMessage(
+                    msg.sender.id === userId,
+                    msg.sender.name,
+                    msg.content,
+                    msg.createdAt,
+                    msg.messageId,
+                    msg.messageType
+                  );
+                  return false;
+                }
+                return true;
+              });
             } else {
               showToast("Failed to fetch messages: " + response.message);
               console.error("Fetch messages failed:", response.message);
@@ -508,9 +876,8 @@
           });
         }
 
-        // Update user list with unread counts and sorting
         socket.on("updateUsers", (response) => {
-          console.log("Updating admin list:", response.users);
+          console.log("Updating user list:", response.users);
           updateUserList(response.users);
           if (selectedUserId) {
             const user = response.users.find(u => u._id === selectedUserId);
@@ -518,11 +885,23 @@
               document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
               const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
               if (userItem) userItem.classList.add("selected");
+              toggleFavoriteBtn.textContent = user.isFavorite ? "Remove from Favorites" : "Add to Favorites";
+              isFavorite = user.isFavorite;
+            } else {
+              selectedUserId = null;
+              localStorage.removeItem("selectedUserId");
+              chatHeaderName.textContent = "Select an admin";
+              chatHeaderAvatar.src = "https://www.gravatar.com/avatar/?d=retro";
+              chatWindow.innerHTML = "";
             }
           }
         });
 
-        // Receive real-time messages
+        socket.on("updateMessages", (response) => {
+          console.log("Updating messages:", response.messages);
+          displayMessages(response.messages);
+        });
+
         socket.on("receiveMessage", (msg) => {
           console.log("Received message:", msg, "Current selectedUserId:", selectedUserId, "userId:", userId);
           if (
@@ -534,19 +913,21 @@
               msg.sender.name,
               msg.content,
               msg.createdAt,
-              msg.messageId
+              msg.messageId,
+              msg.messageType
             );
           } else {
-            console.log("Message not for current chat:", { sender: msg.sender.id, receiver: msg.receiver.id, selectedUserId, userId });
+            console.log("Queuing message for later:", msg);
+            pendingMessages.push(msg);
           }
         });
 
-        // Display messages with date grouping
         function displayMessages(messages, append = false) {
           if (!append) {
             chatWindow.innerHTML = "";
+            chatWindow.dataset.lastDate = null;
           }
-          let lastDate = append ? chatWindow.dataset.lastDate || null : null;
+          let lastDate = chatWindow.dataset.lastDate || null;
           messages.forEach((msg) => {
             const messageDate = new Date(msg.createdAt).toLocaleDateString();
             if (messageDate !== lastDate) {
@@ -561,7 +942,8 @@
               msg.sender.name,
               msg.content,
               msg.createdAt,
-              msg._id || msg.messageId
+              msg._id || msg.messageId,
+              msg.messageType
             );
           });
           chatWindow.dataset.lastDate = lastDate;
@@ -569,8 +951,7 @@
           console.log("Messages displayed:", messages.length);
         }
 
-        // Append message to chat window
-        function appendMessage(isSent, senderName, content, timestamp, messageId) {
+        function appendMessage(isSent, senderName, content, timestamp, messageId, messageType) {
           if (document.querySelector(`.message[data-message-id="${messageId}"]`)) {
             console.log("Skipping duplicate message:", messageId);
             return;
@@ -589,17 +970,34 @@
           messageDiv.dataset.messageId = messageId;
           const messageContent = document.createElement("div");
           messageContent.className = "message-content";
-          messageContent.innerHTML = `
-          <p>${DOMPurify.sanitize(content)}</p>
-          <span class="timestamp">${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-        `;
+          if (messageType === "image") {
+            messageContent.innerHTML = `
+            <img src="${DOMPurify.sanitize(content)}" alt="Shared image" />
+            <span class="timestamp">${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          `;
+          } else {
+            messageContent.innerHTML = `
+            <p>${DOMPurify.sanitize(content)}</p>
+            <span class="timestamp">${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          `;
+          }
           messageDiv.appendChild(messageContent);
           chatWindow.appendChild(messageDiv);
           chatWindow.scrollTop = chatWindow.scrollHeight;
-          console.log("Message appended:", { isSent, senderName, content, messageId });
+          console.log("Message appended:", { isSent, senderName, messageType, messageId });
         }
 
-        // Handle Socket.IO errors
+        setInterval(() => {
+          if (selectedUserId) {
+            socket.emit("getMessages", { userId: selectedUserId }, (response) => {
+              if (response.status === "success") {
+                console.log("Periodic message check:", response.messages.length);
+                displayMessages(response.messages);
+              }
+            });
+          }
+        }, 10000);
+
         socket.on("connect_error", (error) => {
           console.error("Socket.IO connection error:", error);
           showToast("Connection error: " + error.message);
@@ -607,13 +1005,15 @@
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             localStorage.removeItem("selectedUserId");
-            window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+            setTimeout(() => {
+              window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+            }, 1000);
           }
         });
 
-        // Handle Socket.IO connection
         socket.on("connect", () => {
           console.log("Socket.IO connected");
+          socket.emit("rejoinRooms");
           socket.emit("getUsers", (response) => {
             if (response.status === "success") {
               updateUserList(response.users);
@@ -625,9 +1025,9 @@
           });
         });
 
-        // Handle reconnection
         socket.on("reconnect", (attempt) => {
           console.log(`Socket.IO reconnected after ${attempt} attempts`);
+          socket.emit("rejoinRooms");
           socket.emit("getUsers", (response) => {
             if (response.status === "success") {
               updateUserList(response.users);
@@ -638,14 +1038,6 @@
             }
           });
         });
-
-        // Toast notification
-        function showToast(message) {
-          const toast = document.getElementById("toast");
-          toast.textContent = message;
-          toast.style.display = "block";
-          setTimeout(() => (toast.style.display = "none"), 3000);
-        }
       });
     </script>
 </body>
