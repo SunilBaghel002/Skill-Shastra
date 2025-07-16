@@ -25,7 +25,7 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(cors({ origin: "http://localhost:5000", credentials: true }));
+app.use(cors({ origin: "https://skill-shastra.vercel.app/", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -602,7 +602,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-    
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
