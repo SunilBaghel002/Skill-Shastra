@@ -339,6 +339,9 @@
       const socket = io(window.location.origin, {
         auth: { token },
         transports: ["websocket"],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
       });
 
       const userList = document.getElementById("userList");
@@ -354,7 +357,6 @@
         if (response.status === "success") {
           console.log("Received admins:", response.users);
           updateUserList(response.users);
-          // Restore selected admin after refresh
           if (selectedUserId) {
             const user = response.users.find(u => u._id === selectedUserId);
             if (user) {
@@ -370,7 +372,7 @@
       function updateUserList(users) {
         userList.innerHTML = "";
         users.forEach((u) => {
-          if (u.role !== "admin") return; // Ensure only admins are shown
+          if (u.role !== "admin") return;
           const userItem = document.createElement("div");
           userItem.className = `user-item${u._id === selectedUserId ? " selected" : ""}`;
           userItem.dataset.userId = u._id;
@@ -418,13 +420,21 @@
       socket.on("updateUsers", (response) => {
         console.log("Updating admin list:", response.users);
         updateUserList(response.users);
+        // Re-select admin if still in the list
+        if (selectedUserId) {
+          const user = response.users.find(u => u._id === selectedUserId);
+          if (user) {
+            document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
+            const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
+            if (userItem) userItem.classList.add("selected");
+          }
+        }
       });
 
       // Send message
       sendButton.addEventListener("click", () => {
         const content = messageInput.value.trim();
         if (selectedUserId && content) {
-          // Verify selected user is an admin
           socket.emit("getUsers", (response) => {
             if (response.status === "success") {
               const selectedUser = response.users.find(u => u._id === selectedUserId);
@@ -458,13 +468,13 @@
           (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
           (msg.sender.id === userId && msg.receiver.id === selectedUserId)
         ) {
-          const messages = [{
-            sender: { _id: msg.sender.id, name: msg.sender.name, profileImage: msg.sender.profileImage },
-            receiver: { _id: msg.receiver.id, name: msg.receiver.name, profileImage: msg.receiver.profileImage },
-            content: msg.content,
-            createdAt: msg.createdAt
-          }];
-          displayMessages(messages, true);
+          appendMessage(
+            msg.sender.id === userId,
+            msg.sender.name,
+            msg.content,
+            msg.createdAt,
+            msg.messageId
+          );
         }
       });
 
@@ -487,7 +497,8 @@
             msg.sender._id === userId,
             msg.sender.name,
             msg.content,
-            msg.createdAt
+            msg.createdAt,
+            msg._id
           );
         });
         chatWindow.dataset.lastDate = lastDate;
@@ -495,9 +506,20 @@
       }
 
       // Append message to chat window
-      function appendMessage(isSent, senderName, content, timestamp) {
+      function appendMessage(isSent, senderName, content, timestamp, messageId) {
+        if (document.querySelector(`.message[data-message-id="${messageId}"]`)) return;
+        const messageDate = new Date(timestamp).toLocaleDateString();
+        const lastDate = chatWindow.dataset.lastDate || null;
+        if (messageDate !== lastDate) {
+          const dateHeader = document.createElement("div");
+          dateHeader.className = "date-header";
+          dateHeader.textContent = messageDate;
+          chatWindow.appendChild(dateHeader);
+          chatWindow.dataset.lastDate = messageDate;
+        }
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${isSent ? "sent" : "received"}`;
+        messageDiv.dataset.messageId = messageId;
         const messageContent = document.createElement("div");
         messageContent.className = "message-content";
         messageContent.innerHTML = `
@@ -524,6 +546,20 @@
       // Handle Socket.IO connection
       socket.on("connect", () => {
         console.log("Socket.IO connected");
+      });
+
+      // Handle reconnection
+      socket.on("reconnect", (attempt) => {
+        console.log(`Socket.IO reconnected after ${attempt} attempts`);
+        socket.emit("getUsers", (response) => {
+          if (response.status === "success") {
+            updateUserList(response.users);
+            if (selectedUserId) {
+              const user = response.users.find(u => u._id === selectedUserId);
+              if (user) selectUser(user);
+            }
+          }
+        });
       });
 
       // Toast notification
