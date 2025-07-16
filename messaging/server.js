@@ -15,7 +15,19 @@ cloudinary.config({
 const initializeMessaging = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: ["http://localhost:5000", "https://skill-shastra.vercel.app"],
+      origin: (origin, callback) => {
+        const allowedOrigins = [
+          "http://localhost:5000",
+          "http://localhost:3000",
+          "https://skill-shastra.vercel.app",
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.error(`CORS Error: Origin ${origin} not allowed`);
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -131,10 +143,14 @@ const initializeMessaging = (httpServer) => {
             isFavorite: u.isFavorite,
           }))
         );
-        callback({ status: "success", users: usersWithDetails });
+        if (typeof callback === "function") {
+          callback({ status: "success", users: usersWithDetails });
+        }
       } catch (error) {
         console.error("Error fetching users:", error);
-        callback({ status: "error", message: "Failed to fetch users" });
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to fetch users" });
+        }
       }
     });
 
@@ -154,7 +170,9 @@ const initializeMessaging = (httpServer) => {
           id.toString()
         );
         console.log(`Toggled favorite for user ${userId}: ${!isFavorite}`);
-        callback({ status: "success", isFavorite: !isFavorite });
+        if (typeof callback === "function") {
+          callback({ status: "success", isFavorite: !isFavorite });
+        }
         socket.emit("getUsers", (response) => {
           if (response.status === "success") {
             io.to(socket.user.id).emit("updateUsers", {
@@ -164,7 +182,9 @@ const initializeMessaging = (httpServer) => {
         });
       } catch (error) {
         console.error("Error toggling favorite:", error);
-        callback({ status: "error", message: "Failed to toggle favorite" });
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to toggle favorite" });
+        }
       }
     });
 
@@ -175,16 +195,18 @@ const initializeMessaging = (httpServer) => {
         callback
       ) => {
         try {
-          // Validate required fields
           if (!receiverId || !content) {
             console.error("SendMessage Error: Missing receiverId or content", {
               receiverId,
               content,
             });
-            return callback({
-              status: "error",
-              message: "Receiver ID and content are required",
-            });
+            if (typeof callback === "function") {
+              return callback({
+                status: "error",
+                message: "Receiver ID and content are required",
+              });
+            }
+            return;
           }
           const receiver = await User.findById(receiverId);
           if (!receiver || !receiver.isVerified) {
@@ -192,23 +214,28 @@ const initializeMessaging = (httpServer) => {
               "SendMessage Error: Receiver not found or not verified:",
               receiverId
             );
-            return callback({
-              status: "error",
-              message: "Receiver not found or not verified",
-            });
+            if (typeof callback === "function") {
+              return callback({
+                status: "error",
+                message: "Receiver not found or not verified",
+              });
+            }
+            return;
           }
           if (socket.user.role === "user" && receiver.role !== "admin") {
             console.error(
               "SendMessage Error: User attempted to message non-admin:",
               { sender: socket.user.id, receiver: receiverId }
             );
-            return callback({
-              status: "error",
-              message: "Users can only message admins",
-            });
+            if (typeof callback === "function") {
+              return callback({
+                status: "error",
+                message: "Users can only message admins",
+              });
+            }
+            return;
           }
 
-          // Determine messageType and fileMetadata
           let finalMessageType = messageType || "text";
           let fileMetadata =
             messageType !== "text"
@@ -220,7 +247,6 @@ const initializeMessaging = (httpServer) => {
               : undefined;
           let secureUrl = content;
 
-          // Handle file uploads to Cloudinary
           if (
             content.startsWith("data:") ||
             content.startsWith("https://res.cloudinary.com/")
@@ -230,7 +256,6 @@ const initializeMessaging = (httpServer) => {
               audio: ["audio/mpeg", "audio/wav", "audio/webm"],
             };
 
-            // Validate file type if provided, or infer from content
             if (
               fileType &&
               ![
@@ -243,17 +268,19 @@ const initializeMessaging = (httpServer) => {
               ].includes(fileType)
             ) {
               console.error("SendMessage Error: Invalid file type:", fileType);
-              return callback({
-                status: "error",
-                message: `Invalid file type. Allowed: ${Object.values(
-                  allowedTypes
-                )
-                  .flat()
-                  .join(", ")}`,
-              });
+              if (typeof callback === "function") {
+                return callback({
+                  status: "error",
+                  message: `Invalid file type. Allowed: ${Object.values(
+                    allowedTypes
+                  )
+                    .flat()
+                    .join(", ")}`,
+                });
+              }
+              return;
             }
 
-            // Infer messageType if content is a Cloudinary URL
             if (content.startsWith("https://res.cloudinary.com/")) {
               if (
                 content.endsWith(".jpg") ||
@@ -287,21 +314,23 @@ const initializeMessaging = (httpServer) => {
                 };
               }
             } else if (content.startsWith("data:")) {
-              // Handle base64 upload
               const maxSizeMB = 5;
-              const base64Size = (content.length * 3) / 4 / (1024 * 1024); // Approximate size in MB
+              const base64Size = (content.length * 3) / 4 / (1024 * 1024);
               if (base64Size > maxSizeMB) {
                 console.error(
                   `SendMessage Error: ${finalMessageType} size exceeds ${maxSizeMB}MB`,
                   { base64Size }
                 );
-                return callback({
-                  status: "error",
-                  message: `${
-                    finalMessageType.charAt(0).toUpperCase() +
-                    finalMessageType.slice(1)
-                  } size must be less than ${maxSizeMB}MB`,
-                });
+                if (typeof callback === "function") {
+                  return callback({
+                    status: "error",
+                    message: `${
+                      finalMessageType.charAt(0).toUpperCase() +
+                      finalMessageType.slice(1)
+                    } size must be less than ${maxSizeMB}MB`,
+                  });
+                }
+                return;
               }
 
               const base64Regex = new RegExp(
@@ -311,10 +340,13 @@ const initializeMessaging = (httpServer) => {
                 console.error(
                   `SendMessage Error: Invalid ${finalMessageType} base64 format`
                 );
-                return callback({
-                  status: "error",
-                  message: `Invalid ${finalMessageType} format`,
-                });
+                if (typeof callback === "function") {
+                  return callback({
+                    status: "error",
+                    message: `Invalid ${finalMessageType} format`,
+                  });
+                }
+                return;
               }
 
               const base64Data = content.replace(base64Regex, "");
@@ -348,15 +380,17 @@ const initializeMessaging = (httpServer) => {
                   `Error uploading ${finalMessageType} to Cloudinary:`,
                   uploadError
                 );
-                return callback({
-                  status: "error",
-                  message: `Failed to upload ${finalMessageType}`,
-                });
+                if (typeof callback === "function") {
+                  return callback({
+                    status: "error",
+                    message: `Failed to upload ${finalMessageType}`,
+                  });
+                }
+                return;
               }
             }
           }
 
-          // Create and save the message
           const message = new Message({
             sender: socket.user.id,
             receiver: receiverId,
@@ -453,14 +487,18 @@ const initializeMessaging = (httpServer) => {
           };
           await updateUsers(socket.user.id);
           await updateUsers(receiverId);
-          callback({
-            status: "success",
-            message: "Message sent",
-            messageId: message._id.toString(),
-          });
+          if (typeof callback === "function") {
+            callback({
+              status: "success",
+              message: "Message sent",
+              messageId: message._id.toString(),
+            });
+          }
         } catch (error) {
           console.error("Error sending message:", error);
-          callback({ status: "error", message: "Failed to send message" });
+          if (typeof callback === "function") {
+            callback({ status: "error", message: "Failed to send message" });
+          }
         }
       }
     );
@@ -474,7 +512,9 @@ const initializeMessaging = (httpServer) => {
           ],
         });
         console.log(`Cleared chats between ${socket.user.id} and ${userId}`);
-        callback({ status: "success", message: "Chats cleared" });
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Chats cleared" });
+        }
         socket.emit("getMessages", { userId }, (response) => {
           if (response.status === "success") {
             io.to(socket.user.id).emit("updateMessages", {
@@ -526,7 +566,9 @@ const initializeMessaging = (httpServer) => {
         await updateUsers(userId);
       } catch (error) {
         console.error("Error clearing chats:", error);
-        callback({ status: "error", message: "Failed to clear chats" });
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to clear chats" });
+        }
       }
     });
 
@@ -537,22 +579,32 @@ const initializeMessaging = (httpServer) => {
           .lean();
         if (!user) {
           console.error("GetUserProfile Error: User not found:", userId);
-          return callback({ status: "error", message: "User not found" });
+          if (typeof callback === "function") {
+            return callback({ status: "error", message: "User not found" });
+          }
+          return;
         }
-        callback({
-          status: "success",
-          user: {
-            id: user._id.toString(),
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            profileImage:
-              user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
-          },
-        });
+        if (typeof callback === "function") {
+          callback({
+            status: "success",
+            user: {
+              id: user._id.toString(),
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              profileImage:
+                user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+            },
+          });
+        }
       } catch (error) {
         console.error("Error fetching user profile:", error);
-        callback({ status: "error", message: "Failed to fetch user profile" });
+        if (typeof callback === "function") {
+          callback({
+            status: "error",
+            message: "Failed to fetch user profile",
+          });
+        }
       }
     });
 
@@ -613,7 +665,9 @@ const initializeMessaging = (httpServer) => {
             })),
           }
         );
-        callback({ status: "success", messages: formattedMessages });
+        if (typeof callback === "function") {
+          callback({ status: "success", messages: formattedMessages });
+        }
 
         const updatedMessages = await Message.find({
           $or: [
@@ -711,8 +765,164 @@ const initializeMessaging = (httpServer) => {
         await updateUsers(userId);
       } catch (error) {
         console.error("Error fetching messages:", error);
-        callback({ status: "error", message: "Failed to fetch messages" });
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to fetch messages" });
+        }
       }
+    });
+
+    // WebRTC Signaling for Audio Calls
+    socket.on("callUser", ({ to, offer }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          console.error("CallUser Error: Invalid receiver ID:", to);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        const receiver = User.findById(to);
+        if (!receiver) {
+          console.error("CallUser Error: Receiver not found:", to);
+          if (typeof callback === "function") {
+            return callback({ status: "error", message: "Receiver not found" });
+          }
+          return;
+        }
+        io.to(to).emit("incomingCall", {
+          from: socket.user.id,
+          callerName: socket.user.name,
+          offer,
+        });
+        console.log(`Call initiated from ${socket.user.id} to ${to}`);
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call initiated" });
+        }
+      } catch (error) {
+        console.error("CallUser Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to initiate call" });
+        }
+      }
+    });
+
+    socket.on("answerCall", ({ to, answer }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          console.error("AnswerCall Error: Invalid receiver ID:", to);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        io.to(to).emit("callAnswered", {
+          from: socket.user.id,
+          answer,
+        });
+        console.log(`Call answered by ${socket.user.id} to ${to}`);
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call answered" });
+        }
+      } catch (error) {
+        console.error("AnswerCall Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to answer call" });
+        }
+      }
+    });
+
+    socket.on("iceCandidate", ({ to, candidate }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          console.error("IceCandidate Error: Invalid receiver ID:", to);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        io.to(to).emit("iceCandidate", {
+          from: socket.user.id,
+          candidate,
+        });
+        console.log(`ICE candidate sent from ${socket.user.id} to ${to}`);
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "ICE candidate sent" });
+        }
+      } catch (error) {
+        console.error("IceCandidate Error:", error);
+        if (typeof callback === "function") {
+          callback({
+            status: "error",
+            message: "Failed to send ICE candidate",
+          });
+        }
+      }
+    });
+
+    socket.on("rejectCall", ({ to }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          console.error("RejectCall Error: Invalid receiver ID:", to);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        io.to(to).emit("callRejected");
+        console.log(`Call rejected by ${socket.user.id} to ${to}`);
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call rejected" });
+        }
+      } catch (error) {
+        console.error("RejectCall Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to reject call" });
+        }
+      }
+    });
+
+    socket.on("endCall", ({ to }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          console.error("EndCall Error: Invalid receiver ID:", to);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        io.to(to).emit("callEnded");
+        console.log(`Call ended by ${socket.user.id} to ${to}`);
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call ended" });
+        }
+      } catch (error) {
+        console.error("EndCall Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to end call" });
+        }
+      }
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error(
+        `Socket.IO Connect Error for user ${socket.user.id}:`,
+        error.message
+      );
     });
 
     socket.on("disconnect", () => {
