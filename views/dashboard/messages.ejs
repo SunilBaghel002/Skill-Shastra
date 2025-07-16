@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,6 +19,7 @@
       padding: 0;
       box-sizing: border-box;
     }
+
     body {
       font-family: 'Poppins', sans-serif;
       background: #f3f4f6;
@@ -29,9 +31,11 @@
       align-items: center;
       overflow-x: hidden;
     }
+
     .main-content.full {
       margin-left: 0;
     }
+
     .chat-container {
       width: 100%;
       max-width: 1024px;
@@ -42,6 +46,7 @@
       display: flex;
       height: 700px;
     }
+
     .user-list-container {
       width: 33.33%;
       background: #f9fafb;
@@ -50,19 +55,23 @@
       display: flex;
       flex-direction: column;
     }
+
     .user-list-header {
       padding: 1.5rem;
       border-bottom: 1px solid #e5e7eb;
     }
+
     .user-list-header h2 {
       font-size: 1.5rem;
       font-weight: 700;
       color: #1f2937;
     }
+
     .user-list {
       flex: 1;
       overflow-y: auto;
     }
+
     .user-item {
       display: flex;
       align-items: center;
@@ -71,27 +80,33 @@
       border-bottom: 1px solid #e5e7eb;
       transition: background 0.2s;
     }
+
     .user-item:hover {
       background: #f3f4f6;
     }
+
     .user-item.selected {
       background: #e0e7ff;
     }
+
     .user-item img {
       width: 48px;
       height: 48px;
       border-radius: 50%;
       margin-right: 1rem;
     }
+
     .user-item h3 {
       font-size: 1rem;
       font-weight: 600;
       color: #111827;
     }
+
     .user-item p {
       font-size: 0.875rem;
       color: #6b7280;
     }
+
     .user-item .unread-count {
       margin-left: auto;
       background: #3b82f6;
@@ -105,11 +120,13 @@
       align-items: center;
       justify-content: center;
     }
+
     .chat-window-container {
       width: 66.67%;
       display: flex;
       flex-direction: column;
     }
+
     .chat-header {
       padding: 1rem;
       border-bottom: 1px solid #e5e7eb;
@@ -117,25 +134,30 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .chat-header .user-info {
       display: flex;
       align-items: center;
     }
+
     .chat-header img {
       width: 48px;
       height: 48px;
       border-radius: 50%;
       margin-right: 1rem;
     }
+
     .chat-header h3 {
       font-size: 1.125rem;
       font-weight: 600;
       color: #1f2937;
     }
+
     .chat-header .online-status {
       font-size: 0.875rem;
       color: #22c55e;
     }
+
     .chat-header .actions button {
       color: #6b7280;
       transition: color 0.2s;
@@ -143,15 +165,18 @@
       border: none;
       cursor: pointer;
     }
+
     .chat-header .actions button:hover {
       color: #374151;
     }
+
     .chat-body {
       flex: 1;
       padding: 1.5rem;
       background: #f9fafb;
       overflow-y: auto;
     }
+
     .date-header {
       text-align: center;
       margin: 1rem 0;
@@ -162,53 +187,66 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+
     .message {
       margin-bottom: 1rem;
       display: flex;
     }
+
     .message.sent {
       justify-content: flex-end;
     }
+
     .message.received {
       justify-content: flex-start;
     }
+
     .message-content {
       max-width: 300px;
       padding: 0.75rem;
       border-radius: 8px;
     }
+
     .message.sent .message-content {
       background: #4f46e5;
       color: #ffffff;
     }
+
     .message.received .message-content {
       background: #e5e7eb;
       color: #1f2937;
     }
+
     .message-content p {
       margin: 0;
     }
+
     .message-content .timestamp {
       font-size: 0.75rem;
       margin-top: 0.25rem;
       display: block;
     }
+
     .message.sent .timestamp {
       color: #e0e7ff;
     }
+
     .message.received .timestamp {
       color: #6b7280;
     }
+
     .message-input-container {
       padding: 1rem;
       background: #ffffff;
       border-top: 1px solid #e5e7eb;
       border-radius: 0 0 16px 0;
     }
+
     .message-input-container .input-wrapper {
       display: flex;
       align-items: center;
     }
+
     .message-input {
       flex: 1;
       background: #f3f4f6;
@@ -218,9 +256,11 @@
       font-size: 1rem;
       outline: none;
     }
+
     .message-input:focus {
       box-shadow: 0 0 0 2px #818cf8;
     }
+
     .send-button {
       margin-left: 1rem;
       background: #4f46e5;
@@ -231,9 +271,11 @@
       cursor: pointer;
       transition: background 0.2s;
     }
+
     .send-button:hover {
       background: #4338ca;
     }
+
     .toast {
       position: fixed;
       top: 20px;
@@ -245,137 +287,186 @@
       display: none;
       z-index: 1000;
     }
+
     @media (max-width: 768px) {
       body {
         margin-left: 0;
       }
+
       .chat-container {
         flex-direction: column;
         height: auto;
         margin: 1rem;
       }
+
       .user-list-container {
         width: 100%;
         border-right: none;
         border-bottom: 1px solid #e5e7eb;
         border-radius: 16px 16px 0 0;
       }
+
       .chat-window-container {
         width: 100%;
       }
     }
   </style>
 </head>
+
 <body>
   <%- include('../partials/sidebar') %>
-  <main class="main-content" id="main-content">
-    <div class="chat-container">
-      <div class="user-list-container">
-        <div class="user-list-header">
-          <h2>Messages</h2>
+    <main class="main-content" id="main-content">
+      <div class="chat-container">
+        <div class="user-list-container">
+          <div class="user-list-header">
+            <h2>Messages</h2>
+          </div>
+          <div class="user-list" id="userList"></div>
         </div>
-        <div class="user-list" id="userList"></div>
-      </div>
-      <div class="chat-window-container">
-        <div class="chat-header">
-          <div class="user-info" id="chatHeaderUser">
-            <img src="https://www.gravatar.com/avatar/?d=retro" alt="Admin avatar" id="chatHeaderAvatar" />
-            <div>
-              <h3 id="chatHeaderName">Select an admin</h3>
-              <p class="online-status">Online</p>
+        <div class="chat-window-container">
+          <div class="chat-header">
+            <div class="user-info" id="chatHeaderUser">
+              <img src="https://www.gravatar.com/avatar/?d=retro" alt="Admin avatar" id="chatHeaderAvatar" />
+              <div>
+                <h3 id="chatHeaderName">Select an admin</h3>
+                <p class="online-status">Online</p>
+              </div>
+            </div>
+            <div class="actions">
+              <button><span class="material-icons">search</span></button>
+              <button><span class="material-icons">more_vert</span></button>
             </div>
           </div>
-          <div class="actions">
-            <button><span class="material-icons">search</span></button>
-            <button><span class="material-icons">more_vert</span></button>
-          </div>
-        </div>
-        <div class="chat-body" id="chatWindow"></div>
-        <div class="message-input-container">
-          <div class="input-wrapper">
-            <input type="text" id="messageInput" class="message-input" placeholder="Type your message..." />
-            <button id="sendButton" class="send-button"><span class="material-icons">send</span></button>
+          <div class="chat-body" id="chatWindow"></div>
+          <div class="message-input-container">
+            <div class="input-wrapper">
+              <input type="text" id="messageInput" class="message-input" placeholder="Type your message..." />
+              <button id="sendButton" class="send-button"><span class="material-icons">send</span></button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div id="toast" class="toast"></div>
-    <%- include('../partials/footer') %>
-  </main>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
-  <script src="/js/sidebar.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = localStorage.getItem("token");
-      const userId = "<%= user._id || '' %>";
-      const userName = "<%= user.name || '' %>";
-      if (!user.name || !user.email || !token || !userId || !userName) {
-        showToast("Please log in to access this page.");
-        window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
-        return;
-      }
-      if (user.role !== "user") {
-        showToast("This page is for users only.");
-        window.location.href = "/";
-        return;
-      }
-
-      // Update main content margin
-      const sidebar = document.querySelector(".sidebar");
-      const mainContent = document.querySelector(".main-content");
-      if (sidebar && mainContent) {
-        if (sidebar.classList.contains("hidden")) {
-          mainContent.classList.add("full");
+      <div id="toast" class="toast"></div>
+      <%- include('../partials/footer') %>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
+    <script src="/js/sidebar.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const token = localStorage.getItem("token");
+        const userId = "<%= user._id || '' %>";
+        const userName = "<%= user.name || '' %>";
+        if (!user.name || !user.email || !token || !userId || !userName) {
+          showToast("Please log in to access this page.");
+          window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+          return;
         }
-        sidebar.addEventListener("transitionend", () => {
-          mainContent.classList.toggle("full", sidebar.classList.contains("hidden"));
-        });
-      }
+        if (user.role !== "user") {
+          showToast("This page is for users only.");
+          window.location.href = "/";
+          return;
+        }
 
-      // Socket.IO connection
-      const socket = io(window.location.origin, {
-        auth: { token },
-        transports: ["websocket"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
-
-      const userList = document.getElementById("userList");
-      const chatWindow = document.getElementById("chatWindow");
-      const messageInput = document.getElementById("messageInput");
-      const sendButton = document.getElementById("sendButton");
-      const chatHeaderName = document.getElementById("chatHeaderName");
-      const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
-      let selectedUserId = localStorage.getItem("selectedUserId") || null;
-
-      // Fetch admins
-      socket.emit("getUsers", (response) => {
-        if (response.status === "success") {
-          console.log("Received admins:", response.users);
-          updateUserList(response.users);
-          if (selectedUserId) {
-            const user = response.users.find(u => u._id === selectedUserId);
-            if (user) {
-              selectUser(user);
-            }
+        // Update main content margin
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
+        if (sidebar && mainContent) {
+          if (sidebar.classList.contains("hidden")) {
+            mainContent.classList.add("full");
           }
-        } else {
-          showToast("Failed to fetch admins: " + response.message);
+          sidebar.addEventListener("transitionend", () => {
+            mainContent.classList.toggle("full", sidebar.classList.contains("hidden"));
+          });
         }
-      });
 
-      // Update user list
-      function updateUserList(users) {
-        userList.innerHTML = "";
-        users.forEach((u) => {
-          if (u.role !== "admin") return;
-          const userItem = document.createElement("div");
-          userItem.className = `user-item${u._id === selectedUserId ? " selected" : ""}`;
-          userItem.dataset.userId = u._id;
-          userItem.innerHTML = `
+        // Socket.IO connection
+        const socket = io(window.location.origin, {
+          auth: { token },
+          transports: ["websocket"],
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+        });
+
+        const userList = document.getElementById("userList");
+        const chatWindow = document.getElementById("chatWindow");
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+        const chatHeaderName = document.getElementById("chatHeaderName");
+        const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
+        let selectedUserId = localStorage.getItem("selectedUserId") || null;
+
+        // Send message function
+        function sendMessage() {
+          const content = messageInput.value.trim();
+          if (selectedUserId && content) {
+            socket.emit("getUsers", (response) => {
+              if (response.status === "success") {
+                const selectedUser = response.users.find(u => u._id === selectedUserId);
+                if (selectedUser && selectedUser.role === "admin") {
+                  console.log("Sending message to:", selectedUserId, "Content:", content);
+                  socket.emit("sendMessage", { receiverId: selectedUserId, content }, (response) => {
+                    if (response.status === "success") {
+                      messageInput.value = "";
+                    } else {
+                      showToast("Failed to send message: " + response.message);
+                      console.error("Send message failed:", response.message);
+                    }
+                  });
+                } else {
+                  showToast("You can only message admins.");
+                  console.error("Send failed: selected user is not an admin");
+                }
+              } else {
+                showToast("Failed to verify admin: " + response.message);
+                console.error("Verify admin failed:", response.message);
+              }
+            });
+          } else {
+            showToast("Please select an admin and enter a message.");
+            console.log("Send failed: selectedUserId =", selectedUserId, "content =", content);
+          }
+        }
+
+        // Send message on button click
+        sendButton.addEventListener("click", sendMessage);
+
+        // Send message on Enter key
+        messageInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+
+        // Fetch admins
+        socket.emit("getUsers", (response) => {
+          if (response.status === "success") {
+            console.log("Received admins:", response.users);
+            updateUserList(response.users);
+            if (selectedUserId) {
+              const user = response.users.find(u => u._id === selectedUserId);
+              if (user) {
+                selectUser(user);
+              }
+            }
+          } else {
+            showToast("Failed to fetch admins: " + response.message);
+            console.error("Fetch admins failed:", response.message);
+          }
+        });
+
+        // Update user list
+        function updateUserList(users) {
+          userList.innerHTML = "";
+          users.forEach((u) => {
+            if (u.role !== "admin") return;
+            const userItem = document.createElement("div");
+            userItem.className = `user-item${u._id === selectedUserId ? " selected" : ""}`;
+            userItem.dataset.userId = u._id;
+            userItem.innerHTML = `
             <img src="${DOMPurify.sanitize(u.profileImage || 'https://www.gravatar.com/avatar/?d=retro')}" alt="Admin avatar" />
             <div>
               <h3>${DOMPurify.sanitize(u.name)}</h3>
@@ -383,192 +474,180 @@
             </div>
             ${u.unreadCount > 0 ? `<span class="unread-count">${u.unreadCount}</span>` : ""}
           `;
-          userItem.addEventListener("click", () => {
-            selectedUserId = u._id;
-            localStorage.setItem("selectedUserId", selectedUserId);
-            console.log("Selected admin ID:", selectedUserId);
-            selectUser(u);
+            userItem.addEventListener("click", () => {
+              selectedUserId = u._id;
+              localStorage.setItem("selectedUserId", selectedUserId);
+              console.log("Selected admin ID:", selectedUserId);
+              selectUser(u);
+            });
+            userList.appendChild(userItem);
           });
-          userList.appendChild(userItem);
-        });
-      }
-
-      // Select admin
-      function selectUser(user) {
-        if (user.role !== "admin") {
-          showToast("You can only message admins.");
-          return;
         }
-        document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
-        const userItem = document.querySelector(`.user-item[data-user-id="${user._id}"]`);
-        if (userItem) userItem.classList.add("selected");
-        chatHeaderName.textContent = user.name;
-        chatHeaderAvatar.src = user.profileImage || 'https://www.gravatar.com/avatar/?d=retro';
-        chatWindow.innerHTML = "";
-        socket.emit("getMessages", { userId: user._id }, (response) => {
-          if (response.status === "success") {
-            console.log("Received messages:", response.messages);
-            displayMessages(response.messages);
-          } else {
-            showToast("Failed to fetch messages: " + response.message);
-          }
-        });
-      }
 
-      // Update user list with unread counts and sorting
-      socket.on("updateUsers", (response) => {
-        console.log("Updating admin list:", response.users);
-        updateUserList(response.users);
-        // Re-select admin if still in the list
-        if (selectedUserId) {
-          const user = response.users.find(u => u._id === selectedUserId);
-          if (user) {
-            document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
-            const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
-            if (userItem) userItem.classList.add("selected");
+        // Select admin
+        function selectUser(user) {
+          if (user.role !== "admin") {
+            showToast("You can only message admins.");
+            console.error("Select failed: user is not an admin", user);
+            return;
           }
-        }
-      });
-
-      // Send message
-      sendButton.addEventListener("click", () => {
-        const content = messageInput.value.trim();
-        if (selectedUserId && content) {
-          socket.emit("getUsers", (response) => {
+          document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
+          const userItem = document.querySelector(`.user-item[data-user-id="${user._id}"]`);
+          if (userItem) userItem.classList.add("selected");
+          chatHeaderName.textContent = user.name;
+          chatHeaderAvatar.src = user.profileImage || 'https://www.gravatar.com/avatar/?d=retro';
+          chatWindow.innerHTML = "";
+          socket.emit("getMessages", { userId: user._id }, (response) => {
             if (response.status === "success") {
-              const selectedUser = response.users.find(u => u._id === selectedUserId);
-              if (selectedUser && selectedUser.role === "admin") {
-                console.log("Sending message to:", selectedUserId, "Content:", content);
-                socket.emit("sendMessage", { receiverId: selectedUserId, content }, (response) => {
-                  if (response.status === "success") {
-                    messageInput.value = "";
-                  } else {
-                    showToast("Failed to send message: " + response.message);
-                  }
-                });
-              } else {
-                showToast("You can only message admins.");
-                console.log("Send failed: selected user is not an admin");
-              }
+              console.log("Received messages:", response.messages);
+              displayMessages(response.messages);
             } else {
-              showToast("Failed to verify admin: " + response.message);
+              showToast("Failed to fetch messages: " + response.message);
+              console.error("Fetch messages failed:", response.message);
             }
           });
-        } else {
-          showToast("Please select an admin and enter a message.");
-          console.log("Send failed: selectedUserId =", selectedUserId, "content =", content);
         }
-      });
 
-      // Receive real-time messages
-      socket.on("receiveMessage", (msg) => {
-        console.log("Received message:", msg);
-        if (
-          (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
-          (msg.sender.id === userId && msg.receiver.id === selectedUserId)
-        ) {
-          appendMessage(
-            msg.sender.id === userId,
-            msg.sender.name,
-            msg.content,
-            msg.createdAt,
-            msg.messageId
-          );
-        }
-      });
+        // Update user list with unread counts and sorting
+        socket.on("updateUsers", (response) => {
+          console.log("Updating admin list:", response.users);
+          updateUserList(response.users);
+          if (selectedUserId) {
+            const user = response.users.find(u => u._id === selectedUserId);
+            if (user) {
+              document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
+              const userItem = document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`);
+              if (userItem) userItem.classList.add("selected");
+            }
+          }
+        });
 
-      // Display messages with date grouping
-      function displayMessages(messages, append = false) {
-        if (!append) {
-          chatWindow.innerHTML = "";
+        // Receive real-time messages
+        socket.on("receiveMessage", (msg) => {
+          console.log("Received message:", msg, "Current selectedUserId:", selectedUserId, "userId:", userId);
+          if (
+            (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
+            (msg.sender.id === userId && msg.receiver.id === selectedUserId)
+          ) {
+            appendMessage(
+              msg.sender.id === userId,
+              msg.sender.name,
+              msg.content,
+              msg.createdAt,
+              msg.messageId
+            );
+          } else {
+            console.log("Message not for current chat:", { sender: msg.sender.id, receiver: msg.receiver.id, selectedUserId, userId });
+          }
+        });
+
+        // Display messages with date grouping
+        function displayMessages(messages, append = false) {
+          if (!append) {
+            chatWindow.innerHTML = "";
+          }
+          let lastDate = append ? chatWindow.dataset.lastDate || null : null;
+          messages.forEach((msg) => {
+            const messageDate = new Date(msg.createdAt).toLocaleDateString();
+            if (messageDate !== lastDate) {
+              const dateHeader = document.createElement("div");
+              dateHeader.className = "date-header";
+              dateHeader.textContent = messageDate;
+              chatWindow.appendChild(dateHeader);
+              lastDate = messageDate;
+            }
+            appendMessage(
+              msg.sender._id === userId,
+              msg.sender.name,
+              msg.content,
+              msg.createdAt,
+              msg._id || msg.messageId
+            );
+          });
+          chatWindow.dataset.lastDate = lastDate;
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+          console.log("Messages displayed:", messages.length);
         }
-        let lastDate = append ? chatWindow.dataset.lastDate || null : null;
-        messages.forEach((msg) => {
-          const messageDate = new Date(msg.createdAt).toLocaleDateString();
+
+        // Append message to chat window
+        function appendMessage(isSent, senderName, content, timestamp, messageId) {
+          if (document.querySelector(`.message[data-message-id="${messageId}"]`)) {
+            console.log("Skipping duplicate message:", messageId);
+            return;
+          }
+          const messageDate = new Date(timestamp).toLocaleDateString();
+          const lastDate = chatWindow.dataset.lastDate || null;
           if (messageDate !== lastDate) {
             const dateHeader = document.createElement("div");
             dateHeader.className = "date-header";
             dateHeader.textContent = messageDate;
             chatWindow.appendChild(dateHeader);
-            lastDate = messageDate;
+            chatWindow.dataset.lastDate = messageDate;
           }
-          appendMessage(
-            msg.sender._id === userId,
-            msg.sender.name,
-            msg.content,
-            msg.createdAt,
-            msg._id
-          );
-        });
-        chatWindow.dataset.lastDate = lastDate;
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-      }
-
-      // Append message to chat window
-      function appendMessage(isSent, senderName, content, timestamp, messageId) {
-        if (document.querySelector(`.message[data-message-id="${messageId}"]`)) return;
-        const messageDate = new Date(timestamp).toLocaleDateString();
-        const lastDate = chatWindow.dataset.lastDate || null;
-        if (messageDate !== lastDate) {
-          const dateHeader = document.createElement("div");
-          dateHeader.className = "date-header";
-          dateHeader.textContent = messageDate;
-          chatWindow.appendChild(dateHeader);
-          chatWindow.dataset.lastDate = messageDate;
-        }
-        const messageDiv = document.createElement("div");
-        messageDiv.className = `message ${isSent ? "sent" : "received"}`;
-        messageDiv.dataset.messageId = messageId;
-        const messageContent = document.createElement("div");
-        messageContent.className = "message-content";
-        messageContent.innerHTML = `
+          const messageDiv = document.createElement("div");
+          messageDiv.className = `message ${isSent ? "sent" : "received"}`;
+          messageDiv.dataset.messageId = messageId;
+          const messageContent = document.createElement("div");
+          messageContent.className = "message-content";
+          messageContent.innerHTML = `
           <p>${DOMPurify.sanitize(content)}</p>
           <span class="timestamp">${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         `;
-        messageDiv.appendChild(messageContent);
-        chatWindow.appendChild(messageDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-      }
-
-      // Handle Socket.IO errors
-      socket.on("connect_error", (error) => {
-        console.error("Socket.IO connection error:", error);
-        showToast("Connection error: " + error.message);
-        if (error.message.includes("Authentication error")) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          localStorage.removeItem("selectedUserId");
-          window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
+          messageDiv.appendChild(messageContent);
+          chatWindow.appendChild(messageDiv);
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+          console.log("Message appended:", { isSent, senderName, content, messageId });
         }
-      });
 
-      // Handle Socket.IO connection
-      socket.on("connect", () => {
-        console.log("Socket.IO connected");
-      });
-
-      // Handle reconnection
-      socket.on("reconnect", (attempt) => {
-        console.log(`Socket.IO reconnected after ${attempt} attempts`);
-        socket.emit("getUsers", (response) => {
-          if (response.status === "success") {
-            updateUserList(response.users);
-            if (selectedUserId) {
-              const user = response.users.find(u => u._id === selectedUserId);
-              if (user) selectUser(user);
-            }
+        // Handle Socket.IO errors
+        socket.on("connect_error", (error) => {
+          console.error("Socket.IO connection error:", error);
+          showToast("Connection error: " + error.message);
+          if (error.message.includes("Authentication error")) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("selectedUserId");
+            window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
           }
         });
-      });
 
-      // Toast notification
-      function showToast(message) {
-        const toast = document.getElementById("toast");
-        toast.textContent = message;
-        toast.style.display = "block";
-        setTimeout(() => (toast.style.display = "none"), 3000);
-      }
-    });
-  </script>
+        // Handle Socket.IO connection
+        socket.on("connect", () => {
+          console.log("Socket.IO connected");
+          socket.emit("getUsers", (response) => {
+            if (response.status === "success") {
+              updateUserList(response.users);
+              if (selectedUserId) {
+                const user = response.users.find(u => u._id === selectedUserId);
+                if (user) selectUser(user);
+              }
+            }
+          });
+        });
+
+        // Handle reconnection
+        socket.on("reconnect", (attempt) => {
+          console.log(`Socket.IO reconnected after ${attempt} attempts`);
+          socket.emit("getUsers", (response) => {
+            if (response.status === "success") {
+              updateUserList(response.users);
+              if (selectedUserId) {
+                const user = response.users.find(u => u._id === selectedUserId);
+                if (user) selectUser(user);
+              }
+            }
+          });
+        });
+
+        // Toast notification
+        function showToast(message) {
+          const toast = document.getElementById("toast");
+          toast.textContent = message;
+          toast.style.display = "block";
+          setTimeout(() => (toast.style.display = "none"), 3000);
+        }
+      });
+    </script>
 </body>
+
 </html>
