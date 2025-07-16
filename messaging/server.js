@@ -34,7 +34,7 @@ const initializeMessaging = (httpServer) => {
         role: user.role,
         profileImage: user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       };
-      console.log("Socket.IO Auth Success: User:", socket.user.email);
+      console.log("Socket.IO Auth Success: User:", socket.user.email, "ID:", socket.user.id);
       next();
     } catch (error) {
       console.error("Socket.IO Auth Error:", error.message, { token });
@@ -44,8 +44,9 @@ const initializeMessaging = (httpServer) => {
 
   // Handle Socket.IO Connections
   io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.user.email} (${socket.user.role})`);
+    console.log(`User connected: ${socket.user.email} (${socket.user.role}, ID: ${socket.user.id})`);
     socket.join(socket.user.id);
+    console.log(`User ${socket.user.id} joined room: ${socket.user.id}`);
 
     // Fetch user list with unread message counts and sort by recent messages
     socket.on("getUsers", async (callback) => {
@@ -90,13 +91,16 @@ const initializeMessaging = (httpServer) => {
     socket.on("sendMessage", async ({ receiverId, content }, callback) => {
       try {
         if (!receiverId || !content) {
+          console.error("SendMessage Error: Missing receiverId or content", { receiverId, content });
           return callback({ status: "error", message: "Receiver ID and content are required" });
         }
         const receiver = await User.findById(receiverId);
         if (!receiver || !receiver.isVerified) {
+          console.error("SendMessage Error: Receiver not found or not verified:", receiverId);
           return callback({ status: "error", message: "Receiver not found or not verified" });
         }
         if (socket.user.role === "user" && receiver.role !== "admin") {
+          console.error("SendMessage Error: User attempted to message non-admin:", { sender: socket.user.id, receiver: receiverId });
           return callback({ status: "error", message: "Users can only message admins" });
         }
         const message = new Message({
@@ -124,6 +128,7 @@ const initializeMessaging = (httpServer) => {
           createdAt: message.createdAt,
           messageId: message._id.toString(),
         };
+        console.log(`Emitting receiveMessage to sender room: ${socket.user.id}, receiver room: ${receiverId}`, messageData);
         io.to(receiverId).emit("receiveMessage", messageData);
         io.to(socket.user.id).emit("receiveMessage", messageData);
         console.log(`Message sent from ${socket.user.id} to ${receiverId}: ${content}`);
@@ -169,6 +174,7 @@ const initializeMessaging = (httpServer) => {
     // Fetch message history
     socket.on("getMessages", async ({ userId }, callback) => {
       try {
+        console.log(`Fetching messages for user ${socket.user.id} with user ${userId}`);
         const messages = await Message.find({
           $or: [
             { sender: socket.user.id, receiver: userId },
@@ -223,7 +229,7 @@ const initializeMessaging = (httpServer) => {
     });
 
     socket.on("disconnect", () => {
-      console.log(`User disconnected: ${socket.user.email}`);
+      console.log(`User disconnected: ${socket.user.email} (ID: ${socket.user.id})`);
     });
   });
 
