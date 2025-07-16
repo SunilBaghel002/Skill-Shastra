@@ -1,769 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Materials - Skillshastra</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <title>Study Materials - Skill Shastra</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.9/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon">
     <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/footer.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            background: linear-gradient(145deg, #e8f0ff 0%, #f0f4ff 50%, #ffffff 100%);
             overflow-x: hidden;
         }
-
-        /* Navbar Styles */
-        .btm {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 12px;
-            /* font-size: 1.1rem; */
-            font-weight: 500;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btm-primary {
-            background: linear-gradient(135deg, #7c3aed, #a855f7);
-            color: white;
-            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
-        }
-
-        .btm-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
-        }
-
-        /* Study Materials Hero Section */
-        .study-hero {
-            min-height: 60vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            padding: 8rem 2rem 4rem;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d1b69 100%);
-            overflow: hidden;
-        }
-
-        .study-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 30% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .study-hero-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            text-align: center;
-            z-index: 2;
-            position: relative;
-        }
-
-        .study-hero h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            color: white;
-            line-height: 1.2;
-            margin-bottom: 1.5rem;
-        }
-
-        .study-hero .gradient-text {
-            background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
+        .gradient-text {
+            background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899, #f472b6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: gradient-shift 3s ease-in-out infinite;
+            animation: gradient-shift 4s ease-in-out infinite;
         }
-
         @keyframes gradient-shift {
-
-            0%,
-            100% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 200% 50%; }
         }
-
-        .study-hero p {
-            font-size: 1.1rem;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.6;
-            max-width: 600px;
-            margin: 0 auto 2rem;
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Study Materials Section */
-        .study-materials-section {
-            padding: 6rem 2rem;
-            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-
-        .study-materials-container {
-            max-width: 1200px;
-            margin: 0 auto;
+        @keyframes ripple {
+            0% { transform: scale(0); opacity: 0.5; }
+            100% { transform: scale(4); opacity: 0; }
         }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-tag {
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            background: rgba(124, 58, 237, 0.2);
-            color: #a855f7;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(124, 58, 237, 0.3);
-            animation: pulse-glow 3s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-
-            0%,
-            100% {
-                box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
-            }
-
-            50% {
-                box-shadow: 0 0 30px rgba(124, 58, 237, 0.6), 0 0 50px rgba(124, 58, 237, 0.3);
-            }
-        }
-
-        .section-title {
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 1rem;
-        }
-
-        .section-description {
-            font-size: 1.1rem;
-            color: #6b7280;
-            max-width: 600px;
-            margin: 2rem auto;
-        }
-
-        /* Filter Bar */
-        .filter-bar {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 0.75rem 1.5rem;
-            background: rgba(124, 58, 237, 0.1);
-            color: #7c3aed;
-            border: 50px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .filter-btn:hover,
-        .filter-btn {
-            background: #7c3aed;
-            color: white;
-        }
-
-        /* Study Material Cards */
-        .study-materials-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .study-material-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        .study-material-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(124, 58, 237, 0.2);
-        }
-
-        .material-image {
-            width: 100%;
-            height: 200px;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 1rem;
-        }
-
-        .material-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .study-material-card:hover .material-image img {
-            transform: scale(1.05);
-        }
-
-        .material-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 0.5rem;
-        }
-
-        .material-category {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #7c3aed;
-            margin-bottom: 0.75rem;
-        }
-
-        .material-description {
-            font-size: 0.85rem;
-            color: #6b7280;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .material-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .material-tag {
-            padding: 0.4rem 0.8rem;
-            background: rgba(124, 58, 237, 0.1);
-            color: #7c3aed;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .material-tag:hover {
-            background: #7c3aed;
-            color: white;
-        }
-
-        .material-download {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #7c3aed, #a855f7);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .material-download:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
-        }
-
-        .material-download i {
-            margin-right: 0.5rem;
-        }
-
-        /* Footer Styles */
-        .footer {
-            background: linear-gradient(135deg, #0a0a1a 0%, #14142b 50%, #1f1247 100%);
-            padding: 5rem 2rem 2rem;
+        .card-hover {
             position: relative;
             overflow: hidden;
-            color: rgba(255, 255, 255, 0.8);
-            border-top: 1px solid rgba(88, 28, 135, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        .footer::before {
+        .card-hover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 20px rgba(124, 58, 237, 0.2);
+            border: 2px solid transparent;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 244, 255, 0.9)) padding-box,
+                        linear-gradient(135deg, #7c3aed, #a855f7, #ec4899) border-box;
+        }
+        .card-hover::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 20%, rgba(88, 28, 135, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(147, 51, 234, 0.15) 0%, transparent 50%);
-            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-
-        .footer-container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .card-hover:hover::before {
+            opacity: 1;
+        }
+        .btn-gradient {
             position: relative;
-            z-index: 2;
+            overflow: hidden;
+            background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .footer-section {
-            padding: 1rem;
-        }
-
-        .footer-logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #9333ea;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .footer-logo i {
-            font-size: 1.5rem;
-        }
-
-        .footer-description {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .social-icon {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .social-icon:hover {
-            color: #9333ea;
+        .btn-gradient:hover {
             transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.4);
         }
-
-        .footer-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #9333ea;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        .footer-title::after {
+        .btn-gradient::after {
             content: '';
             position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 40px;
-            height: 3px;
-            background: linear-gradient(90deg, #581c87, #9333ea);
-            border-radius: 2px;
+            top: 0;
+            left: -150%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
         }
-
-        .footer-menu {
-            list-style: none;
+        .btn-gradient:hover::after {
+            left: 150%;
         }
-
-        .footer-link {
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 0.9rem;
-            display: block;
-            margin-bottom: 0.75rem;
-            transition: all 0.3s ease;
+        .icon-hover {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .footer-link:hover {
-            color: #9333ea;
-            transform: translateX(5px);
-        }
-
-        .footer-contact p {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .newsletter-form {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .newsletter-input {
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            font-size: 0.9rem;
-            width: 100%;
-            max-width: 200px;
-            transition: all 0.3s ease;
-        }
-
-        .newsletter-input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .newsletter-btn {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #581c87, #9333ea);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .newsletter-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(88, 28, 135, 0.4);
-        }
-
-        .footer-bottom {
-            text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(88, 28, 135, 0.3);
-        }
-
-        .footer-bottom p {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .study-hero {
-                padding: 6rem 1rem 3rem;
-            }
-
-            .study-hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .filter-bar {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .study-materials-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .material-image {
-                height: 180px;
-            }
-
-            .footer-content {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-
-            .social-links {
-                justify-content: center;
-            }
-
-            .footer-logo {
-                justify-content: center;
-            }
-
-            .newsletter-form {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .newsletter-input {
-                max-width: 100%;
-            }
+        .card-hover:hover .icon-hover {
+            transform: scale(1.15) rotate(8deg);
         }
     </style>
 </head>
-
 <body>
     <!-- Navigation -->
     <%- include('../partials/navbar') %>
-
-
-
-    <!-- Study Materials Hero Section -->
-
-    <section class="study-hero">
-        <div class="study-hero-container">
-            <h1><span class="gradient-text">Study</span> Materials</h1>
-            <p>Access a wide range of resources to enhance your learning journey with Skillshastra.</p>
-        </div>
-    </section>
-    <section>
-        <marquee scrollamount="15" width="100%" direction="left" height="100px"
-            style="margin: 2rem auto;  color: white; font-size: 2rem; background: linear-gradient(135deg, #230f0f 0%, #3a1a1a 50%, #691b1b 100%); padding: 1rem; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);">
-            This page is under maintenance, we will notify you when it is ready to use. Please check back later.
-        </marquee>
-    </section>
-
-    <!-- Study Materials Section -->
-    <section class="study-materials-section">
-        <div class="study-materials-container">
-            <div class="section-header">
-                <span class="section-tag">Resources</span>
-                <h2 class="section-title">Explore Our <span class="gradient-text">Study Materials</span></h2>
-                <p class="section-description">Browse our curated collection of study guides, cheat sheets, and
-                    tutorials to master your tech skills.</p>
-            </div>
-
-
-
-            <!-- Filter Bar -->
-            <div class="filter-bar">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="Programming">Programming</button>
-                <button class="filter-btn" data-filter="Web Development">Web Development</button>
-                <button class="filter-btn" data-filter="Digital Marketing">Digital Marketing</button>
-                <button class="filter-btn" data-filter="Generative AI">Generative AI</button>
-            </div>
-
-            <!-- Study Materials Grid -->
-            <div class="study-materials-grid" id="study-materials-grid"></div>
-        </div>
-    </section>
-
-    <!-- Footer -->
+    <div id="root"></div>
+    
     <%- include('../partials/footer') %>
+    <script type="text/babel">
+        const { useState } = React;
 
-    <script>
-        // Study Materials Data
-        const studyMaterials = [
-            {
-                title: "Java Programming Guide",
-                category: "Programming",
-                description: "A comprehensive guide to mastering Java, covering basics to advanced topics like multithreading and Spring Boot.",
-                tags: ["Java", "OOP", "Spring Boot"],
-                image: "images/java-guide.png",
-                downloadLink: "files/java-guide.pdf"
+        const coursesData = {
+            "Programming": {
+                subcategories: {
+                    "Java": [
+                        { type: "pdf", title: "Java Basics", url: "/files/java_basics.pdf" },
+                        { type: "text", title: "Java OOP Concepts", content: "Object-oriented programming in Java..." },
+                        { type: "photo", title: "Java Flowchart", url: "/images/java_flowchart.png" },
+                        { type: "link", title: "Java Docs", url: "https://docs.oracle.com/en/java/" }
+                    ],
+                    "C": [
+                        { type: "pdf", title: "C Programming Guide", url: "/files/c_guide.pdf" },
+                        { type: "text", title: "Pointers in C", content: "Understanding pointers in C..." },
+                    ],
+                    "C++": [
+                        { type: "pdf", title: "C++ STL", url: "/files/cpp_stl.pdf" },
+                        { type: "link", title: "C++ Reference", url: "https://en.cppreference.com/" }
+                    ],
+                    "Python": [
+                        { type: "pdf", title: "Python Basics", url: "/files/python_basics.pdf" },
+                        { type: "photo", title: "Python Syntax", url: "/images/python_syntax.png" }
+                    ],
+                    "JavaScript": [
+                        { type: "text", title: "ES6 Features", content: "Introduction to ES6 features..." },
+                        { type: "link", title: "MDN JavaScript", url: "https://developer.mozilla.org/en-US/docs/Web/JavaScript" }
+                    ]
+                },
+                icon: "fas fa-code"
             },
-            {
-                title: "React.js Cheat Sheet",
-                category: "Web Development",
-                description: "Quick reference for React.js components, hooks, and best practices for building modern web apps.",
-                tags: ["React", "JavaScript", "Frontend"],
-                image: "images/react-cheatsheet.png",
-                downloadLink: "files/react-cheatsheet.pdf"
+            "Web Development": {
+                subcategories: {
+                    "Frontend": [
+                        { type: "pdf", title: "HTML & CSS Guide", url: "/files/html_css.pdf" },
+                        { type: "photo", title: "Responsive Design", url: "/images/responsive_design.png" }
+                    ],
+                    "Backend": [
+                        { type: "text", title: "Node.js Basics", content: "Setting up a Node.js server..." },
+                        { type: "link", title: "Express Docs", url: "https://expressjs.com/" }
+                    ]
+                },
+                icon: "fas fa-laptop-code"
             },
-            {
-                title: "SEO Fundamentals",
-                category: "Digital Marketing",
-                description: "Learn the essentials of SEO to optimize websites and boost search engine rankings.",
-                tags: ["SEO", "Marketing", "Analytics"],
-                image: "images/seo-guide.png",
-                downloadLink: "files/seo-fundamentals.pdf"
+            "Digital Marketing": {
+                subcategories: {
+                    "SEO": [
+                        { type: "pdf", title: "SEO Strategies", url: "/files/seo_strategies.pdf" },
+                        { type: "link", title: "Google SEO Guide", url: "https://developers.google.com/search/docs" }
+                    ],
+                    "Social Media": [
+                        { type: "photo", title: "Social Media Plan", url: "/images/social_media_plan.png" }
+                    ]
+                },
+                icon: "fas fa-bullhorn"
             },
-            {
-                title: "Introduction to Generative AI",
-                category: "Generative AI",
-                description: "Explore the basics of Generative AI, including neural networks and practical applications.",
-                tags: ["AI", "Machine Learning", "Neural Networks"],
-                image: "images/genai-intro.png",
-                downloadLink: "files/genai-intro.pdf"
+            "Generative AI": {
+                subcategories: {
+                    "Machine Learning": [
+                        { type: "pdf", title: "ML Basics", url: "/files/ml_basics.pdf" },
+                        { type: "text", title: "Neural Networks", content: "Introduction to neural networks..." }
+                    ],
+                    "Deep Learning": [
+                        { type: "link", title: "TensorFlow Docs", url: "https://www.tensorflow.org/" }
+                    ]
+                },
+                icon: "fas fa-brain"
             },
-            {
-                title: "Data Structures in Python",
-                category: "Programming",
-                description: "In-depth guide to implementing data structures like lists, stacks, and queues in Python.",
-                tags: ["Python", "Data Structures", "Algorithms"],
-                image: "images/python-ds.png",
-                downloadLink: "files/python-ds.pdf"
-            },
-            {
-                title: "Node.js Tutorial",
-                category: "Web Development",
-                description: "Step-by-step tutorial for building scalable backend applications using Node.js and Express.",
-                tags: ["Node.js", "Backend", "Express"],
-                image: "images/nodejs-tutorial.png",
-                downloadLink: "files/nodejs-tutorial.pdf"
+            "Fundamentals of Computers": {
+                subcategories: {
+                    "Basics": [
+                        { type: "pdf", title: "Computer Fundamentals", url: "/files/computer_fundamentals.pdf" },
+                        { type: "photo", title: "Computer Architecture", url: "/images/architecture.png" }
+                    ],
+                    "Networking": [
+                        { type: "text", title: "Networking Basics", content: "Understanding OSI model..." }
+                    ]
+                },
+                icon: "fas fa-desktop"
             }
-        ];
+        };
 
-        // Render Study Materials
-        function renderStudyMaterials(materials) {
-            const grid = document.getElementById('study-materials-grid');
-            grid.innerHTML = '';
+        function StudyMaterialPage() {
+            const [selectedCourse, setSelectedCourse] = useState(null);
+            const [selectedSubcategory, setSelectedSubcategory] = useState(null);
 
-            materials.forEach(material => {
-                const card = document.createElement('div');
-                card.className = 'study-material-card';
-                card.setAttribute('data-category', material.category);
+            const handleCourseClick = (course) => {
+                setSelectedCourse(course);
+                setSelectedSubcategory(null);
+            };
 
-                card.innerHTML = `
-                    <div class="material-image">
-                        <img src="${material.image}" alt="${material.title}">
-                    </div>
-                    <h3 class="material-title">${material.title}</h3>
-                    <p class="material-category">${material.category}</p>
-                    <p class="material-description">${material.description}</p>
-                    <div class="material-tags">
-                        ${material.tags.map(tag => `<span class="material-tag">${tag}</span>`).join('')}
-                    </div>
-                    <a href="${material.downloadLink}" class="material-download" download>
-                        <i class="fas fa-download"></i> Download
-                    </a>
-                `;
+            const handleSubcategoryClick = (subcategory) => {
+                setSelectedSubcategory(subcategory);
+            };
 
-                grid.appendChild(card);
-            });
+            const handleBack = () => {
+                if (selectedSubcategory) {
+                    setSelectedSubcategory(null);
+                } else if (selectedCourse) {
+                    setSelectedCourse(null);
+                }
+            };
 
-            // Animate cards
-            const cards = document.querySelectorAll('.study-material-card');
-            cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                    card.style.transition = 'all 0.6s ease';
-                }, index * 100);
-            });
+            const handleMouseMove = (e) => {
+                const card = e.currentTarget;
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                card.style.setProperty('--mouse-x', `${x}%`);
+                card.style.setProperty('--mouse-y', `${y}%`);
+            };
+
+            return (
+                <div>
+                    {/* Hero Section */}
+                    <section className="min-h-[60vh] flex items-center relative p-6 md:p-24 bg-gradient-to-r from-[#0f0f23] via-[#1a1a3a] to-[#2d1b69] overflow-hidden">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(124,58,237,0.15)_0%,transparent_50%),radial-gradient(circle_at_80%_80%,rgba(168,85,247,0.15)_0%,transparent_50%)]"></div>
+                        <div className="max-w-[1200px] mx-auto text-center z-10 opacity-0 translate-y-8 animate-[fadeInUp_1s_ease_forwards]">
+                            <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">
+                                Discover <span className="gradient-text">Skill Shastra Study Materials</span>
+                            </h1>
+                            <p className="text-lg md:text-xl text-white/85 max-w-[650px] mx-auto opacity-0 animate-[fadeInUp_1.5s_ease_forwards_0.3s]">
+                                Dive into expertly curated notes, PDFs, images, and links across all Skill Shastra courses.
+                            </p>
+                        </div>
+                    </section>
+
+                    {/* Study Materials Section */}
+                    <section className="py-16 px-6 bg-gradient-to-r from-[#f0f4ff] via-[#f8f9ff] to-[#ffffff]">
+                        <div className="max-w-[1200px] mx-auto">
+                            {selectedCourse ? (
+                                <div>
+                                    <button
+                                        onClick={handleBack}
+                                        className="mb-8 px-6 py-3 btn-gradient text-white rounded-xl font-semibold flex items-center gap-2 hover:shadow-[0_10px_25px_rgba(124,58,237,0.4)] transition-all"
+                                    >
+                                        <i className="fas fa-arrow-left"></i> Back
+                                    </button>
+                                    <h2 className="text-2xl md:text-3xl font-semibold text-[#1f2937] mb-8 tracking-tight text-center">
+                                        {selectedCourse} Study Materials
+                                    </h2>
+                                    {selectedSubcategory ? (
+                                        <div>
+                                            <h3 className="text-xl md:text-2xl font-semibold text-[#1f2937] mb-6 tracking-tight text-center">
+                                                {selectedSubcategory}
+                                            </h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                {coursesData[selectedCourse].subcategories[selectedSubcategory].map((material, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="card-hover rounded-2xl p-6 transition-all opacity-0 animate-[cardFadeIn_0.8s_ease_forwards] delay-[calc(var(--delay)*0.2s)]"
+                                                        style={{ '--delay': index + 1 }}
+                                                        onMouseMove={handleMouseMove}
+                                                    >
+                                                        <i className={`fas ${material.type === 'pdf' ? 'fa-file-pdf' : material.type === 'text' ? 'fa-file-text' : material.type === 'photo' ? 'fa-image' : 'fa-link'} text-4xl text-[#7c3aed] mb-4 icon-hover`}></i>
+                                                        <h4 className="text-lg font-semibold text-[#1f2937] mb-3">{material.title}</h4>
+                                                        {material.type === 'text' ? (
+                                                            <p className="text-sm text-[#6b7280] line-clamp-3 leading-relaxed">{material.content}</p>
+                                                        ) : (
+                                                            <div className="flex gap-3 justify-center">
+                                                                <a
+                                                                    href={material.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex-1 text-center px-5 py-2.5 btn-gradient text-white rounded-xl font-semibold hover:shadow-[0_10px_25px_rgba(124,58,237,0.4)] transition-all relative overflow-hidden"
+                                                                >
+                                                                    View
+                                                                    <i className="fas fa-eye ml-2"></i>
+                                                                </a>
+                                                                {(material.type === 'pdf' || material.type === 'photo') && (
+                                                                    <a
+                                                                        href={material.url}
+                                                                        download
+                                                                        className="flex-1 text-center px-5 py-2.5 btn-gradient text-white rounded-xl font-semibold hover:shadow-[0_10px_25px_rgba(124,58,237,0.4)] transition-all relative overflow-hidden"
+                                                                    >
+                                                                        Download
+                                                                        <i className="fas fa-download ml-2"></i>
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {Object.keys(coursesData[selectedCourse].subcategories).map((subcategory, index) => (
+                                                <div
+                                                    key={subcategory}
+                                                    onClick={() => handleSubcategoryClick(subcategory)}
+                                                    className="card-hover rounded-2xl p-6 cursor-pointer transition-all opacity-0 animate-[cardFadeIn_0.8s_ease_forwards] delay-[calc(var(--delay)*0.2s)]"
+                                                    style={{ '--delay': index + 1 }}
+                                                    onMouseMove={handleMouseMove}
+                                                >
+                                                    <i className={`${coursesData[selectedCourse].icon} text-4xl text-[#7c3aed] mb-4 icon-hover`}></i>
+                                                    <h3 className="text-lg font-semibold text-[#1f2937] mb-3 tracking-tight">{subcategory}</h3>
+                                                    <p className="text-sm text-[#6b7280] leading-relaxed">Explore study materials for {subcategory}.</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {Object.keys(coursesData).map((course, index) => (
+                                        <div
+                                            key={course}
+                                            onClick={() => handleCourseClick(course)}
+                                            className="card-hover rounded-2xl p-6 cursor-pointer transition-all opacity-0 animate-[cardFadeIn_0.8s_ease_forwards] delay-[calc(var(--delay)*0.2s)]"
+                                            style={{ '--delay': index + 1 }}
+                                            onMouseMove={handleMouseMove}
+                                        >
+                                            <i className={`${coursesData[course].icon} text-4xl text-[#7c3aed] mb-4 icon-hover`}></i>
+                                            <h3 className="text-lg font-semibold text-[#1f2937] mb-3 tracking-tight">{course}</h3>
+                                            <p className="text-sm text-[#6b7280] leading-relaxed">Access notes, PDFs, images, and links for {course}.</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                </div>
+            );
         }
 
-        // Filter Study Materials
-        function filterStudyMaterials(category) {
-            const filteredMaterials = category === 'all'
-                ? studyMaterials
-                : studyMaterials.filter(material => material.category === category);
-            renderStudyMaterials(filteredMaterials);
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            renderStudyMaterials(studyMaterials);
-
-            // Filter Button Event Listeners
-            const filterButtons = document.querySelectorAll('.filter-btn');
-            filterButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    const filter = button.getAttribute('data-filter');
-                    filterStudyMaterials(filter);
-                });
-            });
-        });
-
-
-        // Smooth Scroll for Buttons and Links
-        document.querySelectorAll('.footer-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                const href = link.getAttribute('href');
-                if (href && href.startsWith('#')) {
-                    e.preventDefault();
-                    const targetElement = document.querySelector(href);
-                    if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'smooth' });
-                        const ripple = document.createElement('span');
-                        ripple.style.position = 'absolute';
-                        ripple.style.borderRadius = '50%';
-                        ripple.style.background = 'rgba(255, 255, 255, 0.6)';
-                        ripple.style.transform = 'scale(0)';
-                        ripple.style.animation = 'ripple 0.6s linear';
-                        const rect = link.getBoundingClientRect();
-                        ripple.style.left = `${e.clientX - rect.left}px`;
-                        ripple.style.top = `${e.clientY - rect.top}px`;
-                        link.appendChild(ripple);
-                        setTimeout(() => ripple.remove(), 600);
-                    }
-                }
-            });
-        });
-
-        // Footer Newsletter Form Submission
-        const newsletterForm = document.querySelector('.newsletter-form');
-        if (newsletterForm) {
-            newsletterForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const emailInput = newsletterForm.querySelector('.newsletter-input');
-                const email = emailInput.value.trim();
-                if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    alert('Thank you for subscribing to Skillshastra!');
-                    emailInput.value = '';
-                } else {
-                    alert('Please enter a valid email address.');
-                }
-            });
-        }
-
-        // Footer Social and Link Hover Animation
-        document.querySelectorAll('.footer-link, .social-icon').forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                link.style.transition = 'all 0.3s ease';
-            });
-            link.addEventListener('mouseleave', () => {
-                link.style.transform = '';
-            });
-        });
-
-        // Ripple Animation Styles
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes ripple {
-                to {
-                    transform: scale(4);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
+        ReactDOM.render(<StudyMaterialPage />, document.getElementById('root'));
     </script>
-    <script src="/js/navbar.js"></script>
+     <script src="/js/navbar.js"></script>
 </body>
-
 </html>
