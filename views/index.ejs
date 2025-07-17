@@ -14,1048 +14,1073 @@
     <link rel="stylesheet" href="/css/navbar.css">
     <style>
         /* Responsive Styles for Timeline Section */
-.timeline-section {
-    padding: 80px 20px; /* Adjust padding for smaller screens */
-}
-
-.timeline-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.section-tag {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.section-title {
-    font-size: 36px;
-    font-weight: 600;
-    margin: 10px 0;
-    font-family: 'Poppins', sans-serif;
-}
-
-.section-description {
-    font-size: 16px;
-    max-width: 600px;
-    margin: 0 auto;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline {
-    position: relative;
-    margin: 0 auto;
-    padding: 20px 0;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    width: 6px;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.timeline-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    margin: 40px 0;
-    width: 100%;
-}
-
-.timeline-content {
-    width: 45%;
-    padding: 20px;
-    border-radius: 8px;
-}
-
-.timeline-year {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline-title {
-    font-size: 20px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline-description {
-    font-size: 16px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline-dot {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1;
-}
-
-.timeline-item:nth-child(even) .timeline-content {
-    order: 2;
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-    .timeline-section {
-        padding: 40px 15px;
-    }
-
-    .section-title {
-        font-size: 28px;
-    }
-
-    .section-description {
-        font-size: 14px;
-    }
-
-    .timeline::before {
-        left: 15px;
-        transform: none;
-    }
-
-    .timeline-item {
-        flex-direction: column;
-        align-items: flex-start;
-        margin: 20px 0;
-    }
-
-    .timeline-content {
-        width: 100%;
-        margin-left: 30px;
-        padding: 15px;
-    }
-
-    .timeline-dot {
-        left: 15px;
-        transform: none;
-    }
-
-    .timeline-item:nth-child(even) .timeline-content {
-        order: 1;
-    }
-
-    .timeline-year {
-        font-size: 20px;
-    }
-
-    .timeline-title {
-        font-size: 18px;
-    }
-
-    .timeline-description {
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 480px) {
-    .section-title {
-        font-size: 24px;
-    }
-
-    .section-description {
-        font-size: 12px;
-    }
-
-    .timeline-content {
-        margin-left: 25px;
-        padding: 10px;
-    }
-
-    .timeline-dot {
-        width: 12px;
-        height: 12px;
-        left: 13px;
-    }
-
-    .timeline::before {
-        width: 4px;
-        left: 13px;
-    }
-
-    .timeline-year {
-        font-size: 18px;
-    }
-
-    .timeline-title {
-        font-size: 16px;
-    }
-
-    .timeline-description {
-        font-size: 12px;
-    }
-}/* Responsive Styles for Timeline Section */
-.timeline-section {
-    padding: 80px 20px; /* Adjust padding for smaller screens */
-}
-
-.timeline-container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: 40px;
-}
-
-.section-tag {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.section-title {
-    font-size: 36px;
-    font-weight: 600;
-    margin: 10px 0;
-    font-family: 'Poppins', sans-serif;
-}
-
-.section-description {
-    font-size: 16px;
-    max-width: 600px;
-    margin: 0 auto;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline {
-    position: relative;
-    margin: 0 auto;
-    padding: 20px 0;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    width: 6px;
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.timeline-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    margin: 40px 0;
-    width: 100%;
-}
-
-.timeline-content {
-    width: 45%;
-    padding: 20px;
-    border-radius: 8px;
-}
-
-.timeline-year {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline-title {
-    font-size: 20px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline-description {
-    font-size: 16px;
-    font-family: 'Poppins', sans-serif;
-}
-
-.timeline-dot {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1;
-}
-
-.timeline-item:nth-child(even) .timeline-content {
-    order: 2;
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-    .timeline-section {
-        padding: 40px 15px;
-    }
-
-    .section-title {
-        font-size: 28px;
-    }
-
-    .section-description {
-        font-size: 14px;
-    }
-
-    .timeline::before {
-        left: 15px;
-        transform: none;
-    }
-
-    .timeline-item {
-        flex-direction: column;
-        align-items: flex-start;
-        margin: 20px 0;
-    }
-
-    .timeline-content {
-        width: 100%;
-        margin-left: 30px;
-        padding: 15px;
-    }
-
-    .timeline-dot {
-        left: 15px;
-        transform: none;
-    }
-
-    .timeline-item:nth-child(even) .timeline-content {
-        order: 1;
-    }
-
-    .timeline-year {
-        font-size: 20px;
-    }
-
-    .timeline-title {
-        font-size: 18px;
-    }
-
-    .timeline-description {
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 480px) {
-    .section-title {
-        font-size: 24px;
-    }
-
-    .section-description {
-        font-size: 12px;
-    }
-
-    .timeline-content {
-        margin-left: 25px;
-        padding: 10px;
-    }
-
-    .timeline-dot {
-        width: 12px;
-        height: 12px;
-        left: 13px;
-    }
-
-    .timeline::before {
-        width: 4px;
-        left: 13px;
-    }
-
-    .timeline-year {
-        font-size: 18px;
-    }
-
-    .timeline-title {
-        font-size: 16px;
-    }
-
-    .timeline-description {
-        font-size: 12px;
-    }
-}
+        .timeline-section {
+            padding: 80px 20px;
+            /* Adjust padding for smaller screens */
+        }
+
+        .timeline-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-tag {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 600;
+            margin: 10px 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .section-description {
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline {
+            position: relative;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            margin: 40px 0;
+            width: 100%;
+        }
+
+        .timeline-content {
+            width: 45%;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .timeline-year {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline-description {
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content {
+            order: 2;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .timeline-section {
+                padding: 40px 15px;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .section-description {
+                font-size: 14px;
+            }
+
+            .timeline::before {
+                left: 15px;
+                transform: none;
+            }
+
+            .timeline-item {
+                flex-direction: column;
+                align-items: flex-start;
+                margin: 20px 0;
+            }
+
+            .timeline-content {
+                width: 100%;
+                margin-left: 30px;
+                padding: 15px;
+            }
+
+            .timeline-dot {
+                left: 15px;
+                transform: none;
+            }
+
+            .timeline-item:nth-child(even) .timeline-content {
+                order: 1;
+            }
+
+            .timeline-year {
+                font-size: 20px;
+            }
+
+            .timeline-title {
+                font-size: 18px;
+            }
+
+            .timeline-description {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 24px;
+            }
+
+            .section-description {
+                font-size: 12px;
+            }
+
+            .timeline-content {
+                margin-left: 25px;
+                padding: 10px;
+            }
+
+            .timeline-dot {
+                width: 12px;
+                height: 12px;
+                left: 13px;
+            }
+
+            .timeline::before {
+                width: 4px;
+                left: 13px;
+            }
+
+            .timeline-year {
+                font-size: 18px;
+            }
+
+            .timeline-title {
+                font-size: 16px;
+            }
+
+            .timeline-description {
+                font-size: 12px;
+            }
+        }
+
+        /* Responsive Styles for Timeline Section */
+        .timeline-section {
+            padding: 80px 20px;
+            /* Adjust padding for smaller screens */
+        }
+
+        .timeline-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-tag {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 600;
+            margin: 10px 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .section-description {
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline {
+            position: relative;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            margin: 40px 0;
+            width: 100%;
+        }
+
+        .timeline-content {
+            width: 45%;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .timeline-year {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline-description {
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content {
+            order: 2;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .timeline-section {
+                padding: 40px 15px;
+            }
+
+            .section-title {
+                font-size: 28px;
+            }
+
+            .section-description {
+                font-size: 14px;
+            }
+
+            .timeline::before {
+                left: 15px;
+                transform: none;
+            }
+
+            .timeline-item {
+                flex-direction: column;
+                align-items: flex-start;
+                margin: 20px 0;
+            }
+
+            .timeline-content {
+                width: 100%;
+                margin-left: 30px;
+                padding: 15px;
+            }
+
+            .timeline-dot {
+                left: 15px;
+                transform: none;
+            }
+
+            .timeline-item:nth-child(even) .timeline-content {
+                order: 1;
+            }
+
+            .timeline-year {
+                font-size: 20px;
+            }
+
+            .timeline-title {
+                font-size: 18px;
+            }
+
+            .timeline-description {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 24px;
+            }
+
+            .section-description {
+                font-size: 12px;
+            }
+
+            .timeline-content {
+                margin-left: 25px;
+                padding: 10px;
+            }
+
+            .timeline-dot {
+                width: 12px;
+                height: 12px;
+                left: 13px;
+            }
+
+            .timeline::before {
+                width: 4px;
+                left: 13px;
+            }
+
+            .timeline-year {
+                font-size: 18px;
+            }
+
+            .timeline-title {
+                font-size: 16px;
+            }
+
+            .timeline-description {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <%- include('./partials/navbar') %>
 
-    <!-- Hero Section -->
-    <section class="hero" id="hero">
-        <div class="hover-grid" id="hoverGrid"></div>
-        <div class="hero-container">
-            <div class="hero-content">
-                <h1>Master <span class="highlight">Future-Ready</span> Tech Skills</h1>
-                <p>Transform your career with comprehensive courses in Programming, Web Development, Digital Marketing,
-                    and Generative AI. Learn from industry experts and build real-world projects.</p>
+        <!-- Hero Section -->
+        <section class="hero" id="hero">
+            <div class="hover-grid" id="hoverGrid"></div>
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1>Master <span class="highlight">Future-Ready</span> Tech Skills</h1>
+                    <p>Transform your career with comprehensive courses in Programming, Web Development, Digital
+                        Marketing,
+                        and Generative AI. Learn from industry experts and build real-world projects.</p>
 
-                <div class="hero-buttons">
-                    <a href="#about" class="btn btn-primary">
-                        <i class="fas fa-search"></i> Explore More
-                    </a>
-                    <a href="#coursesSection" class="btn btn-secondary">
-                        <i class="fas fa-user-plus"></i> Enroll Now
-                    </a>
+                    <div class="hero-buttons">
+                        <a href="#about" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Explore More
+                        </a>
+                        <a href="#coursesSection" class="btn btn-secondary">
+                            <i class="fas fa-user-plus"></i> Enroll Now
+                        </a>
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-number">500+</span>
+                            <span class="stat-label">Students Trained</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">15+</span>
+                            <span class="stat-label">Expert Instructors</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">95%</span>
+                            <span class="stat-label">Job Placement</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-number">500+</span>
-                        <span class="stat-label">Students Trained</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">15+</span>
-                        <span class="stat-label">Expert Instructors</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">95%</span>
-                        <span class="stat-label">Job Placement</span>
+                <div class="hero-visual">
+                    <div class="code-window">
+                        <div class="window-header">
+                            <div class="window-dot dot-red"></div>
+                            <div class="window-dot dot-yellow"></div>
+                            <div class="window-dot dot-green"></div>
+                        </div>
+                        <div class="code-content">
+                            <div class="code-line">const skills = ['Programming', 'WebDev'];</div>
+                            <div class="code-line">const marketing = 'Digital Marketing';</div>
+                            <div class="code-line">const ai = 'Generative AI';</div>
+                            <div class="code-line">console.log('Ready to code! 🚀');</div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <div class="hero-visual">
-                <div class="code-window">
-                    <div class="window-header">
-                        <div class="window-dot dot-red"></div>
-                        <div class="window-dot dot-yellow"></div>
-                        <div class="window-dot dot-green"></div>
-                    </div>
-                    <div class="code-content">
-                        <div class="code-line">const skills = ['Programming', 'WebDev'];</div>
-                        <div class="code-line">const marketing = 'Digital Marketing';</div>
-                        <div class="code-line">const ai = 'Generative AI';</div>
-                        <div class="code-line">console.log('Ready to code! 🚀');</div>
-                    </div>
-                </div>
+        <section class="about-hero" id="about">
+            <div class="about-hero-container">
+                <h1>Shaping the Future with <span class="gradient-text">Skillshastra</span></h1>
+                <p>Empowering learners worldwide with cutting-edge tech education to achieve their dreams and drive
+                    innovation.</p>
+                <a href="#values" class="btn"><i class="fas fa-rocket"></i> Discover Our Story</a>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section class="about-hero" id="about">
-        <div class="about-hero-container">
-            <h1>Shaping the Future with <span class="gradient-text">Skillshastra</span></h1>
-            <p>Empowering learners worldwide with cutting-edge tech education to achieve their dreams and drive
-                innovation.</p>
-            <a href="#values" class="btn"><i class="fas fa-rocket"></i> Discover Our Story</a>
-        </div>
-    </section>
-
-    <section class="values-section" id="values">
-        <div class="values-container">
-            <div class="section-header">
-                <span class="section-tag">Our Purpose</span>
-                <h2 class="section-title-1">Mission, Vision & Values</h2>
-                <p class="section-description-1">Learn what fuels our passion for transforming tech education globally.
-                </p>
-            </div>
-            <div class="values-grid">
-                <div class="value-card">
-                    <i class="fas fa-bullseye value-icon"></i>
-                    <h3 class="value-title">Mission</h3>
-                    <p class="value-description">Deliver accessible, high-quality tech education to empower career
-                        success.</p>
-                </div>
-                <div class="value-card">
-                    <i class="fas fa-eye value-icon"></i>
-                    <h3 class="value-title">Vision</h3>
-                    <p class="value-description">Build a global community of innovators shaping the future of
-                        technology.</p>
-                </div>
-                <div class="value-card">
-                    <i class="fas fa-heart value-icon"></i>
-                    <h3 class="value-title">Values</h3>
-                    <p class="value-description">Integrity, inclusivity, and innovation define our approach to learning.
+        <section class="values-section" id="values">
+            <div class="values-container">
+                <div class="section-header">
+                    <span class="section-tag">Our Purpose</span>
+                    <h2 class="section-title-1">Mission, Vision & Values</h2>
+                    <p class="section-description-1">Learn what fuels our passion for transforming tech education
+                        globally.
                     </p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Timeline Section -->
-    <section class="timeline-section" id="timelineSection">
-        <div class="timeline-container">
-            <div class="section-header">
-                <span class="section-tag">Our Journey</span>
-                <h2 class="section-title">Our <span class="gradient-text">Milestones</span></h2>
-                <p class="section-description">Key moments that have defined Skillshastra’s growth and impact.</p>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <h3 class="timeline-year">2025</h3>
-                        <h4 class="timeline-title">Skillshastra Founded</h4>
-                        <p class="timeline-description">Launched to make tech education accessible to all aspiring
-                            learners.</p>
+                <div class="values-grid">
+                    <div class="value-card">
+                        <i class="fas fa-bullseye value-icon"></i>
+                        <h3 class="value-title">Mission</h3>
+                        <p class="value-description">Deliver accessible, high-quality tech education to empower career
+                            success.</p>
                     </div>
-                    <div class="timeline-dot"></div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <h3 class="timeline-year">2030</h3>
-                        <h4 class="timeline-title">ambitious for 1000+ Students Enrolled</h4>
-                        <p class="timeline-description">We will Reached over 1000 learners with programming and AI
-                            courses.</p>
+                    <div class="value-card">
+                        <i class="fas fa-eye value-icon"></i>
+                        <h3 class="value-title">Vision</h3>
+                        <p class="value-description">Build a global community of innovators shaping the future of
+                            technology.</p>
                     </div>
-                    <div class="timeline-dot"></div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-content">
-                        <h3 class="timeline-year">2035</h3>
-                        <h4 class="timeline-title">Global Reach</h4>
-                        <p class="timeline-description">Expanded to serve learners in over 50 countries worldwide.</p>
+                    <div class="value-card">
+                        <i class="fas fa-heart value-icon"></i>
+                        <h3 class="value-title">Values</h3>
+                        <p class="value-description">Integrity, inclusivity, and innovation define our approach to
+                            learning.
+                        </p>
                     </div>
-                    <div class="timeline-dot"></div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Featured Courses Section -->
-    <section class="featured-courses" id="coursesSection">
-        <div class="courses-container">
-            <div class="section-header">
-                <div class="header-content">
-                    <span class="section-tag">Popular Choice</span>
-                    <h2 class="section-title">Featured <span class="gradient-text">Courses</span></h2>
-                    <p class="section-description">Master cutting-edge technologies with our comprehensive,
-                        industry-focused curriculum designed by experts</p>
+        <!-- Timeline Section -->
+        <section class="timeline-section" id="timelineSection">
+            <div class="timeline-container">
+                <div class="section-header">
+                    <span class="section-tag">Our Journey</span>
+                    <h2 class="section-title">Our <span class="gradient-text">Milestones</span></h2>
+                    <p class="section-description">Key moments that have defined Skillshastra’s growth and impact.</p>
                 </div>
-                <div class="floating-elements">
-                    <div class="float-element code-bracket">{</div>
-                    <div class="float-element code-bracket">}</div>
-                    <div class="float-element code-symbol">
-                        </>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h3 class="timeline-year">2025</h3>
+                            <h4 class="timeline-title">Skillshastra Founded</h4>
+                            <p class="timeline-description">Launched to make tech education accessible to all aspiring
+                                learners.</p>
+                        </div>
+                        <div class="timeline-dot"></div>
                     </div>
-                    <div class="float-element code-symbol">AI</div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h3 class="timeline-year">2030</h3>
+                            <h4 class="timeline-title">ambitious for 1000+ Students Enrolled</h4>
+                            <p class="timeline-description">We will Reached over 1000 learners with programming and AI
+                                courses.</p>
+                        </div>
+                        <div class="timeline-dot"></div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <h3 class="timeline-year">2035</h3>
+                            <h4 class="timeline-title">Global Reach</h4>
+                            <p class="timeline-description">Expanded to serve learners in over 50 countries worldwide.
+                            </p>
+                        </div>
+                        <div class="timeline-dot"></div>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <div class="courses-grid">
-                <div class="course-card" data-course="programming">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
+        <!-- Featured Courses Section -->
+        <section class="featured-courses" id="coursesSection">
+            <div class="courses-container">
+                <div class="section-header">
+                    <div class="header-content">
+                        <span class="section-tag">Popular Choice</span>
+                        <h2 class="section-title">Featured <span class="gradient-text">Courses</span></h2>
+                        <p class="section-description">Master cutting-edge technologies with our comprehensive,
+                            industry-focused curriculum designed by experts</p>
                     </div>
-                    <div class="card-content">
-                        <div class="course-icon">
-                            <i class="fas fa-code"></i>
-                            <div class="icon-particles"></div>
+                    <div class="floating-elements">
+                        <div class="float-element code-bracket">{</div>
+                        <div class="float-element code-bracket">}</div>
+                        <div class="float-element code-symbol">
+                            </>
                         </div>
-                        <h3 class="course-title">Programming Languages</h3>
-                        <p class="course-description">Master Python, JavaScript, Java, and C++ with hands-on projects
-                            and real-world applications</p>
-                        <div class="course-stats">
-                            <div class="stat">
-                                <span class="stat-number">150+</span>
-                                <span class="stat-label">Students</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number">4.9</span>
-                                <span class="stat-label">Rating</span>
-                            </div>
-                        </div>
-                        <div class="course-tech-stack">
-                            <span class="tech-tag">Python</span>
-                            <span class="tech-tag">JavaScript</span>
-                            <span class="tech-tag">Java</span>
-                        </div>
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/programming"><button class="explore-btn">
-                                <span>Explore Course</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                        </div>
+                        <div class="float-element code-symbol">AI</div>
                     </div>
                 </div>
 
-                <div class="course-card" data-course="webdev">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="course-icon">
-                            <i class="fas fa-globe"></i>
-                            <div class="icon-particles"></div>
+                <div class="courses-grid">
+                    <div class="course-card" data-course="programming">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
                         </div>
-                        <h3 class="course-title">Web Development</h3>
-                        <p class="course-description">Build modern, responsive websites with React, Node.js, and
-                            cutting-edge frameworks</p>
-                        <div class="course-stats">
-                            <div class="stat">
-                                <span class="stat-number">200+</span>
-                                <span class="stat-label">Students</span>
+                        <div class="card-content">
+                            <div class="course-icon">
+                                <i class="fas fa-code"></i>
+                                <div class="icon-particles"></div>
                             </div>
-                            <div class="stat">
-                                <span class="stat-number">4.8</span>
-                                <span class="stat-label">Rating</span>
+                            <h3 class="course-title">Programming Languages</h3>
+                            <p class="course-description">Master Python, JavaScript, Java, and C++ with hands-on
+                                projects
+                                and real-world applications</p>
+                            <div class="course-stats">
+                                <div class="stat">
+                                    <span class="stat-number">150+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">4.9</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                            <div class="course-tech-stack">
+                                <span class="tech-tag">Python</span>
+                                <span class="tech-tag">JavaScript</span>
+                                <span class="tech-tag">Java</span>
                             </div>
                         </div>
-                        <div class="course-tech-stack">
-                            <span class="tech-tag">React</span>
-                            <span class="tech-tag">Node.js</span>
-                            <span class="tech-tag">MongoDB</span>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/programming"><button class="explore-btn">
+                                        <span>Explore Course</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <!-- Route to web dev -->
-                            <a href="/web-dev"><button class="explore-btn">
-                                <span>Explore Course</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
+
+                    <div class="course-card" data-course="webdev">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
+                        </div>
+                        <div class="card-content">
+                            <div class="course-icon">
+                                <i class="fas fa-globe"></i>
+                                <div class="icon-particles"></div>
+                            </div>
+                            <h3 class="course-title">Web Development</h3>
+                            <p class="course-description">Build modern, responsive websites with React, Node.js, and
+                                cutting-edge frameworks</p>
+                            <div class="course-stats">
+                                <div class="stat">
+                                    <span class="stat-number">200+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">4.8</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                            <div class="course-tech-stack">
+                                <span class="tech-tag">React</span>
+                                <span class="tech-tag">Node.js</span>
+                                <span class="tech-tag">MongoDB</span>
+                            </div>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <!-- Route to web dev -->
+                                <a href="/web-dev"><button class="explore-btn">
+                                        <span>Explore Course</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                            </div>
                         </div>
                     </div>
+
+                    <div class="course-card" data-course="marketing">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
+                        </div>
+                        <div class="card-content">
+                            <div class="course-icon">
+                                <i class="fas fa-bullhorn"></i>
+                                <div class="icon-particles"></div>
+                            </div>
+                            <h3 class="course-title">Digital Marketing</h3>
+                            <p class="course-description">Drive growth with SEO, social media, content marketing, and
+                                data-driven strategies</p>
+                            <div class="course-stats">
+                                <div class="stat">
+                                    <span class="stat-number">120+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">4.7</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                            <div class="course-tech-stack">
+                                <span class="tech-tag">SEO</span>
+                                <span class="tech-tag">Analytics</span>
+                                <span class="tech-tag">Ads</span>
+                            </div>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/digital-marketing"><button class="explore-btn">
+                                        <span>Explore Course</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="course-card" data-course="ai">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
+                        </div>
+                        <div class="card-content">
+                            <div class="course-icon">
+                                <i class="fas fa-robot"></i>
+                                <div class="icon-particles"></div>
+                            </div>
+                            <h3 class="course-title">Generative AI</h3>
+                            <p class="course-description">Harness the power of AI with GPT, machine learning, and prompt
+                                engineering</p>
+                            <div class="course-stats">
+                                <div class="stat">
+                                    <span class="stat-number">80+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">5.0</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                            <div class="course-tech-stack">
+                                <span class="tech-tag">ChatGPT</span>
+                                <span class="tech-tag">ML</span>
+                                <span class="tech-tag">Prompts</span>
+                            </div>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/genai"><button class="explore-btn">
+                                        <span>Explore Course</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="course-card" data-course="ai">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
+                        </div>
+                        <div class="card-content">
+                            <div class="course-icon">
+                                <i class="fas fa-code"></i>
+                                <div class="icon-particles"></div>
+                            </div>
+                            <h3 class="course-title">Fundamentals of Computers</h3>
+                            <p class="course-description">Computer course: hardware, software, programming, data,
+                                networking, cybersecurity, and practical applications.</p>
+                            <div class="course-stats">
+                                <div class="stat">
+                                    <span class="stat-number">80+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">5.0</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                            <div class="course-tech-stack">
+                                <span class="tech-tag">Basics</span>
+                                <span class="tech-tag">Hardware</span>
+                                <span class="tech-tag">Software</span>
+                            </div>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/fundamentals"><button class="explore-btn">
+                                        <span>Explore Course</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="course-card" data-course="ai">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
+                        </div>
+                        <div class="card-content">
+                            <div class="course-icon">
+                                <i class="fas fa-tree"></i>
+                                <div class="icon-particles"></div>
+                            </div>
+                            <h3 class="course-title">Data Structures and Algorithms</h3>
+                            <p class="course-description">DSA course: algorithms, data structures, sorting, searching,
+                                graphs, complexity, problem-solving.</p>
+                            <div class="course-stats">
+                                <div class="stat">
+                                    <span class="stat-number">80+</span>
+                                    <span class="stat-label">Students</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number">5.0</span>
+                                    <span class="stat-label">Rating</span>
+                                </div>
+                            </div>
+                            <div class="course-tech-stack">
+                                <span class="tech-tag">Basics</span>
+                                <span class="tech-tag">Programming</span>
+                                <span class="tech-tag">Advanced</span>
+                            </div>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/programming"><button class="explore-btn">
+                                        <span>Explore Course</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <div class="course-card" data-course="marketing">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="course-icon">
-                            <i class="fas fa-bullhorn"></i>
-                            <div class="icon-particles"></div>
-                        </div>
-                        <h3 class="course-title">Digital Marketing</h3>
-                        <p class="course-description">Drive growth with SEO, social media, content marketing, and
-                            data-driven strategies</p>
-                        <div class="course-stats">
-                            <div class="stat">
-                                <span class="stat-number">120+</span>
-                                <span class="stat-label">Students</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number">4.7</span>
-                                <span class="stat-label">Rating</span>
-                            </div>
-                        </div>
-                        <div class="course-tech-stack">
-                            <span class="tech-tag">SEO</span>
-                            <span class="tech-tag">Analytics</span>
-                            <span class="tech-tag">Ads</span>
-                        </div>
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/digital-marketing"><button class="explore-btn">
-                                <span>Explore Course</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="course-card" data-course="ai">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="course-icon">
-                            <i class="fas fa-robot"></i>
-                            <div class="icon-particles"></div>
-                        </div>
-                        <h3 class="course-title">Generative AI</h3>
-                        <p class="course-description">Harness the power of AI with GPT, machine learning, and prompt
-                            engineering</p>
-                        <div class="course-stats">
-                            <div class="stat">
-                                <span class="stat-number">80+</span>
-                                <span class="stat-label">Students</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number">5.0</span>
-                                <span class="stat-label">Rating</span>
-                            </div>
-                        </div>
-                        <div class="course-tech-stack">
-                            <span class="tech-tag">ChatGPT</span>
-                            <span class="tech-tag">ML</span>
-                            <span class="tech-tag">Prompts</span>
-                        </div>
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/genai"><button class="explore-btn">
-                                <span>Explore Course</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="course-card" data-course="ai">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="course-icon">
-                            <i class="fas fa-code"></i>
-                            <div class="icon-particles"></div>
-                        </div>
-                        <h3 class="course-title">Fundamentals of Computers</h3>
-                        <p class="course-description">Computer course: hardware, software, programming, data,
-                            networking, cybersecurity, and practical applications.</p>
-                        <div class="course-stats">
-                            <div class="stat">
-                                <span class="stat-number">80+</span>
-                                <span class="stat-label">Students</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number">5.0</span>
-                                <span class="stat-label">Rating</span>
-                            </div>
-                        </div>
-                        <div class="course-tech-stack">
-                            <span class="tech-tag">Basics</span>
-                            <span class="tech-tag">Hardware</span>
-                            <span class="tech-tag">Software</span>
-                        </div>
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/fundamentals"><button class="explore-btn">
-                                <span>Explore Course</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="course-card" data-course="ai">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="course-icon">
-                            <i class="fas fa-tree"></i>
-                            <div class="icon-particles"></div>
-                        </div>
-                        <h3 class="course-title">Data Structures and Algorithms</h3>
-                        <p class="course-description">DSA course: algorithms, data structures, sorting, searching,
-                            graphs, complexity, problem-solving.</p>
-                        <div class="course-stats">
-                            <div class="stat">
-                                <span class="stat-number">80+</span>
-                                <span class="stat-label">Students</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number">5.0</span>
-                                <span class="stat-label">Rating</span>
-                            </div>
-                        </div>
-                        <div class="course-tech-stack">
-                            <span class="tech-tag">Basics</span>
-                            <span class="tech-tag">Programming</span>
-                            <span class="tech-tag">Advanced</span>
-                        </div>
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/programming"><button class="explore-btn">
-                                <span>Explore Course</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- <div class="section-footer">
+                <!-- <div class="section-footer">
                 <a href="#" class="view-all-btn">
                     <span>View All Courses</span>
                     <div class="btn-particles"></div>
                 </a>
             </div> -->
-        </div>
-    </section>
-
-    <section class="mentors-section" id="mentorsSection">
-        <div class="mentors-container">
-            <div class="section-header">
-                <span class="section-tag">Our Experts</span>
-                <h2 class="section-title">Meet Our <span class="gradient-text">Mentors</span></h2>
-                <p class="section-description">Learn from industry leaders with years of experience in tech and
-                    innovation.</p>
-                <div class="floating-elements">
-                    <div class="float-element code-bracket">{</div>
-                    <div class="float-element code-bracket">}</div>
-                    <div class="float-element code-symbol">/</div>
-                    <div class="float-element code-symbol">AI</div>
-                </div>
             </div>
+        </section>
 
-            <div class="mentors-grid">
-                <div class="mentor-card">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
+        <section class="mentors-section" id="mentorsSection">
+            <div class="mentors-container">
+                <div class="section-header">
+                    <span class="section-tag">Our Experts</span>
+                    <h2 class="section-title">Meet Our <span class="gradient-text">Mentors</span></h2>
+                    <p class="section-description">Learn from industry leaders with years of experience in tech and
+                        innovation.</p>
+                    <div class="floating-elements">
+                        <div class="float-element code-bracket">{</div>
+                        <div class="float-element code-bracket">}</div>
+                        <div class="float-element code-symbol">/</div>
+                        <div class="float-element code-symbol">AI</div>
                     </div>
-                    <div class="card-content">
-                        <div class="mentor-image">
-                            <img src="images/satyam.png" alt="Mentor 1">
-                            <div class="image-overlay"></div>
+                </div>
+
+                <div class="mentors-grid">
+                    <div class="mentor-card">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
                         </div>
-                        <h3 class="mentor-name">Satyam Pandey</h3>
-                        <p class="mentor-expertise">Expirenced java developer & Programmer</p>
-                        <p class="mentor-description">
-                            Passionate about teaching programming languages and helping students build a strong
-                            foundation in
-                            coding.</p>
-                        </p>
-                        <!-- <div class="mentor-socials">
+                        <div class="card-content">
+                            <div class="mentor-image">
+                                <img src="images/satyam.png" alt="Mentor 1">
+                                <div class="image-overlay"></div>
+                            </div>
+                            <h3 class="mentor-name">Satyam Pandey</h3>
+                            <p class="mentor-expertise">Expirenced java developer & Programmer</p>
+                            <p class="mentor-description">
+                                Passionate about teaching programming languages and helping students build a strong
+                                foundation in
+                                coding.</p>
+                            </p>
+                            <!-- <div class="mentor-socials">
                             <a href="https://www.linkedin.com/in/satyam-pandey-301061272/" target="_blank" class="social-icon"><i class="fab fa-linkedin"></i></a>
                             <a href="https://github.com/Satyam12x" target="_blank" class="social-icon"><i class="fab fa-github"></i></a>
                             <a href="https://www.instagram.com/pandit_satyam12/" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
                         </div> -->
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/expertProfiles#satyam"><button class="explore-btn">
-                                <span>View Profile</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                            <div class="mentor-socials">
-                                <a href="https://www.linkedin.com/in/satyam-pandey-301061272/" target="_blank" class="social-icon"><i class="fab fa-linkedin"></i></a>
-                                <a href="https://github.com/Satyam12x" target="_blank" class="social-icon"><i class="fab fa-github"></i></a>
-                                <a href="https://www.instagram.com/pandit_satyam12/" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/expertProfiles#satyam"><button class="explore-btn">
+                                        <span>View Profile</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                                <div class="mentor-socials">
+                                    <a href="https://www.linkedin.com/in/satyam-pandey-301061272/" target="_blank"
+                                        class="social-icon"><i class="fab fa-linkedin"></i></a>
+                                    <a href="https://github.com/Satyam12x" target="_blank" class="social-icon"><i
+                                            class="fab fa-github"></i></a>
+                                    <a href="https://www.instagram.com/pandit_satyam12/" target="_blank"
+                                        class="social-icon"><i class="fab fa-instagram"></i></a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mentor-card">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="mentor-image">
-                            <img src="images/aryan.png" alt="Mentor 2">
-                            <div class="image-overlay"></div>
+                    <div class="mentor-card">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
                         </div>
-                        <h3 class="mentor-name">Aryan Kumar</h3>
-                        <p class="mentor-expertise">Web Development & Digital Marketing Specialist</p>
-                        <p class="mentor-description">
-                            Experienced in building scalable web applications and driving online marketing strategies
-                            for
-                            startups and enterprises.
-                        </p>
-                        <!-- <div class="mentor-socials">
+                        <div class="card-content">
+                            <div class="mentor-image">
+                                <img src="images/aryan.png" alt="Mentor 2">
+                                <div class="image-overlay"></div>
+                            </div>
+                            <h3 class="mentor-name">Aryan Kumar</h3>
+                            <p class="mentor-expertise">Web Development & Digital Marketing Specialist</p>
+                            <p class="mentor-description">
+                                Experienced in building scalable web applications and driving online marketing
+                                strategies
+                                for
+                                startups and enterprises.
+                            </p>
+                            <!-- <div class="mentor-socials">
                             <a href="https://www.linkedin.com/in/aryan-kumar-735266307/" class="social-icon"><i class="fab fa-linkedin"></i></a>
                             <a href="https://github.com/aryan24-cs" class="social-icon"><i class="fab fa-github"></i></a>
                             <a href="https://www.instagram.com/yours_aryanthakur24/" class="social-icon"><i class="fab fa-instagram"></i></a>
                         </div> -->
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/expertProfiles#aryan"><button class="explore-btn">
-                                <span>View Profile</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                            <div class="mentor-socials">
-                                <a href="https://www.linkedin.com/in/aryan-kumar-735266307/" target="_blank" class="social-icon"><i class="fab fa-linkedin"></i></a>
-                                <a href="https://github.com/aryan24-cs" target="_blank" class="social-icon"><i class="fab fa-github"></i></a>
-                                <a href="https://www.instagram.com/yours_aryanthakur24/" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/expertProfiles#aryan"><button class="explore-btn">
+                                        <span>View Profile</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                                <div class="mentor-socials">
+                                    <a href="https://www.linkedin.com/in/aryan-kumar-735266307/" target="_blank"
+                                        class="social-icon"><i class="fab fa-linkedin"></i></a>
+                                    <a href="https://github.com/aryan24-cs" target="_blank" class="social-icon"><i
+                                            class="fab fa-github"></i></a>
+                                    <a href="https://www.instagram.com/yours_aryanthakur24/" target="_blank"
+                                        class="social-icon"><i class="fab fa-instagram"></i></a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mentor-card">
-                    <div class="card-background">
-                        <div class="bg-pattern"></div>
-                        <div class="bg-glow"></div>
-                    </div>
-                    <div class="card-content">
-                        <div class="mentor-image">
-                            <img src="images/sunil.png" alt="Mentor 3">
-                            <div class="image-overlay"></div>
+                    <div class="mentor-card">
+                        <div class="card-background">
+                            <div class="bg-pattern"></div>
+                            <div class="bg-glow"></div>
                         </div>
-                        <h3 class="mentor-name">Sunil Baghel</h3>
-                        <p class="mentor-expertise">Full stack developer & Experienced in UI/UX Designer </p>
-                        <p class="mentor-description">
-                            A creative UI/UX designer with a passion for building user-friendly interfaces and enhancing
-                            user
-                            experiences across web and mobile platforms.
-                        </p>
-                        <!-- <div class="mentor-socials">
+                        <div class="card-content">
+                            <div class="mentor-image">
+                                <img src="images/sunil.png" alt="Mentor 3">
+                                <div class="image-overlay"></div>
+                            </div>
+                            <h3 class="mentor-name">Sunil Baghel</h3>
+                            <p class="mentor-expertise">Full stack developer & Experienced in UI/UX Designer </p>
+                            <p class="mentor-description">
+                                A creative UI/UX designer with a passion for building user-friendly interfaces and
+                                enhancing
+                                user
+                                experiences across web and mobile platforms.
+                            </p>
+                            <!-- <div class="mentor-socials">
                             <a href="https://www.linkedin.com/in/sunil-baghel-140a60348/" class="social-icon"><i class="fab fa-linkedin"></i></a>
                             <a href="https://github.com/SunilBaghel002" class="social-icon"><i class="fab fa-github"></i></a>
                             <a href="https://instagram.com/sunilbaghel5075" class="social-icon"><i class="fab fa-instagram"></i></a>
                         </div> -->
-                    </div>
-                    <div class="card-hover-overlay">
-                        <div class="overlay-content">
-                            <a href="/expertProfiles#sunil"><button class="explore-btn">
-                                <span>View Profile</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                            </a>
-                            <div class="mentor-socials">
-                            <a href="https://www.linkedin.com/in/sunil-baghel-140a60348/" target="_blank" class="social-icon"><i class="fab fa-linkedin"></i></a>
-                            <a href="https://github.com/SunilBaghel002" target="_blank" class="social-icon"><i class="fab fa-github"></i></a>
-                            <a href="https://instagram.com/sunilbaghel5075" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
                         </div>
+                        <div class="card-hover-overlay">
+                            <div class="overlay-content">
+                                <a href="/expertProfiles#sunil"><button class="explore-btn">
+                                        <span>View Profile</span>
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </a>
+                                <div class="mentor-socials">
+                                    <a href="https://www.linkedin.com/in/sunil-baghel-140a60348/" target="_blank"
+                                        class="social-icon"><i class="fab fa-linkedin"></i></a>
+                                    <a href="https://github.com/SunilBaghel002" target="_blank" class="social-icon"><i
+                                            class="fab fa-github"></i></a>
+                                    <a href="https://instagram.com/sunilbaghel5075" target="_blank"
+                                        class="social-icon"><i class="fab fa-instagram"></i></a>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                 </div>
 
-            </div>
-
-            <!-- <div class="section-footer">
+                <!-- <div class="section-footer">
                 <a href="#" class="view-all-btn">
                     <span>Meet More Mentors</span>
                     <div class="btn-particles"></div>
                 </a>
             </div> -->
-        </div>
-    </section>
-
-    <section class="contact-hero">
-        <div class="contact-hero-container">
-            <h1 aria-label="Contact Skillshastra">Get in Touch with <span class="gradient-text">Skillshastra</span></h1>
-            <p>We’re here to answer your questions and help you achieve your learning goals. Reach out today!</p>
-        </div>
-        <div class="floating-elements">
-            <div class="float-element" style="top: 10%; left: 20%;"><i class="fas fa-code"></i></div>
-            <div class="float-element" style="top: 60%; right: 15%;"><i class="fas fa-robot"></i></div>
-            <div class="float-element" style="bottom: 20%; left: 30%;"><i class="fas fa-laptop-code"></i></div>
-            <divhttps: class="float-element" style="top: 30%; right: 25%;"><i class="fas fa-globe"></i></divhttps://github.com/Satyam12x
-        </div>
-    </section>
-
-    <section class="contact-section" id="contact">
-        <div class="particles">
-            <div class="particle" style="--dx: 1; --dy: -1; top: 10%; left: 20%;"></div>
-            <div class="particle" style="--dx: -1; --dy: 1; top: 60%; right: 15%;"></div>
-            <div class="particle" style="--dx: 0.5; --dy: -0.5; bottom: 20%; left: 30%;"></div>
-            <div class="particle" style="--dx: -0.5; --dy: 0.5; top: 30%; right: 25%;"></div>
-        </div>
-        <!-- <button class="theme-toggle" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button> -->
-        <div class="contact-container">
-            <div class="contact-form">
-                <h2>Send Us a Message</h2>
-                <form id="contact-form" aria-label="Contact form" aria-live="polite">
-                    <div class="form-group">
-                        <input type="text" id="name" name="name" placeholder=" " required aria-required="true">
-                        <label for="name">Full Name</label>
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="form-group">
-                        <input type="email" id="email" name="email" placeholder=" " required aria-required="true">
-                        <label for="email">Email Address</label>
-                        <i class="fas fa-envelope"></i>
-                    </div>
-                    <div class="form-group">
-                        <select id="messageType" name="messageType" required aria-required="true">
-                            <option value="" disabled selected></option>
-                            <option value="general">General Inquiry</option>
-                            <option value="support">Support Request</option>
-                            <option value="feedback">Feedback</option>
-                        </select>
-                        <label for="messageType">Message Type</label>
-                        <i class="fas fa-comment"></i>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" id="subject" name="subject" placeholder=" " required aria-required="true">
-                        <label for="subject">Subject</label>
-                        <i class="fas fa-comment-alt"></i>
-                    </div>
-                    <div class="form-group">
-                        <textarea id="message" name="message" placeholder=" " required aria-required="true"
-                            maxlength="500"></textarea>
-                        <label for="message">Message</label>
-                        <i class="fas fa-comment-dots"></i>
-                        <div class="character-count" id="messageCount">0/500</div>
-                    </div>
-                    <button type="submit" class="form-btn"><i class="fas fa-paper-plane"></i> Send Message <span
-                            class="progress-bar"></span></button>
-                </form>
             </div>
-            <div class="contact-info">
-                <div class="info-item">
-                    <i class="fas fa-envelope info-icon"></i>
-                    <div class="info-content">
-                        <h3>Email Us</h3>
-                        <p><a href="mailto:skillshastra001@gmail.com">skillshastra001@gmail.com</a></p>
+        </section>
+
+        <section class="contact-hero">
+            <div class="contact-hero-container">
+                <h1 aria-label="Contact Skillshastra">Get in Touch with <span class="gradient-text">Skillshastra</span>
+                </h1>
+                <p>We’re here to answer your questions and help you achieve your learning goals. Reach out today!</p>
+            </div>
+            <div class="floating-elements">
+                <div class="float-element" style="top: 10%; left: 20%;"><i class="fas fa-code"></i></div>
+                <div class="float-element" style="top: 60%; right: 15%;"><i class="fas fa-robot"></i></div>
+                <div class="float-element" style="bottom: 20%; left: 30%;"><i class="fas fa-laptop-code"></i></div>
+                <divhttps: class="float-element" style="top: 30%; right: 25%;"><i class="fas fa-globe"></i></divhttps:
+                    //github.com/Satyam12x </div>
+        </section>
+
+        <section class="contact-section" id="contact">
+            <div class="particles">
+                <div class="particle" style="--dx: 1; --dy: -1; top: 10%; left: 20%;"></div>
+                <div class="particle" style="--dx: -1; --dy: 1; top: 60%; right: 15%;"></div>
+                <div class="particle" style="--dx: 0.5; --dy: -0.5; bottom: 20%; left: 30%;"></div>
+                <div class="particle" style="--dx: -0.5; --dy: 0.5; top: 30%; right: 25%;"></div>
+            </div>
+            <!-- <button class="theme-toggle" aria-label="Toggle dark mode"><i class="fas fa-moon"></i></button> -->
+            <div class="contact-container">
+                <div class="contact-form">
+                    <h2>Send Us a Message</h2>
+                    <form id="contact-form" aria-label="Contact form" aria-live="polite">
+                        <div class="form-group">
+                            <input type="text" id="name" name="name" placeholder=" " required aria-required="true">
+                            <label for="name">Full Name</label>
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="email" name="email" placeholder=" " required aria-required="true">
+                            <label for="email">Email Address</label>
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="form-group">
+                            <select id="messageType" name="messageType" required aria-required="true">
+                                <option value="" disabled selected></option>
+                                <option value="general">General Inquiry</option>
+                                <option value="support">Support Request</option>
+                                <option value="feedback">Feedback</option>
+                            </select>
+                            <label for="messageType">Message Type</label>
+                            <i class="fas fa-comment"></i>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="subject" name="subject" placeholder=" " required
+                                aria-required="true">
+                            <label for="subject">Subject</label>
+                            <i class="fas fa-comment-alt"></i>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="message" name="message" placeholder=" " required aria-required="true"
+                                maxlength="500"></textarea>
+                            <label for="message">Message</label>
+                            <i class="fas fa-comment-dots"></i>
+                            <div class="character-count" id="messageCount">0/500</div>
+                        </div>
+                        <button type="submit" class="form-btn"><i class="fas fa-paper-plane"></i> Send Message <span
+                                class="progress-bar"></span></button>
+                    </form>
+                </div>
+                <div class="contact-info">
+                    <div class="info-item">
+                        <i class="fas fa-envelope info-icon"></i>
+                        <div class="info-content">
+                            <h3>Email Us</h3>
+                            <p><a href="mailto:skillshastra001@gmail.com">skillshastra001@gmail.com</a></p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone info-icon"></i>
+                        <div class="info-content">
+                            <h3>Call Us</h3>
+                            <p><a href="tel:+918510882886">+91 8510882886</a>, <a href="tel:+918851020767">+91
+                                    8851020767</a></p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt info-icon"></i>
+                        <div class="info-content">
+                            <h3>Visit Us</h3>
+                            <p>Ballabgarh, Faridabad, Haryana, India</p>
+                        </div>
                     </div>
                 </div>
-                <div class="info-item">
-                    <i class="fas fa-phone info-icon"></i>
-                    <div class="info-content">
-                        <h3>Call Us</h3>
-                        <p><a href="tel:+918510882886">+91 8510882886</a>, <a href="tel:+918851020767">+91
-                                8851020767</a></p>
-                    </div>
+            </div>
+            <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+        </section>
+
+        <!-- Map Section (unchanged) -->
+        <section class="map-section">
+            <div class="map-container">
+                <h2>Find Us Here</h2>
+                <p>Visit our office in Ballabgarh, Faridabad, Haryana, to connect with our team.</p>
+                <div class="map-wrapper">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d4634.514728229189!2d77.32185586688267!3d28.33988639066715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMjjCsDIwJzIzLjgiTiA3N8KwMTknMjguMSJF!5e1!3m2!1sen!2sin!4v1752647718527!5m2!1sen!2sin"
+                        allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                        title="Skillshastra Location in Ballabgarh" allowfullscreen></iframe>></iframe>
                 </div>
-                <div class="info-item">
-                    <i class="fas fa-map-marker-alt info-icon"></i>
-                    <div class="info-content">
-                        <h3>Visit Us</h3>
-                        <p>Ballabgarh, Faridabad, Haryana, India</p>
-                    </div>
+                <div class="map-actions">
+                    <a href="https://maps.app.goo.gl/o6Gi5VKzYgwGLSPF8" target="_blank" class="btm btm-primary"><i
+                            class="fas fa-directions"></i> Get Directions</a>
                 </div>
             </div>
-        </div>
-        <div class="toast-container" id="toastContainer" aria-live="polite"></div>
-    </section>
+        </section>
 
-    <!-- Map Section (unchanged) -->
-    <section class="map-section">
-        <div class="map-container">
-            <h2>Find Us Here</h2>
-            <p>Visit our office in Ballabgarh, Faridabad, Haryana, to connect with our team.</p>
-            <div class="map-wrapper">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d4634.514728229189!2d77.32185586688267!3d28.33988639066715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMjjCsDIwJzIzLjgiTiA3N8KwMTknMjguMSJF!5e1!3m2!1sen!2sin!4v1752647718527!5m2!1sen!2sin"  allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Skillshastra Location in Ballabgarh" allowfullscreen></iframe>></iframe>
-            </div>
-            <div class="map-actions">
-                <a href="https://maps.app.goo.gl/o6Gi5VKzYgwGLSPF8"
-                    target="_blank" class="btm btm-primary"><i class="fas fa-directions"></i> Get Directions</a>
-            </div>
-        </div>
-    </section>
+        <%- include('./partials/footer') %>
 
-    <%- include('./partials/footer') %>
+            <a href="#hero" class="back-to-top" aria-label="Back to top"><i class="fas fa-chevron-up"></i></a>
 
-    <a href="#hero" class="back-to-top" aria-label="Back to top"><i class="fas fa-chevron-up"></i></a>
-
-    <script src="/js/script.js"></script>
-    <script src="/js/navbar.js"></script>
+            <script src="/js/script.js"></script>
+            <script src="/js/navbar.js"></script>
 </body>
 
 </html>
