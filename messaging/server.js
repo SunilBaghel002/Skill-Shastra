@@ -32,7 +32,7 @@ const initializeMessaging = (httpServer) => {
       credentials: true,
     },
     transports: ["websocket", "polling"],
-    pingTimeout: 20000,
+    pingTimeout: 30000,
     pingInterval: 25000,
     maxHttpBufferSize: 10 * 1024 * 1024,
   });
@@ -46,7 +46,7 @@ const initializeMessaging = (httpServer) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select(
-        "name email role isVerified profileImage favorites"
+        "name email role isVerified profileImage favorites isOnline"
       );
       if (!user || !user.isVerified) {
         console.error(
@@ -68,6 +68,8 @@ const initializeMessaging = (httpServer) => {
           ? user.favorites.map((id) => id.toString())
           : [],
       };
+      // Set user as online
+      await User.findByIdAndUpdate(user._id, { isOnline: true });
       console.log(
         "Socket.IO Auth Success: User:",
         socket.user.email,
@@ -81,16 +83,142 @@ const initializeMessaging = (httpServer) => {
     }
   });
 
+  // Utility to ensure user joins room with retries
+  const rejoinRoom = async (socket, maxRetries = 3, retryDelay = 1000) => {
+    if (!socket.user?.id) {
+      console.error("RejoinRoom Error: socket.user.id is undefined", {
+        socketId: socket.id,
+      });
+      return false;
+    }
+    let attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        socket.join(`room:${socket.user.id}`);
+        const room = io.sockets.adapter.rooms.get(`room:${socket.user.id}`);
+        if (room && room.size > 0) {
+          console.log(
+            `User ${socket.user.id} joined room: room:${socket.user.id}, sockets:`,
+            Array.from(room)
+          );
+          return true;
+        }
+        console.warn(
+          `Room join attempt ${attempts + 1} failed for user ${socket.user.id}`
+        );
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      } catch (error) {
+        console.error(`Error joining room for ${socket.user.id}:`, error);
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+    }
+    console.error(
+      `Failed to join room for user ${socket.user.id} after ${maxRetries} attempts`
+    );
+    return false;
+  };
+
+  // Helper to check if a user is online
+  async function getSocketByUserId(userId) {
+    try {
+      const user = await User.findById(userId).select("isOnline").lean();
+      if (!user) return null;
+      const sockets = await io.in(`room:${userId}`).fetchSockets();
+      return sockets.length > 0 ? sockets[0] : null;
+    } catch (error) {
+      console.error(`Error checking online status for user ${userId}:`, error);
+      return null;
+    }
+  }
+
+  // Broadcast online status using MongoDB
+  const broadcastOnlineStatus = async () => {
+    try {
+      const onlineUsers = await User.find({ isOnline: true })
+        .select("_id")
+        .lean();
+      const onlineUserIds = onlineUsers.map((user) => user._id.toString());
+      console.log("Broadcasting onlineStatus:", onlineUserIds);
+      io.emit("onlineStatus", { onlineUsers: onlineUserIds });
+    } catch (error) {
+      console.error("Error broadcasting onlineStatus:", error);
+    }
+  };
+
   io.on("connection", (socket) => {
     console.log(
-      `User connected: ${socket.user.email} (${socket.user.role}, ID: ${socket.user.id})`
+      `User connected: ${socket.user.email} (${socket.user.role}, ID: ${socket.user.id}, Socket: ${socket.id})`
     );
-    socket.join(socket.user.id);
-    console.log(`User ${socket.user.id} joined room: ${socket.user.id}`);
+    rejoinRoom(socket).then(async (success) => {
+      if (success) {
+        await broadcastOnlineStatus();
+      } else {
+        socket.emit("rejoinFailed", { message: "Failed to rejoin room" });
+      }
+    });
 
-    socket.on("rejoinRooms", () => {
-      socket.join(socket.user.id);
-      console.log(`User ${socket.user.id} rejoined room: ${socket.user.id}`);
+    // Check for pending messages
+    const checkPendingMessages = async () => {
+      const pendingMessages = await Message.find({
+        receiver: socket.user.id,
+        isRead: false,
+      })
+        .populate("sender", "name email profileImage")
+        .populate("receiver", "name email profileImage")
+        .lean();
+      pendingMessages.forEach((msg) => {
+        const messageData = {
+          sender: {
+            id: msg.sender._id.toString(),
+            name: msg.sender.name,
+            email: msg.sender.email,
+            profileImage:
+              msg.sender.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          receiver: {
+            id: msg.receiver._id.toString(),
+            name: msg.receiver.name,
+            email: msg.receiver.email,
+            profileImage:
+              msg.receiver.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          content: msg.content,
+          messageType: msg.messageType || "text",
+          fileMetadata: msg.fileMetadata,
+          createdAt: msg.createdAt,
+          messageId: msg._id.toString(),
+          isRead: msg.isRead,
+        };
+        console.log(
+          `Emitting pending receiveMessage to ${
+            socket.user.id
+          }, messageId: ${msg._id.toString()}`
+        );
+        socket.emit("receiveMessage", messageData);
+      });
+    };
+
+    checkPendingMessages().catch((error) =>
+      console.error("Error checking pending messages:", error)
+    );
+
+    socket.on("rejoinRooms", async () => {
+      if (await rejoinRoom(socket)) {
+        console.log(`User ${socket.user.id} successfully rejoined rooms`);
+        checkPendingMessages().catch((error) =>
+          console.error(
+            "Error checking pending messages in rejoinRooms:",
+            error
+          )
+        );
+        await broadcastOnlineStatus();
+      } else {
+        socket.emit("rejoinFailed", { message: "Failed to rejoin room" });
+      }
     });
 
     socket.on("getUsers", async (callback) => {
@@ -98,11 +226,11 @@ const initializeMessaging = (httpServer) => {
         let users;
         if (socket.user.role === "admin") {
           users = await User.find({ isVerified: true })
-            .select("name email role profileImage")
+            .select("name email role profileImage isOnline")
             .lean();
         } else {
           users = await User.find({ role: "admin", isVerified: true })
-            .select("name email role profileImage")
+            .select("name email role profileImage isOnline")
             .lean();
         }
         const usersWithDetails = await Promise.all(
@@ -124,25 +252,26 @@ const initializeMessaging = (httpServer) => {
               ...user,
               _id: user._id.toString(),
               unreadCount,
-              lastMessageTime: latestMessage
-                ? latestMessage.createdAt
-                : new Date(0),
+              lastMessage: latestMessage
+                ? {
+                    content: latestMessage.content,
+                    createdAt: latestMessage.createdAt,
+                  }
+                : null,
               isFavorite: socket.user.favorites.includes(user._id.toString()),
+              isOnline: user.isOnline || false,
             };
           })
         );
-        usersWithDetails.sort(
-          (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-        );
-        console.log(
-          "Sending users to client:",
-          usersWithDetails.map((u) => ({
-            id: u._id,
-            name: u.name,
-            unreadCount: u.unreadCount,
-            isFavorite: u.isFavorite,
-          }))
-        );
+        usersWithDetails.sort((a, b) => {
+          const aTime = a.lastMessage
+            ? new Date(a.lastMessage.createdAt)
+            : new Date(0);
+          const bTime = b.lastMessage
+            ? new Date(b.lastMessage.createdAt)
+            : new Date(0);
+          return bTime - aTime;
+        });
         if (typeof callback === "function") {
           callback({ status: "success", users: usersWithDetails });
         }
@@ -169,13 +298,12 @@ const initializeMessaging = (httpServer) => {
         socket.user.favorites = currentUser.favorites.map((id) =>
           id.toString()
         );
-        console.log(`Toggled favorite for user ${userId}: ${!isFavorite}`);
         if (typeof callback === "function") {
           callback({ status: "success", isFavorite: !isFavorite });
         }
         socket.emit("getUsers", (response) => {
           if (response.status === "success") {
-            io.to(socket.user.id).emit("updateUsers", {
+            io.to(`room:${socket.user.id}`).emit("updateUsers", {
               users: response.users,
             });
           }
@@ -196,10 +324,6 @@ const initializeMessaging = (httpServer) => {
       ) => {
         try {
           if (!receiverId || !content) {
-            console.error("SendMessage Error: Missing receiverId or content", {
-              receiverId,
-              content,
-            });
             if (typeof callback === "function") {
               return callback({
                 status: "error",
@@ -210,10 +334,6 @@ const initializeMessaging = (httpServer) => {
           }
           const receiver = await User.findById(receiverId);
           if (!receiver || !receiver.isVerified) {
-            console.error(
-              "SendMessage Error: Receiver not found or not verified:",
-              receiverId
-            );
             if (typeof callback === "function") {
               return callback({
                 status: "error",
@@ -223,10 +343,6 @@ const initializeMessaging = (httpServer) => {
             return;
           }
           if (socket.user.role === "user" && receiver.role !== "admin") {
-            console.error(
-              "SendMessage Error: User attempted to message non-admin:",
-              { sender: socket.user.id, receiver: receiverId }
-            );
             if (typeof callback === "function") {
               return callback({
                 status: "error",
@@ -254,20 +370,17 @@ const initializeMessaging = (httpServer) => {
             const allowedTypes = {
               image: ["image/png", "image/jpeg", "image/jpg"],
               audio: ["audio/mpeg", "audio/wav", "audio/webm"],
+              document: [
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ],
             };
 
             if (
               fileType &&
-              ![
-                "image/png",
-                "image/jpeg",
-                "image/jpg",
-                "audio/mpeg",
-                "audio/wav",
-                "audio/webm",
-              ].includes(fileType)
+              !Object.values(allowedTypes).flat().includes(fileType)
             ) {
-              console.error("SendMessage Error: Invalid file type:", fileType);
               if (typeof callback === "function") {
                 return callback({
                   status: "error",
@@ -312,15 +425,28 @@ const initializeMessaging = (httpServer) => {
                       ? "audio/wav"
                       : "audio/webm"),
                 };
+              } else if (
+                content.endsWith(".pdf") ||
+                content.endsWith(".doc") ||
+                content.endsWith(".docx")
+              ) {
+                finalMessageType = "document";
+                fileMetadata = {
+                  fileName: fileName || "document_file",
+                  fileSize: fileSize || 0,
+                  fileType:
+                    fileType ||
+                    (content.endsWith(".pdf")
+                      ? "application/pdf"
+                      : content.endsWith(".doc")
+                      ? "application/msword"
+                      : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                };
               }
             } else if (content.startsWith("data:")) {
               const maxSizeMB = 5;
               const base64Size = (content.length * 3) / 4 / (1024 * 1024);
               if (base64Size > maxSizeMB) {
-                console.error(
-                  `SendMessage Error: ${finalMessageType} size exceeds ${maxSizeMB}MB`,
-                  { base64Size }
-                );
                 if (typeof callback === "function") {
                   return callback({
                     status: "error",
@@ -337,9 +463,6 @@ const initializeMessaging = (httpServer) => {
                 `^data:${fileType?.replace("/", "\\/") || "[^;]+"};base64,`
               );
               if (!base64Regex.test(content)) {
-                console.error(
-                  `SendMessage Error: Invalid ${finalMessageType} base64 format`
-                );
                 if (typeof callback === "function") {
                   return callback({
                     status: "error",
@@ -351,7 +474,11 @@ const initializeMessaging = (httpServer) => {
 
               const base64Data = content.replace(base64Regex, "");
               const resourceType =
-                finalMessageType === "image" ? "image" : "video";
+                finalMessageType === "image"
+                  ? "image"
+                  : finalMessageType === "audio"
+                  ? "video"
+                  : "raw";
               try {
                 const uploadResult = await cloudinary.uploader.upload(content, {
                   resource_type: resourceType,
@@ -368,13 +495,10 @@ const initializeMessaging = (httpServer) => {
                     fileType ||
                     (finalMessageType === "image"
                       ? "image/jpeg"
-                      : "audio/webm"),
+                      : finalMessageType === "audio"
+                      ? "audio/webm"
+                      : "application/pdf"),
                 };
-                console.log(
-                  `Uploaded ${finalMessageType} to Cloudinary:`,
-                  secureUrl,
-                  { fileMetadata }
-                );
               } catch (uploadError) {
                 console.error(
                   `Error uploading ${finalMessageType} to Cloudinary:`,
@@ -425,30 +549,24 @@ const initializeMessaging = (httpServer) => {
             isRead: false,
           };
 
-          console.log(
-            `Emitting receiveMessage to sender room: ${socket.user.id}, receiver room: ${receiverId}`,
-            {
-              messageId: messageData.messageId,
-              messageType: messageData.messageType,
-              content: messageData.content,
-              fileMetadata: messageData.fileMetadata,
-            }
-          );
+          io.to(`room:${receiverId}`).emit("receiveMessage", messageData);
+          io.to(`room:${socket.user.id}`).emit("receiveMessage", messageData);
 
-          io.to(receiverId).emit("receiveMessage", messageData);
-          io.to(socket.user.id).emit("receiveMessage", messageData);
-          console.log(
-            `Message sent from ${socket.user.id} to ${receiverId}: ${finalMessageType}`
-          );
+          io.to(`room:${receiverId}`).emit("updateMessages", {
+            userId: socket.user.id,
+          });
+          io.to(`room:${socket.user.id}`).emit("updateMessages", {
+            userId: receiverId,
+          });
 
           const updateUsers = async (userId) => {
             const users =
               socket.user.role === "admin"
                 ? await User.find({ isVerified: true })
-                    .select("name email role profileImage")
+                    .select("name email role profileImage isOnline")
                     .lean()
                 : await User.find({ role: "admin", isVerified: true })
-                    .select("name email role profileImage")
+                    .select("name email role profileImage isOnline")
                     .lean();
             const usersWithDetails = await Promise.all(
               users.map(async (user) => {
@@ -469,21 +587,31 @@ const initializeMessaging = (httpServer) => {
                   ...user,
                   _id: user._id.toString(),
                   unreadCount,
-                  lastMessageTime: latestMessage
-                    ? latestMessage.createdAt
-                    : new Date(0),
+                  lastMessage: latestMessage
+                    ? {
+                        content: latestMessage.content,
+                        createdAt: latestMessage.createdAt,
+                      }
+                    : null,
                   isFavorite: socket.user.favorites.includes(
                     user._id.toString()
                   ),
+                  isOnline: user.isOnline || false,
                 };
               })
             );
-            usersWithDetails.sort(
-              (a, b) =>
-                new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-            );
-            io.to(userId).emit("updateUsers", { users: usersWithDetails });
-            console.log(`Updated user list for ${userId}`);
+            usersWithDetails.sort((a, b) => {
+              const aTime = a.lastMessage
+                ? new Date(a.lastMessage.createdAt)
+                : new Date(0);
+              const bTime = b.lastMessage
+                ? new Date(b.lastMessage.createdAt)
+                : new Date(0);
+              return bTime - aTime;
+            });
+            io.to(`room:${userId}`).emit("updateUsers", {
+              users: usersWithDetails,
+            });
           };
           await updateUsers(socket.user.id);
           await updateUsers(receiverId);
@@ -511,25 +639,22 @@ const initializeMessaging = (httpServer) => {
             { sender: userId, receiver: socket.user.id },
           ],
         });
-        console.log(`Cleared chats between ${socket.user.id} and ${userId}`);
         if (typeof callback === "function") {
           callback({ status: "success", message: "Chats cleared" });
         }
-        socket.emit("getMessages", { userId }, (response) => {
-          if (response.status === "success") {
-            io.to(socket.user.id).emit("updateMessages", {
-              messages: response.messages,
-            });
-          }
+        io.to(`room:${socket.user.id}`).emit("updateMessages", { userId });
+        io.to(`room:${userId}`).emit("updateMessages", {
+          userId: socket.user.id,
         });
+
         const updateUsers = async (targetUserId) => {
           const users =
             socket.user.role === "admin"
               ? await User.find({ isVerified: true })
-                  .select("name email role profileImage")
+                  .select("name email role profileImage isOnline")
                   .lean()
               : await User.find({ role: "admin", isVerified: true })
-                  .select("name email role profileImage")
+                  .select("name email role profileImage isOnline")
                   .lean();
           const usersWithDetails = await Promise.all(
             users.map(async (user) => {
@@ -550,17 +675,29 @@ const initializeMessaging = (httpServer) => {
                 ...user,
                 _id: user._id.toString(),
                 unreadCount,
-                lastMessageTime: latestMessage
-                  ? latestMessage.createdAt
-                  : new Date(0),
+                lastMessage: latestMessage
+                  ? {
+                      content: latestMessage.content,
+                      createdAt: latestMessage.createdAt,
+                    }
+                  : null,
                 isFavorite: socket.user.favorites.includes(user._id.toString()),
+                isOnline: user.isOnline || false,
               };
             })
           );
-          usersWithDetails.sort(
-            (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-          );
-          io.to(targetUserId).emit("updateUsers", { users: usersWithDetails });
+          usersWithDetails.sort((a, b) => {
+            const aTime = a.lastMessage
+              ? new Date(a.lastMessage.createdAt)
+              : new Date(0);
+            const bTime = b.lastMessage
+              ? new Date(b.lastMessage.createdAt)
+              : new Date(0);
+            return bTime - aTime;
+          });
+          io.to(`room:${targetUserId}`).emit("updateUsers", {
+            users: usersWithDetails,
+          });
         };
         await updateUsers(socket.user.id);
         await updateUsers(userId);
@@ -575,10 +712,9 @@ const initializeMessaging = (httpServer) => {
     socket.on("getUserProfile", async ({ userId }, callback) => {
       try {
         const user = await User.findById(userId)
-          .select("name email role profileImage")
+          .select("name email role profileImage isOnline")
           .lean();
         if (!user) {
-          console.error("GetUserProfile Error: User not found:", userId);
           if (typeof callback === "function") {
             return callback({ status: "error", message: "User not found" });
           }
@@ -594,6 +730,7 @@ const initializeMessaging = (httpServer) => {
               role: user.role,
               profileImage:
                 user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+              isOnline: user.isOnline || false,
             },
           });
         }
@@ -610,9 +747,6 @@ const initializeMessaging = (httpServer) => {
 
     socket.on("getMessages", async ({ userId }, callback) => {
       try {
-        console.log(
-          `Fetching messages for user ${socket.user.id} with user ${userId}`
-        );
         const messages = await Message.find({
           $or: [
             { sender: socket.user.id, receiver: userId },
@@ -654,17 +788,6 @@ const initializeMessaging = (httpServer) => {
           _id: msg._id.toString(),
           isRead: msg.isRead,
         }));
-        console.log(
-          `Fetched ${formattedMessages.length} messages for user ${userId}`,
-          {
-            messages: formattedMessages.map((m) => ({
-              id: m._id,
-              messageType: m.messageType,
-              content: m.content,
-              fileMetadata: m.fileMetadata,
-            })),
-          }
-        );
         if (typeof callback === "function") {
           callback({ status: "success", messages: formattedMessages });
         }
@@ -706,63 +829,11 @@ const initializeMessaging = (httpServer) => {
             messageId: msg._id.toString(),
             isRead: msg.isRead,
           };
-          console.log(
-            `Emitting updateMessageStatus for message ${msg._id.toString()}`,
-            {
-              messageId: messageData.messageId,
-              messageType: messageData.messageType,
-              content: messageData.content,
-              fileMetadata: messageData.fileMetadata,
-            }
-          );
-          io.to(msg.sender._id.toString()).emit(
+          io.to(`room:${msg.sender._id.toString()}`).emit(
             "updateMessageStatus",
             messageData
           );
         });
-        const updateUsers = async (targetUserId) => {
-          const users =
-            socket.user.role === "admin"
-              ? await User.find({ isVerified: true })
-                  .select("name email role profileImage")
-                  .lean()
-              : await User.find({ role: "admin", isVerified: true })
-                  .select("name email role profileImage")
-                  .lean();
-          const usersWithDetails = await Promise.all(
-            users.map(async (user) => {
-              const unreadCount = await Message.countDocuments({
-                sender: user._id,
-                receiver: targetUserId,
-                isRead: false,
-              });
-              const latestMessage = await Message.findOne({
-                $or: [
-                  { sender: targetUserId, receiver: user._id },
-                  { sender: user._id, receiver: targetUserId },
-                ],
-              })
-                .sort({ createdAt: -1 })
-                .lean();
-              return {
-                ...user,
-                _id: user._id.toString(),
-                unreadCount,
-                lastMessageTime: latestMessage
-                  ? latestMessage.createdAt
-                  : new Date(0),
-                isFavorite: socket.user.favorites.includes(user._id.toString()),
-              };
-            })
-          );
-          usersWithDetails.sort(
-            (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-          );
-          io.to(targetUserId).emit("updateUsers", { users: usersWithDetails });
-          console.log(`Updated user list for ${targetUserId}`);
-        };
-        await updateUsers(socket.user.id);
-        await updateUsers(userId);
       } catch (error) {
         console.error("Error fetching messages:", error);
         if (typeof callback === "function") {
@@ -771,168 +842,40 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    // WebRTC Signaling for Audio Calls
-    socket.on("callUser", ({ to, offer }, callback) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("CallUser Error: Invalid receiver ID:", to);
-          if (typeof callback === "function") {
-            return callback({
-              status: "error",
-              message: "Invalid receiver ID",
-            });
-          }
-          return;
-        }
-        const receiver = User.findById(to);
-        if (!receiver) {
-          console.error("CallUser Error: Receiver not found:", to);
-          if (typeof callback === "function") {
-            return callback({ status: "error", message: "Receiver not found" });
-          }
-          return;
-        }
-        io.to(to).emit("incomingCall", {
-          from: socket.user.id,
-          callerName: socket.user.name,
-          offer,
-        });
-        console.log(`Call initiated from ${socket.user.id} to ${to}`);
-        if (typeof callback === "function") {
-          callback({ status: "success", message: "Call initiated" });
-        }
-      } catch (error) {
-        console.error("CallUser Error:", error);
-        if (typeof callback === "function") {
-          callback({ status: "error", message: "Failed to initiate call" });
-        }
-      }
-    });
-
-    socket.on("answerCall", ({ to, answer }, callback) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("AnswerCall Error: Invalid receiver ID:", to);
-          if (typeof callback === "function") {
-            return callback({
-              status: "error",
-              message: "Invalid receiver ID",
-            });
-          }
-          return;
-        }
-        io.to(to).emit("callAnswered", {
-          from: socket.user.id,
-          answer,
-        });
-        console.log(`Call answered by ${socket.user.id} to ${to}`);
-        if (typeof callback === "function") {
-          callback({ status: "success", message: "Call answered" });
-        }
-      } catch (error) {
-        console.error("AnswerCall Error:", error);
-        if (typeof callback === "function") {
-          callback({ status: "error", message: "Failed to answer call" });
-        }
-      }
-    });
-
-    socket.on("iceCandidate", ({ to, candidate }, callback) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("IceCandidate Error: Invalid receiver ID:", to);
-          if (typeof callback === "function") {
-            return callback({
-              status: "error",
-              message: "Invalid receiver ID",
-            });
-          }
-          return;
-        }
-        io.to(to).emit("iceCandidate", {
-          from: socket.user.id,
-          candidate,
-        });
-        console.log(`ICE candidate sent from ${socket.user.id} to ${to}`);
-        if (typeof callback === "function") {
-          callback({ status: "success", message: "ICE candidate sent" });
-        }
-      } catch (error) {
-        console.error("IceCandidate Error:", error);
-        if (typeof callback === "function") {
-          callback({
-            status: "error",
-            message: "Failed to send ICE candidate",
-          });
-        }
-      }
-    });
-
-    socket.on("rejectCall", ({ to }, callback) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("RejectCall Error: Invalid receiver ID:", to);
-          if (typeof callback === "function") {
-            return callback({
-              status: "error",
-              message: "Invalid receiver ID",
-            });
-          }
-          return;
-        }
-        io.to(to).emit("callRejected");
-        console.log(`Call rejected by ${socket.user.id} to ${to}`);
-        if (typeof callback === "function") {
-          callback({ status: "success", message: "Call rejected" });
-        }
-      } catch (error) {
-        console.error("RejectCall Error:", error);
-        if (typeof callback === "function") {
-          callback({ status: "error", message: "Failed to reject call" });
-        }
-      }
-    });
-
-    socket.on("endCall", ({ to }, callback) => {
-      try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("EndCall Error: Invalid receiver ID:", to);
-          if (typeof callback === "function") {
-            return callback({
-              status: "error",
-              message: "Invalid receiver ID",
-            });
-          }
-          return;
-        }
-        io.to(to).emit("callEnded");
-        console.log(`Call ended by ${socket.user.id} to ${to}`);
-        if (typeof callback === "function") {
-          callback({ status: "success", message: "Call ended" });
-        }
-      } catch (error) {
-        console.error("EndCall Error:", error);
-        if (typeof callback === "function") {
-          callback({ status: "error", message: "Failed to end call" });
-        }
-      }
-    });
-
     socket.on("connect_error", (error) => {
       console.error(
-        `Socket.IO Connect Error for user ${socket.user.id}:`,
+        `Socket.IO Connect Error for user ${socket.user?.id || "unknown"}:`,
         error.message
       );
+      setTimeout(async () => {
+        if (await rejoinRoom(socket)) {
+          socket.emit("rejoinRooms");
+          await broadcastOnlineStatus();
+        }
+      }, 1000);
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log(
-        `User disconnected: ${socket.user.email} (ID: ${socket.user.id})`
+        `User disconnected: ${socket.user.email} (ID: ${socket.user.id}, Socket: ${socket.id})`
       );
+      try {
+        await User.findByIdAndUpdate(socket.user.id, { isOnline: false });
+        await broadcastOnlineStatus();
+      } catch (error) {
+        console.error(
+          `Error updating isOnline to false for user ${socket.user.id}:`,
+          error
+        );
+      }
     });
+
+    // Periodic online status broadcast
+    setInterval(broadcastOnlineStatus, 5000);
   });
 
   const router = require("express").Router();
+
   router.get("/messages", async (req, res) => {
     try {
       const messages = await Message.find()
