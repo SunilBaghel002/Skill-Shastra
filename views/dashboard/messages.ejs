@@ -1180,13 +1180,6 @@
           }, 1000);
           return;
         }
-        if (user.role !== "user") {
-          showToast("This page is for users only.");
-          setTimeout(() => {
-            window.location.href = "/";
-          }, 1000);
-          return;
-        }
 
         const sidebar = document.querySelector(".sidebar");
         const mainContent = document.querySelector(".main-content");
@@ -1221,7 +1214,7 @@
         const photoOption = document.getElementById("photoOption");
         const documentOption = document.getElementById("documentOption");
         const audioOption = document.getElementById("audioOption");
-        const cameraOption = document.getElementById("cameraOption");
+        const cameraButton = document.getElementById("cameraButton");
         const imageInput = document.getElementById("imageInput");
         const audioInput = document.getElementById("audioInput");
         const documentInput = document.getElementById("documentInput");
@@ -1267,7 +1260,7 @@
         const endCallButton = document.getElementById("endCallButton");
 
         // State Variables
-        let selectedAdminId = localStorage.getItem("selectedAdminId") || null;
+        let selectedUserId = localStorage.getItem("selectedUserId") || null;
         let currentCategory = "all";
         let mediaRecorder = null;
         let audioChunks = [];
@@ -1367,7 +1360,7 @@
           messageType,
           isRead,
           fileMetadata,
-          status = "delivered"
+          status = "pending"
         ) {
           if (document.getElementById(`message-${messageId}`)) {
             console.log("Message already exists, skipping:", messageId);
@@ -1410,19 +1403,19 @@
                 content.endsWith(".webm")))
           ) {
             contentHtml = `
-        <div class="audio-container" data-message-id="${messageId}">
-          <button class="play-pause-btn" data-message-id="${messageId}">
-            <i class="fas fa-play" aria-hidden="true"></i>
-          </button>
-          <div class="progress-bar" id="progress-bar-${messageId}">
-            ${Array(20)
-              .fill()
-              .map((_, i) => `<div class="bar" data-index="${i}"></div>`)
-              .join("")}
+          <div class="audio-container" data-message-id="${messageId}">
+            <button class="play-pause-btn" data-message-id="${messageId}">
+              <i class="fas fa-play" aria-hidden="true"></i>
+            </button>
+            <div class="progress-bar" id="progress-bar-${messageId}">
+              ${Array(20)
+                .fill()
+                .map((_, i) => `<div class="bar" data-index="${i}"></div>`)
+                .join("")}
+            </div>
+            <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
           </div>
-          <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
-        </div>
-      `;
+        `;
           } else if (
             messageType === "document" ||
             (content.startsWith("https://res.cloudinary.com/") &&
@@ -1431,30 +1424,30 @@
                 content.endsWith(".docx")))
           ) {
             contentHtml = `
-        <a href="${DOMPurify.sanitize(
-          content
-        )}" target="_blank" class="document-link">
-          <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
-            fileMetadata?.fileName || "Document"
-          )}
-        </a>
-      `;
+          <a href="${DOMPurify.sanitize(
+            content
+          )}" target="_blank" class="document-link">
+            <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
+              fileMetadata?.fileName || "Document"
+            )}
+          </a>
+        `;
           } else {
             contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
           }
           messageDiv.innerHTML = `
-      <div class="message-content">
-        ${contentHtml}
-        <span class="timestamp">${formatMessageTime(timestamp)}</span>
-        ${
-          isSent
-            ? `<div class="read-receipt ${
-                status === "delivered" ? (isRead ? "read" : "") : status
-              }"><span class="dot"></span><span class="dot"></span></div>`
-            : ""
-        }
-      </div>
-    `;
+        <div class="message-content">
+          ${contentHtml}
+          <span class="timestamp">${formatMessageTime(timestamp)}</span>
+          ${
+            isSent
+              ? `<div class="read-receipt ${
+                  status === "delivered" ? (isRead ? "read" : "") : status
+                }"><span class="dot"></span><span class="dot"></span></div>`
+              : ""
+          }
+        </div>
+      `;
           chatWindow.appendChild(messageDiv);
           chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -1559,6 +1552,7 @@
         }
 
         function displayMessages(messages) {
+          console.log("Displaying messages:", messages.length);
           chatWindow.innerHTML = "";
           chatWindow.dataset.lastDate = null;
           audioElements.forEach((audio) => audio.pause());
@@ -1576,6 +1570,10 @@
               "delivered"
             );
           });
+          console.log(
+            "Messages displayed, chatWindow children:",
+            chatWindow.childElementCount
+          );
         }
 
         function closeCallModal() {
@@ -1609,8 +1607,8 @@
           }
           isMuted = false;
           stopCallTimer();
-          if (selectedAdminId) {
-            socket.emit("endCall", { to: selectedAdminId }, (response) => {
+          if (selectedUserId) {
+            socket.emit("endCall", { to: selectedUserId }, (response) => {
               if (response && response.status === "error") {
                 showToast(response.message);
               }
@@ -1625,13 +1623,13 @@
           fileMetadata = {},
           retryCount = 0
         ) {
-          if (!selectedAdminId || !content) {
+          if (!selectedUserId || !content) {
             showToast(
-              "Please select an admin and enter a message or select a file."
+              "Please select a user and enter a message or select a file."
             );
-            console.log(
-              "Send failed: selectedAdminId =",
-              selectedAdminId,
+            console.error(
+              "Send failed: selectedUserId =",
+              selectedUserId,
               "content =",
               content
             );
@@ -1662,10 +1660,10 @@
 
           socket.emit("getUsers", (response) => {
             if (response.status === "success") {
-              const selectedAdmin = response.users.find(
-                (u) => u._id === selectedAdminId
+              const selectedUser = response.users.find(
+                (u) => u._id === selectedUserId
               );
-              if (selectedAdmin) {
+              if (selectedUser) {
                 if (
                   messageType === "image" ||
                   messageType === "audio" ||
@@ -1681,10 +1679,10 @@
                     showToast(
                       `${messageType} size exceeds 5MB after encoding.`
                     );
-                    console.log(
-                      `${messageType} too large after encoding:`,
-                      base64Size.toFixed(2),
-                      "MB"
+                    console.error(
+                      `${messageType} too large after encoding: ${base64Size.toFixed(
+                        2
+                      )}MB`
                     );
                     sentMessageIds.delete(tempMessageId);
                     isSending = false;
@@ -1697,12 +1695,12 @@
                 }
 
                 console.log(
-                  `Sending ${messageType} to ${selectedAdminId}, Content length: ${content.length}, Temp ID: ${tempMessageId}`
+                  `Sending ${messageType} to ${selectedUserId}, Content length: ${content.length}, Temp ID: ${tempMessageId}`
                 );
                 socket.emit(
                   "sendMessage",
                   {
-                    receiverId: selectedAdminId,
+                    receiverId: selectedUserId,
                     content,
                     messageType,
                     fileName: fileMetadata.fileName || "file",
@@ -1726,9 +1724,13 @@
                       if (tempMessage) tempMessage.remove();
                       socket.emit(
                         "getMessages",
-                        { adminId: selectedAdminId },
+                        { userId: selectedUserId },
                         (msgResponse) => {
                           if (msgResponse.status === "success") {
+                            console.log(
+                              "Refreshed messages:",
+                              msgResponse.messages.length
+                            );
                             displayMessages(msgResponse.messages);
                           } else {
                             showToast(
@@ -1785,15 +1787,15 @@
                   }
                 );
               } else {
-                showToast("Selected admin not found.");
-                console.error("Send failed: selected admin not found");
+                showToast("Selected user not found.");
+                console.error("Send failed: selected user not found");
                 sentMessageIds.delete(tempMessageId);
                 isSending = false;
                 updateMessageStatus(tempMessageId, "failed");
               }
             } else {
-              showToast("Failed to verify admin: " + response.message);
-              console.error("Verify admin failed:", response.message);
+              showToast("Failed to verify user: " + response.message);
+              console.error("Verify user failed:", response.message);
               sentMessageIds.delete(tempMessageId);
               isSending = false;
               updateMessageStatus(tempMessageId, "failed");
@@ -1830,7 +1832,7 @@
           if (
             cameraModal &&
             !cameraModal.contains(e.target) &&
-            !cameraOption.contains(e.target) &&
+            !cameraButton.contains(e.target) &&
             cameraModal.style.display === "flex"
           ) {
             closeCameraModal();
@@ -1880,9 +1882,8 @@
           if (cameraModal) cameraModal.style.display = "none";
         }
 
-        if (cameraOption) {
-          cameraOption.addEventListener("click", () => {
-            fileMenu.classList.remove("active");
+        if (cameraButton) {
+          cameraButton.addEventListener("click", () => {
             if (
               !navigator.mediaDevices ||
               !navigator.mediaDevices.getUserMedia
@@ -2179,13 +2180,13 @@
 
         if (clearChatsBtn) {
           clearChatsBtn.addEventListener("click", () => {
-            if (selectedAdminId) {
+            if (selectedUserId) {
               if (
-                confirm("Are you sure you want to clear chats with this admin?")
+                confirm("Are you sure you want to clear chats with this user?")
               ) {
                 socket.emit(
                   "clearChats",
-                  { adminId: selectedAdminId },
+                  { userId: selectedUserId },
                   (response) => {
                     if (response.status === "success") {
                       showToast("Chats cleared successfully");
@@ -2199,33 +2200,32 @@
                 );
               }
             } else {
-              showToast("Please select an admin.");
+              showToast("Please select a user.");
             }
           });
         }
 
         if (viewProfileBtn) {
           viewProfileBtn.addEventListener("click", () => {
-            if (selectedAdminId) {
+            if (selectedUserId) {
               socket.emit(
-                "getAdminProfile",
-                { adminId: selectedAdminId },
+                "getUserProfile",
+                { userId: selectedUserId },
                 (response) => {
                   if (response.status === "success") {
                     if (modalAvatar && modalName && modalEmail && modalRole) {
                       modalAvatar.src = DOMPurify.sanitize(
-                        response.admin.profileImage ||
-                          "https://www.gravatar.com/avatar/?d=retro"
+                        response.user.profileImage
                       );
                       modalName.textContent = DOMPurify.sanitize(
-                        response.admin.name
+                        response.user.name
                       );
                       modalEmail.textContent = DOMPurify.sanitize(
-                        response.admin.email
+                        response.user.email
                       );
                       modalRole.textContent = DOMPurify.sanitize(
-                        response.admin.role.charAt(0).toUpperCase() +
-                          response.admin.role.slice(1)
+                        response.user.role.charAt(0).toUpperCase() +
+                          response.user.role.slice(1)
                       );
                       profileModal.style.display = "flex";
                     }
@@ -2236,7 +2236,7 @@
                 }
               );
             } else {
-              showToast("Please select an admin.");
+              showToast("Please select a user.");
             }
           });
         }
@@ -2315,44 +2315,37 @@
             "input",
             debounce(() => {
               socket.emit("getUsers", (response) => {
-                console.log("Search getUsers response:", response);
-                if (
-                  response.status === "success" &&
-                  Array.isArray(response.users)
-                ) {
+                if (response.status === "success") {
                   const query = searchUsersInput.value.trim().toLowerCase();
-                  let filteredAdmins = response.users;
+                  let filteredUsers = response.users.filter(
+                    (user) => user.role === "admin"
+                  );
                   if (query) {
-                    filteredAdmins = filteredAdmins.filter(
-                      (admin) =>
-                        admin.name?.toLowerCase().includes(query) ||
-                        admin.email?.toLowerCase().includes(query)
+                    filteredUsers = filteredUsers.filter(
+                      (user) =>
+                        user.name.toLowerCase().includes(query) ||
+                        user.email.toLowerCase().includes(query)
                     );
                   }
                   if (currentCategory === "unread") {
-                    filteredAdmins = filteredAdmins.filter(
-                      (admin) => admin.unreadCount > 0
+                    filteredUsers = filteredUsers.filter(
+                      (u) => u.unreadCount > 0
                     );
                   }
-                  updateAdminList(filteredAdmins);
+                  updateUserList(filteredUsers);
                 } else {
-                  showToast(
-                    "Failed to fetch admins: " +
-                      (response.message || "Unknown error")
-                  );
-                  console.error("Search fetch admins failed:", response);
-                  updateAdminList([]);
+                  showToast("Failed to fetch users: " + response.message);
+                  console.error("Fetch users failed:", response.message);
                 }
               });
             }, 300)
           );
         }
 
-        // WebRTC Event Listeners
         if (callButton) {
           callButton.addEventListener("click", async () => {
-            if (!selectedAdminId) {
-              showToast("Please select an admin to call.");
+            if (!selectedUserId) {
+              showToast("Please select a user to call.");
               return;
             }
             try {
@@ -2378,7 +2371,7 @@
                 if (event.candidate) {
                   socket.emit(
                     "iceCandidate",
-                    { to: selectedAdminId, candidate: event.candidate },
+                    { to: selectedUserId, candidate: event.candidate },
                     (response) => {
                       if (response && response.status === "error") {
                         showToast(response.message);
@@ -2406,7 +2399,7 @@
               await peerConnection.setLocalDescription(offer);
               socket.emit(
                 "callUser",
-                { to: selectedAdminId, offer, callerName: userName },
+                { to: selectedUserId, offer, callerName: userName },
                 (response) => {
                   if (response.status === "success") {
                     console.log("Call initiated successfully");
@@ -2475,17 +2468,13 @@
                   callStatus.textContent = "Connected";
                   callStatus.classList.add("connected");
                   startCallTimer();
-                } else if (
-                  peerConnection.connectionState === "disconnected" ||
-                  peerConnection.connectionState === "failed"
-                ) {
+                } else if (peerConnection.connectionState === "disconnected") {
                   endCall();
                 }
               };
 
-              const offer = JSON.parse(callModal.dataset.offer);
               await peerConnection.setRemoteDescription(
-                new RTCSessionDescription(offer)
+                new RTCSessionDescription(JSON.parse(callModal.dataset.offer))
               );
               const answer = await peerConnection.createAnswer();
               await peerConnection.setLocalDescription(answer);
@@ -2494,20 +2483,26 @@
                 { to: callModal.dataset.callerId, answer },
                 (response) => {
                   if (response.status === "success") {
+                    console.log("Call accepted successfully");
                     if (callInterface && callInterfaceName) {
-                      callInterfaceName.textContent = `Call with ${callerName.textContent}`;
+                      callInterfaceName.textContent = `Call with ${callerName.textContent.replace(
+                        "Incoming Call from ",
+                        ""
+                      )}`;
                       callInterface.classList.add("active");
-                      closeCallModal();
                     }
+                    closeCallModal();
                   } else {
                     showToast(response.message);
+                    closeCallModal();
                     endCall();
                   }
                 }
               );
             } catch (err) {
               showToast("Failed to accept call: " + err.message);
-              console.error("Accept call error:", err);
+              console.error("Call acceptance error:", err);
+              closeCallModal();
               endCall();
             }
           });
@@ -2525,18 +2520,22 @@
               }
             );
             closeCallModal();
+            console.log("Call rejected from:", callModal.dataset.callerId);
           });
         }
 
         if (muteButton) {
           muteButton.addEventListener("click", () => {
             if (localStream) {
-              isMuted = !isMuted;
-              localStream
-                .getAudioTracks()
-                .forEach((track) => (track.enabled = !isMuted));
-              muteButton.textContent = isMuted ? "Unmute" : "Mute";
+              const audioTrack = localStream.getAudioTracks()[0];
+              audioTrack.enabled = !audioTrack.enabled;
+              isMuted = !audioTrack.enabled;
+              muteButton.textContent = audioTrack.enabled ? "Mute" : "Unmute";
               muteButton.classList.toggle("muted", isMuted);
+              console.log(
+                "Microphone toggled:",
+                audioTrack.enabled ? "Unmuted" : "Muted"
+              );
             }
           });
         }
@@ -2544,217 +2543,102 @@
         if (endCallButton) {
           endCallButton.addEventListener("click", () => {
             endCall();
+            console.log("Call ended by user");
           });
         }
 
-        function updateAdminList(users) {
-          console.log("Updating admin list with:", users);
-          if (!userList) {
-            console.error("userList element not found");
-            return;
-          }
+        function updateUserList(users) {
+          if (!userList) return;
           userList.innerHTML = "";
-          if (!Array.isArray(users) || users.length === 0) {
-            console.log("No admins to display, setting placeholder");
+          let filteredUsers = users.filter((u) => u.role === "admin");
+          if (currentCategory === "unread") {
+            filteredUsers = filteredUsers.filter((u) => u.unreadCount > 0);
+          }
+          if (filteredUsers.length === 0) {
             userList.innerHTML =
-              '<p style="padding: 1rem; color: #6b7280;">No admins found.</p>';
+              '<p style="text-align: center; color: #6b7280;">No admins found</p>';
             return;
           }
-          let filteredAdmins = users;
-          if (currentCategory === "unread") {
-            filteredAdmins = users.filter((admin) => admin.unreadCount > 0);
-          }
-          filteredAdmins.forEach((admin) => {
-            if (!admin._id || !admin.name) {
-              console.warn("Skipping invalid admin data:", admin);
-              return;
+          filteredUsers.forEach((u) => {
+            if (u._id !== userId) {
+              const userItem = document.createElement("div");
+              userItem.className = `user-item${
+                u._id === selectedUserId ? " selected" : ""
+              }`;
+              userItem.dataset.userId = u._id;
+              userItem.innerHTML = `
+            <img src="${DOMPurify.sanitize(
+              u.profileImage || "https://www.gravatar.com/avatar/?d=retro"
+            )}" alt="User avatar" />
+            <div class="user-info">
+              <h3>${DOMPurify.sanitize(u.name)}</h3>
+              <p>${DOMPurify.sanitize(u.lastMessage || u.role)}</p>
+            </div>
+            <span class="message-time">${
+              u.lastMessageTime ? formatMessageTime(u.lastMessageTime) : ""
+            }</span>
+            ${
+              u.unreadCount > 0
+                ? `<span class="unread-count">${u.unreadCount}</span>`
+                : ""
             }
-            const adminItem = document.createElement("div");
-            adminItem.className = `user-item${
-              admin._id === selectedAdminId ? " selected" : ""
-            }`;
-            adminItem.dataset.adminId = admin._id;
-            adminItem.innerHTML = `
-        <img src="${DOMPurify.sanitize(
-          admin.profileImage || "https://www.gravatar.com/avatar/?d=retro"
-        )}" alt="Admin avatar" />
-        <div class="user-info">
-          <h3>${DOMPurify.sanitize(admin.name)}</h3>
-          <p>${DOMPurify.sanitize(admin.role || "Admin")}</p>
-        </div>
-        <span class="message-time">${
-          admin.lastMessageTime ? formatMessageTime(admin.lastMessageTime) : ""
-        }</span>
-        ${
-          admin.unreadCount > 0
-            ? `<span class="unread-count">${admin.unreadCount}</span>`
-            : ""
-        }
-        <button class="favorite-btn ${
-          admin.isFavorite ? "favorite" : ""
-        }" data-admin-id="${admin._id}">
-          <i class="fas fa-star"></i>
-        </button>
-        <button class="call-btn" data-admin-id="${admin._id}">
-          <i class="fas fa-phone"></i>
-        </button>
-      `;
-            adminItem.addEventListener("click", () => {
-              selectedAdminId = admin._id;
-              localStorage.setItem("selectedAdminId", selectedAdminId);
-              console.log("Selected admin ID:", selectedAdminId);
-              selectAdmin(admin);
-              if (window.innerWidth <= 768) {
-                if (userListContainer && chatWindowContainer) {
-                  userListContainer.style.display = "none";
-                  chatWindowContainer.classList.add("active");
+            <button class="favorite-btn ${
+              u.isFavorite ? "favorite" : ""
+            }" data-user-id="${u._id}"><i class="fas fa-star"></i></button>
+            <button class="call-btn" data-user-id="${u._id}">Call</button>
+          `;
+              userItem.addEventListener("click", () => {
+                selectedUserId = u._id;
+                localStorage.setItem("selectedUserId", selectedUserId);
+                console.log("Selected user ID:", selectedUserId);
+                selectUser(u);
+                if (window.innerWidth <= 768) {
+                  if (userListContainer && chatWindowContainer) {
+                    userListContainer.style.display = "none";
+                    chatWindowContainer.classList.add("active");
+                  }
                 }
-              }
-            });
-            const favoriteBtn = adminItem.querySelector(".favorite-btn");
-            if (favoriteBtn) {
+              });
+              const favoriteBtn = userItem.querySelector(".favorite-btn");
               favoriteBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                socket.emit(
-                  "toggleFavorite",
-                  { adminId: admin._id },
-                  (response) => {
-                    if (response.status === "success") {
-                      favoriteBtn.classList.toggle(
-                        "favorite",
-                        response.isFavorite
-                      );
-                      showToast(
-                        response.isFavorite
-                          ? "Added to favorites"
-                          : "Removed from favorites"
-                      );
-                    } else {
-                      showToast(
-                        "Failed to update favorite: " + response.message
-                      );
-                      console.error(
-                        "Toggle favorite failed:",
-                        response.message
-                      );
-                    }
+                socket.emit("toggleFavorite", { userId: u._id }, (response) => {
+                  if (response.status === "error") {
+                    showToast(response.message);
                   }
-                );
+                });
               });
-            }
-            const callBtn = adminItem.querySelector(".call-btn");
-            if (callBtn) {
-              callBtn.addEventListener("click", async (e) => {
+              const callBtn = userItem.querySelector(".call-btn");
+              callBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
-                if (!admin._id) {
-                  showToast("Please select an admin to call.");
-                  return;
-                }
-                try {
-                  localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                  });
-                  peerConnection = new RTCPeerConnection(webrtcConfig);
-                  localStream
-                    .getTracks()
-                    .forEach((track) =>
-                      peerConnection.addTrack(track, localStream)
-                    );
-
-                  peerConnection.ontrack = (event) => {
-                    remoteStream = event.streams[0];
-                    const audio = document.createElement("audio");
-                    audio.srcObject = remoteStream;
-                    audio.autoplay = true;
-                    document.body.appendChild(audio);
-                  };
-
-                  peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                      socket.emit(
-                        "iceCandidate",
-                        { to: admin._id, candidate: event.candidate },
-                        (response) => {
-                          if (response && response.status === "error") {
-                            showToast(response.message);
-                          }
-                        }
-                      );
-                    }
-                  };
-
-                  peerConnection.onconnectionstatechange = () => {
-                    if (
-                      peerConnection.connectionState === "connected" &&
-                      callInterface &&
-                      callStatus
-                    ) {
-                      callStatus.textContent = "Connected";
-                      callStatus.classList.add("connected");
-                      startCallTimer();
-                    } else if (
-                      peerConnection.connectionState === "disconnected" ||
-                      peerConnection.connectionState === "failed"
-                    ) {
-                      endCall();
-                    }
-                  };
-
-                  const offer = await peerConnection.createOffer();
-                  await peerConnection.setLocalDescription(offer);
-                  socket.emit(
-                    "callUser",
-                    { to: admin._id, offer, callerName: userName },
-                    (response) => {
-                      if (response.status === "success") {
-                        console.log("Call initiated successfully");
-                        if (callInterface && callInterfaceName) {
-                          callInterfaceName.textContent = `Call with ${admin.name}`;
-                          callInterface.classList.add("active");
-                        }
-                      } else {
-                        showToast(response.message);
-                        endCall();
-                      }
-                    }
-                  );
-                } catch (err) {
-                  showToast("Failed to start call: " + err.message);
-                  console.error("Call initiation error:", err);
-                  endCall();
-                }
+                selectedUserId = u._id;
+                localStorage.setItem("selectedUserId", selectedUserId);
+                callButton.click();
               });
+              userList.appendChild(userItem);
             }
-            userList.appendChild(adminItem);
           });
-          console.log("Admin list updated, items:", userList.children.length);
+          console.log("User list updated, users:", filteredUsers.length);
         }
 
-        function selectAdmin(admin) {
-          if (!admin || !admin._id) {
-            showToast("Invalid admin selected.");
-            return;
-          }
+        function selectUser(user) {
+          console.log("Selecting user:", user._id, user.name);
           document
             .querySelectorAll(".user-item")
             .forEach((item) => item.classList.remove("selected"));
-          const adminItem = document.querySelector(
-            `.user-item[data-admin-id="${admin._id}"]`
+          const userItem = document.querySelector(
+            `.user-item[data-user-id="${user._id}"]`
           );
-          if (adminItem) adminItem.classList.add("selected");
+          if (userItem) userItem.classList.add("selected");
           if (chatHeaderName && chatHeaderAvatar) {
-            chatHeaderName.textContent = DOMPurify.sanitize(
-              admin.name || "Unknown Admin"
-            );
+            chatHeaderName.textContent = DOMPurify.sanitize(user.name);
             chatHeaderAvatar.src = DOMPurify.sanitize(
-              admin.profileImage || "https://www.gravatar.com/avatar/?d=retro"
+              user.profileImage || "https://www.gravatar.com/avatar/?d=retro"
             );
           }
-          if (chatWindow) {
-            chatWindow.innerHTML = "";
-            chatWindow.dataset.lastDate = null;
-          }
-          socket.emit("getMessages", { adminId: admin._id }, (response) => {
+          chatWindow.innerHTML = "";
+          chatWindow.dataset.lastDate = null;
+          socket.emit("getMessages", { userId: user._id }, (response) => {
             if (response.status === "success") {
               console.log(
                 "Received messages:",
@@ -2762,6 +2646,8 @@
                   id: m._id,
                   messageType: m.messageType,
                   content: m.content,
+                  sender: m.sender._id,
+                  receiver: m.receiver._id,
                   fileMetadata: m.fileMetadata,
                 }))
               );
@@ -2774,97 +2660,118 @@
           });
         }
 
-        // Socket.IO Event Listeners
-        socket.on("connect", () => {
-          console.log("Connected to socket, user ID:", socket.id);
-          socket.emit("getUsers", (response) => {
-            console.log(
-              "Initial getUsers response:",
-              JSON.stringify(response, null, 2)
-            );
-            if (
-              response.status === "success" &&
-              Array.isArray(response.users)
-            ) {
-              updateAdminList(response.users);
-              if (selectedAdminId) {
-                const admin = response.users.find(
-                  (u) => u._id === selectedAdminId
-                );
-                if (admin) {
-                  selectAdmin(admin);
-                  if (window.innerWidth <= 768) {
-                    if (userListContainer && chatWindowContainer) {
-                      userListContainer.style.display = "none";
-                      chatWindowContainer.classList.add("active");
-                    }
+        socket.emit("getUsers", (response) => {
+          if (response.status === "success") {
+            console.log("Received users:", response.users);
+            updateUserList(response.users);
+            if (selectedUserId) {
+              const user = response.users.find(
+                (u) => u._id === selectedUserId && u.role === "admin"
+              );
+              if (user) {
+                selectUser(user);
+                if (window.innerWidth <= 768) {
+                  if (userListContainer && chatWindowContainer) {
+                    userListContainer.style.display = "none";
+                    chatWindowContainer.classList.add("active");
                   }
-                } else {
-                  selectedAdminId = null;
-                  localStorage.removeItem("selectedAdminId");
-                  if (chatHeaderName && chatHeaderAvatar) {
-                    chatHeaderName.textContent = "Select an admin";
-                    chatHeaderAvatar.src =
-                      "https://www.gravatar.com/avatar/?d=retro";
-                  }
-                  if (chatWindow) chatWindow.innerHTML = "";
-                  if (window.innerWidth <= 768) {
-                    if (chatWindowContainer && userListContainer) {
-                      chatWindowContainer.classList.remove("active");
-                      userListContainer.style.display = "block";
-                    }
+                }
+              } else {
+                selectedUserId = null;
+                localStorage.removeItem("selectedUserId");
+                if (chatHeaderName && chatHeaderAvatar) {
+                  chatHeaderName.textContent = "Select an admin";
+                  chatHeaderAvatar.src =
+                    "https://www.gravatar.com/avatar/?d=retro";
+                }
+                if (window.innerWidth <= 768) {
+                  if (userListContainer && chatWindowContainer) {
+                    userListContainer.style.display = "block";
+                    chatWindowContainer.classList.remove("active");
                   }
                 }
               }
-            } else {
-              showToast(
-                "Failed to fetch admins: " +
-                  (response.message || "Unknown error")
-              );
-              console.error("Initial fetch admins failed:", response);
-              updateAdminList([]);
             }
+          } else {
+            showToast("Failed to fetch users: " + response.message);
+            console.error("Fetch users failed:", response.message);
+          }
+        });
+
+        document.querySelectorAll(".category-tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            document
+              .querySelectorAll(".category-tab")
+              .forEach((t) => t.classList.remove("active"));
+            tab.classList.add("active");
+            currentCategory = tab.dataset.category;
+            console.log("Switched to category:", currentCategory);
+            socket.emit("getUsers", (response) => {
+              if (response.status === "success") {
+                const query = searchUsersInput.value.trim().toLowerCase();
+                let filteredUsers = response.users.filter(
+                  (user) => user.role === "admin"
+                );
+                if (query) {
+                  filteredUsers = filteredUsers.filter(
+                    (user) =>
+                      user.name.toLowerCase().includes(query) ||
+                      user.email.toLowerCase().includes(query)
+                  );
+                }
+                if (currentCategory === "unread") {
+                  filteredUsers = filteredUsers.filter(
+                    (u) => u.unreadCount > 0
+                  );
+                }
+                updateUserList(filteredUsers);
+              }
+            });
           });
         });
 
         socket.on("updateUsers", (response) => {
-          console.log(
-            "Received updateUsers:",
-            JSON.stringify(response, null, 2)
-          );
-          if (response.status === "success" && Array.isArray(response.users)) {
+          console.log("Received updateUsers:", response);
+          if (Array.isArray(response.users)) {
             const query = searchUsersInput
               ? searchUsersInput.value.trim().toLowerCase()
               : "";
-            let filteredAdmins = response.users;
+            let filteredUsers = response.users.filter(
+              (user) => user.role === "admin"
+            );
+            console.log("Initial admins received:", filteredUsers.length);
             if (query) {
-              filteredAdmins = filteredAdmins.filter(
-                (admin) =>
-                  admin.name?.toLowerCase().includes(query) ||
-                  admin.email?.toLowerCase().includes(query)
+              filteredUsers = filteredUsers.filter(
+                (user) =>
+                  user.name?.toLowerCase().includes(query) ||
+                  user.email?.toLowerCase().includes(query)
               );
+              console.log("After search filter:", filteredUsers.length);
             }
             if (currentCategory === "unread") {
-              filteredAdmins = filteredAdmins.filter(
-                (admin) => admin.unreadCount > 0
+              filteredUsers = filteredUsers.filter(
+                (user) => user.unreadCount > 0
               );
+              console.log("After unread filter:", filteredUsers.length);
             }
-            updateAdminList(filteredAdmins);
-            if (selectedAdminId) {
-              const admin = filteredAdmins.find(
-                (u) => u._id === selectedAdminId
-              );
-              if (admin) {
+            updateUserList(filteredUsers);
+            if (selectedUserId) {
+              const user = filteredUsers.find((u) => u._id === selectedUserId);
+              if (user) {
                 document
                   .querySelectorAll(".user-item")
                   .forEach((item) => item.classList.remove("selected"));
-                const adminItem = document.querySelector(
-                  `.user-item[data-admin-id="${selectedAdminId}"]`
+                const userItem = document.querySelector(
+                  `.user-item[data-user-id="${selectedUserId}"]`
                 );
-                if (adminItem) adminItem.classList.add("selected");
+                if (userItem) userItem.classList.add("selected");
               } else {
-                selectedAdminId = null;
-                localStorage.removeItem("selectedAdminId");
+                console.warn(
+                  "Selected admin not found in updated list:",
+                  selectedUserId
+                );
+                selectedUserId = null;
+                localStorage.removeItem("selectedUserId");
                 if (chatHeaderName && chatHeaderAvatar) {
                   chatHeaderName.textContent = "Select an admin";
                   chatHeaderAvatar.src =
@@ -2882,25 +2789,38 @@
           } else {
             showToast(
               "Failed to update admins: " +
-                (response.message || "Unknown error")
+                (response.message || "Invalid response")
             );
             console.error("Update admins failed:", response);
-            updateAdminList([]);
+            updateUserList([]);
           }
         });
 
         socket.on("updateMessages", (response) => {
           console.log(
-            "Updating messages:",
-            response.messages.map((m) => ({
+            "Received updateMessages:",
+            response.messages?.map((m) => ({
               id: m._id,
               messageType: m.messageType,
               content: m.content,
+              sender: m.sender._id,
+              receiver: m.receiver._id,
               fileMetadata: m.fileMetadata,
             }))
           );
-          currentMessages = response.messages;
-          displayMessages(response.messages);
+          if (
+            response.status === "success" &&
+            Array.isArray(response.messages)
+          ) {
+            currentMessages = response.messages;
+            displayMessages(response.messages);
+          } else {
+            showToast(
+              "Failed to update messages: " +
+                (response.message || "Invalid response")
+            );
+            console.error("Update messages failed:", response);
+          }
         });
 
         socket.on("receiveMessage", (msg) => {
@@ -2911,12 +2831,12 @@
             fileMetadata: msg.fileMetadata,
             senderId: msg.sender.id,
             receiverId: msg.receiver.id,
-            selectedAdminId,
+            selectedUserId,
             userId,
           });
           if (
-            (msg.sender.id === selectedAdminId && msg.receiver.id === userId) ||
-            (msg.sender.id === userId && msg.receiver.id === selectedAdminId)
+            (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
+            (msg.sender.id === userId && msg.receiver.id === selectedUserId)
           ) {
             appendMessage(
               msg.sender.id === userId,
@@ -2931,70 +2851,85 @@
             );
             socket.emit("getUsers", (response) => {
               if (response.status === "success") {
-                updateAdminList(response.users);
+                updateUserList(response.users);
               }
             });
           }
         });
 
         socket.on("updateMessageStatus", (msg) => {
-          updateMessageStatus(msg.messageId, "delivered", msg.isRead);
-        });
-
-        socket.on(
-          "incomingCall",
-          ({ from, callerName: incomingCallerName, offer }) => {
-            console.log(
-              "Incoming call from:",
-              from,
-              "Caller:",
-              incomingCallerName
-            );
-            if (callModal && callerName) {
-              callerName.textContent = DOMPurify.sanitize(incomingCallerName);
-              callModal.dataset.callerId = from;
-              callModal.dataset.offer = JSON.stringify(offer);
-              callModal.style.display = "flex";
+          console.log(
+            "Updating message status:",
+            msg.messageId,
+            "isRead:",
+            msg.isRead
+          );
+          const messageElement = document.getElementById(
+            `message-${msg.messageId}`
+          );
+          if (messageElement) {
+            const readReceipt = messageElement.querySelector(".read-receipt");
+            if (readReceipt) {
+              readReceipt.classList.toggle("read", msg.isRead);
             }
           }
-        );
+        });
 
-        socket.on("callAccepted", async ({ answer, from }) => {
-          if (peerConnection) {
-            try {
-              await peerConnection.setRemoteDescription(
-                new RTCSessionDescription(answer)
-              );
-              console.log("Call accepted, remote description set");
-            } catch (err) {
-              showToast("Failed to set remote description: " + err.message);
-              console.error("Set remote description error:", err);
-              endCall();
+        socket.on("incomingCall", (data) => {
+          if (!selectedUserId || selectedUserId !== data.from) {
+            if (callModal && callerName) {
+              callModal.dataset.callerId = data.from;
+              callModal.dataset.offer = JSON.stringify(data.offer);
+              callerName.textContent = `Incoming Call from ${data.callerName}`;
+              callModal.style.display = "flex";
+              console.log("Received incoming call from:", data.from);
             }
+          } else {
+            socket.emit("rejectCall", { to: data.from }, (response) => {
+              if (response && response.status === "error") {
+                showToast(response.message);
+              }
+            });
+            console.log("Auto-rejected call from selected user:", data.from);
+          }
+        });
+
+        socket.on("callAnswered", async (data) => {
+          try {
+            await peerConnection.setRemoteDescription(
+              new RTCSessionDescription(data.answer)
+            );
+            console.log("Call answered by:", data.from);
+          } catch (err) {
+            showToast("Failed to process call answer: " + err.message);
+            console.error("Call answer error:", err);
+            endCall();
+          }
+        });
+
+        socket.on("iceCandidate", async (data) => {
+          try {
+            if (peerConnection) {
+              await peerConnection.addIceCandidate(
+                new RTCIceCandidate(data.candidate)
+              );
+              console.log("Added ICE candidate from:", data.from);
+            }
+          } catch (err) {
+            console.error("ICE candidate error:", err);
           }
         });
 
         socket.on("callRejected", () => {
-          showToast("Call was rejected by the admin.");
+          showToast("Call was rejected by the user.");
           endCall();
+          console.log("Call rejected by remote user");
         });
 
         socket.on("callEnded", () => {
-          showToast("Call ended by the admin.");
+          showToast("Call ended by the other user.");
           endCall();
-        });
-
-        socket.on("iceCandidate", async ({ candidate }) => {
-          if (peerConnection && candidate) {
-            try {
-              await peerConnection.addIceCandidate(
-                new RTCIceCandidate(candidate)
-              );
-              console.log("ICE candidate added");
-            } catch (err) {
-              console.error("Error adding ICE candidate:", err);
-            }
-          }
+          console.log("Call ended by remote user");
         });
 
         socket.on("connect_error", (error) => {
@@ -3007,55 +2942,6 @@
           console.log("Socket disconnected");
           socket.emit("rejoinRooms");
         });
-
-        // Category Tabs
-        document.querySelectorAll(".category-tab").forEach((tab) => {
-          tab.addEventListener("click", () => {
-            document
-              .querySelectorAll(".category-tab")
-              .forEach((t) => t.classList.remove("active"));
-            tab.classList.add("active");
-            currentCategory = tab.dataset.category;
-            socket.emit("getUsers", (response) => {
-              console.log(
-                "Category getUsers response:",
-                JSON.stringify(response, null, 2)
-              );
-              if (
-                response.status === "success" &&
-                Array.isArray(response.users)
-              ) {
-                const query = searchUsersInput
-                  ? searchUsersInput.value.trim().toLowerCase()
-                  : "";
-                let filteredAdmins = response.users;
-                if (query) {
-                  filteredAdmins = filteredAdmins.filter(
-                    (admin) =>
-                      admin.name?.toLowerCase().includes(query) ||
-                      admin.email?.toLowerCase().includes(query)
-                  );
-                }
-                updateAdminList(filteredAdmins);
-              } else {
-                showToast(
-                  "Failed to fetch admins: " +
-                    (response.message || "Unknown error")
-                );
-                console.error("Category fetch admins failed:", response);
-                updateAdminList([]);
-              }
-            });
-          });
-        });
-
-        // Ensure initial state
-        if (searchUsersInput) searchUsersInput.value = "";
-        document.querySelectorAll(".category-tab").forEach((tab) => {
-          tab.classList.remove("active");
-          if (tab.dataset.category === "all") tab.classList.add("active");
-        });
-        currentCategory = "all";
       });
     </script>
   </body>

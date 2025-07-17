@@ -51,8 +51,27 @@
       .main-content {
         margin-left: 0;
         width: 100%;
+        animation: ColorChanger 10s ease-in 0s infinite alternate;
         overflow-y: auto;
         max-height: 100vh;
+      }
+
+      @keyframes ColorChanger {
+        0% {
+          background-color: #7c3aed;
+        }
+
+        20% {
+          background-color: #a855f7;
+        }
+
+        50% {
+          background-color: #ec4899;
+        }
+
+        100% {
+          background-color: #f472b6;
+        }
       }
 
       .chat-container {
@@ -1366,8 +1385,6 @@
       </div>
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.0/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
     <script src="/js/sidebar.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -1392,26 +1409,12 @@
           return;
         }
 
-        const sidebar = document.querySelector(".sidebar");
-        const mainContent = document.querySelector(".main-content");
-        if (sidebar && mainContent) {
-          if (sidebar.classList.contains("hidden")) {
-            mainContent.classList.add("full");
-          }
-          sidebar.addEventListener("transitionend", () => {
-            mainContent.classList.toggle(
-              "full",
-              sidebar.classList.contains("hidden")
-            );
-          });
-        }
-
         const socket = io(window.location.origin, {
           auth: { token },
           transports: ["websocket", "polling"],
           reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
+          reconnectionAttempts: 15,
+          reconnectionDelay: 500,
           maxHttpBufferSize: 10 * 1024 * 1024,
         });
 
@@ -1470,6 +1473,38 @@
         const muteButton = document.getElementById("muteButton");
         const endCallButton = document.getElementById("endCallButton");
 
+        // Create Call Logs Modal
+        const callLogsModal = document.createElement("div");
+        callLogsModal.id = "callLogsModal";
+        callLogsModal.className = "modal";
+        callLogsModal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px; width: 90%;">
+      <h2>Call Logs</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+        <thead>
+          <tr style="background: #f3f4f6;">
+            <th style="padding: 0.5rem; text-align: left;">Caller</th>
+            <th style="padding: 0.5rem; text-align: left;">Receiver</th>
+            <th style="padding: 0.5rem; text-align: left;">Time</th>
+            <th style="padding: 0.5rem; text-align: left;">Duration</th>
+            <th style="padding: 0.5rem; text-align: left;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="callLogsTable"></tbody>
+      </table>
+      <button id="closeCallLogsModal" style="background: #4f46e5; color: #ffffff; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+    </div>
+  `;
+        document.body.appendChild(callLogsModal);
+        const closeCallLogsModal =
+          document.getElementById("closeCallLogsModal");
+
+        // Add Call Logs Button to Dropdown Menu
+        const callLogsBtn = document.createElement("button");
+        callLogsBtn.id = "callLogsBtn";
+        callLogsBtn.textContent = "Call Logs";
+        dropdownMenu.appendChild(callLogsBtn);
+
         // State Variables
         let selectedUserId = localStorage.getItem("selectedUserId") || null;
         let currentCategory = "all";
@@ -1485,10 +1520,41 @@
         let isMuted = false;
         let callStartTime = null;
         let callTimerInterval = null;
+        let iceCandidateQueue = [];
         const speedOptions = [1, 1.2, 1.5, 2];
         const webrtcConfig = {
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+          ],
         };
+        let onlineUsers = new Set();
+        let lastStatusUpdate = 0;
+
+        // Polling for messages and users as a fallback
+        setInterval(() => {
+          if (selectedUserId) {
+            socket.emit(
+              "getMessages",
+              { userId: selectedUserId },
+              (response) => {
+                if (response.status === "success") {
+                  currentMessages = response.messages;
+                  displayMessages(response.messages);
+                  console.log("Polled messages for user:", selectedUserId);
+                }
+              }
+            );
+          }
+          socket.emit("getUsers", updateUserList);
+          console.log("Polled users for real-time update");
+        }, 10000);
+
+        // Periodically ensure socket room membership
+        setInterval(() => {
+          socket.emit("rejoinRooms", { userId });
+          console.log("Emitted rejoinRooms for user:", userId);
+        }, 5000);
 
         function showToast(message) {
           const toast = document.getElementById("toast");
@@ -1554,6 +1620,25 @@
           }
         }
 
+        function displayCallLogs(logs) {
+          const callLogsTable = document.getElementById("callLogsTable");
+          callLogsTable.innerHTML = "";
+          logs.forEach((log) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+        <td style="padding: 0.5rem;">${DOMPurify.sanitize(log.caller.name)}</td>
+        <td style="padding: 0.5rem;">${DOMPurify.sanitize(
+          log.receiver.name
+        )}</td>
+        <td style="padding: 0.5rem;">${formatMessageTime(log.createdAt)}</td>
+        <td style="padding: 0.5rem;">${formatCallTime(log.duration || 0)}</td>
+        <td style="padding: 0.5rem;">${DOMPurify.sanitize(log.status)}</td>
+      `;
+            callLogsTable.appendChild(row);
+          });
+          callLogsModal.style.display = "flex";
+        }
+
         function debounce(func, wait) {
           let timeout;
           return function (...args) {
@@ -1571,7 +1656,7 @@
           messageType,
           isRead,
           fileMetadata,
-          status = "pending"
+          status = "delivered"
         ) {
           if (document.getElementById(`message-${messageId}`)) {
             console.log("Message already exists, skipping:", messageId);
@@ -1731,13 +1816,7 @@
               const progress = audio.currentTime / audio.duration;
               const activeBars = Math.floor(progress * bars.length);
               bars.forEach((bar, index) => {
-                const isActive = index < activeBars;
-                bar.classList.toggle("active", isActive);
-                if (isActive) {
-                  bar.style.animation = "none";
-                  bar.offsetHeight; // Trigger reflow
-                  bar.style.animation = null;
-                }
+                bar.classList.toggle("active", index < activeBars);
               });
               requestAnimationFrame(update);
             }
@@ -1784,15 +1863,29 @@
 
         function closeCallModal() {
           if (callModal) {
-            callModal.style.display = "none";
+            callModal.classList.remove("active");
             callerName.textContent = "Incoming Call";
             callModal.dataset.callerId = "";
             callModal.dataset.offer = "";
+            callModal.dataset.callId = "";
           }
         }
 
-        function endCall() {
+        function endCall(status = "ended") {
+          let duration = 0;
+          if (callStartTime) {
+            duration = Math.floor((Date.now() - callStartTime) / 1000);
+          }
           if (peerConnection) {
+            socket.emit(
+              "endCall",
+              { to: selectedUserId, callId: peerConnection.callId },
+              (response) => {
+                if (response.status === "error") {
+                  showToast("Failed to end call: " + response.message);
+                }
+              }
+            );
             peerConnection.close();
             peerConnection = null;
           }
@@ -1813,14 +1906,39 @@
           }
           isMuted = false;
           stopCallTimer();
-          if (selectedUserId) {
-            socket.emit("endCall", { to: selectedUserId }, (response) => {
-              if (response && response.status === "error") {
-                showToast(response.message);
+          document
+            .querySelectorAll("audio.webrtc")
+            .forEach((audio) => audio.remove());
+          iceCandidateQueue = [];
+          console.log("Call ended by user", {
+            callId: peerConnection ? peerConnection.callId : null,
+            status,
+            duration,
+          });
+        }
+
+        function tryResendIceCandidates(to, callId) {
+          const candidates = iceCandidateQueue.filter(
+            (c) => c.to === to && c.callId === callId
+          );
+          iceCandidateQueue = iceCandidateQueue.filter(
+            (c) => c.to !== to || c.callId !== callId
+          );
+          candidates.forEach(({ candidate }) => {
+            socket.emit(
+              "iceCandidate",
+              { to, candidate, callId },
+              (response) => {
+                if (response.status !== "success") {
+                  console.error("Retry ICE candidate error:", response.message);
+                  if (response.message === "Receiver is not online") {
+                    showToast("Receiver is offline. Please try again later.");
+                    endCall("failed");
+                  }
+                }
               }
-            });
-          }
-          console.log("Call ended by user");
+            );
+          });
         }
 
         function sendMessage(
@@ -1876,32 +1994,24 @@
                   messageType === "document"
                 ) {
                   const base64Size = (content.length * 3) / 4 / 1024 / 1024;
-                  console.log(
-                    `File base64 size: ${base64Size.toFixed(
-                      2
-                    )}MB, Type: ${messageType}, File: ${fileMetadata.fileName}`
-                  );
                   if (base64Size > 5) {
-                    showToast(
-                      `${messageType} size exceeds 5MB after encoding.`
-                    );
+                    showToast(`${messageType} size exceeds 5MB.`);
                     console.log(
-                      `${messageType} too large after encoding:`,
+                      `${messageType} too large:`,
                       base64Size.toFixed(2),
                       "MB"
                     );
                     sentMessageIds.delete(tempMessageId);
                     isSending = false;
-                    const tempMessage = document.getElementById(
-                      `message-${tempMessageId}`
-                    );
-                    if (tempMessage) tempMessage.remove();
+                    document
+                      .getElementById(`message-${tempMessageId}`)
+                      ?.remove();
                     return;
                   }
                 }
 
                 console.log(
-                  `Sending ${messageType} to ${selectedUserId}, Content length: ${content.length}, Temp ID: ${tempMessageId}`
+                  `Sending ${messageType} to ${selectedUserId}, Temp ID: ${tempMessageId}`
                 );
                 socket.emit(
                   "sendMessage",
@@ -1924,15 +2034,15 @@
                         `${messageType} sent successfully: ID: ${response.messageId}`
                       );
                       sentMessageIds.delete(tempMessageId);
-                      const tempMessage = document.getElementById(
-                        `message-${tempMessageId}`
-                      );
-                      if (tempMessage) tempMessage.remove();
+                      document
+                        .getElementById(`message-${tempMessageId}`)
+                        ?.remove();
                       socket.emit(
                         "getMessages",
                         { userId: selectedUserId },
                         (msgResponse) => {
                           if (msgResponse.status === "success") {
+                            currentMessages = msgResponse.messages;
                             displayMessages(msgResponse.messages);
                           } else {
                             showToast(
@@ -1949,9 +2059,7 @@
                     } else {
                       console.error(
                         `Send ${messageType} failed:`,
-                        response.message,
-                        "Response:",
-                        response
+                        response.message
                       );
                       showToast(
                         `Failed to send ${messageType}: ${response.message}`
@@ -1982,7 +2090,7 @@
                         showToast(
                           `Failed to send ${messageType} after ${
                             retryCount + 1
-                          } attempts: ${response.message}`
+                          } attempts`
                         );
                       }
                     }
@@ -2018,9 +2126,7 @@
         });
 
         attachButton.addEventListener("click", () => {
-          if (fileMenu) {
-            fileMenu.classList.toggle("active");
-          }
+          if (fileMenu) fileMenu.classList.toggle("active");
         });
 
         document.addEventListener("click", (e) => {
@@ -2045,6 +2151,13 @@
             !moreOptions.contains(e.target)
           ) {
             dropdownMenu.classList.remove("active");
+          }
+          if (
+            callLogsModal &&
+            !callLogsModal.contains(e.target) &&
+            callLogsModal.style.display === "flex"
+          ) {
+            callLogsModal.style.display = "none";
           }
         });
 
@@ -2394,6 +2507,7 @@
                       showToast("Chats cleared successfully");
                       chatWindow.innerHTML = "";
                       chatWindow.dataset.lastDate = null;
+                      socket.emit("getUsers", updateUserList);
                     } else {
                       showToast("Failed to clear chats: " + response.message);
                       console.error("Clear chats failed:", response.message);
@@ -2440,6 +2554,33 @@
             } else {
               showToast("Please select a user.");
             }
+          });
+        }
+
+        if (callLogsBtn) {
+          callLogsBtn.addEventListener("click", () => {
+            if (selectedUserId) {
+              socket.emit(
+                "getCallLogs",
+                { userId: selectedUserId },
+                (response) => {
+                  if (response.status === "success") {
+                    displayCallLogs(response.logs);
+                  } else {
+                    showToast("Failed to fetch call logs: " + response.message);
+                    console.error("Fetch call logs failed:", response.message);
+                  }
+                }
+              );
+            } else {
+              showToast("Please select a user.");
+            }
+          });
+        }
+
+        if (closeCallLogsModal) {
+          closeCallLogsModal.addEventListener("click", () => {
+            callLogsModal.style.display = "none";
           });
         }
 
@@ -2516,37 +2657,22 @@
           searchUsersInput.addEventListener(
             "input",
             debounce(() => {
-              socket.emit("getUsers", (response) => {
-                if (response.status === "success") {
-                  const query = searchUsersInput.value.trim().toLowerCase();
-                  let filteredUsers = response.users;
-                  if (query) {
-                    filteredUsers = response.users.filter(
-                      (user) =>
-                        user.name.toLowerCase().includes(query) ||
-                        user.email.toLowerCase().includes(query)
-                    );
-                  }
-                  if (currentCategory === "unread") {
-                    filteredUsers = filteredUsers.filter(
-                      (u) => u.unreadCount > 0
-                    );
-                  }
-                  updateUserList(filteredUsers);
-                } else {
-                  showToast("Failed to fetch users: " + response.message);
-                  console.error("Fetch users failed:", response.message);
-                }
-              });
+              socket.emit("getUsers", updateUserList);
             }, 300)
           );
         }
 
-        // WebRTC Event Listeners
         if (callButton) {
           callButton.addEventListener("click", async () => {
             if (!selectedUserId) {
               showToast("Please select a user to call.");
+              return;
+            }
+            if (!onlineUsers.has(selectedUserId)) {
+              showToast(
+                "User is offline. Please try again when they are online."
+              );
+              console.log("Call blocked: User offline", { selectedUserId });
               return;
             }
             try {
@@ -2554,6 +2680,7 @@
                 audio: true,
               });
               peerConnection = new RTCPeerConnection(webrtcConfig);
+              peerConnection.callId = null; // Set after server response
               localStream
                 .getTracks()
                 .forEach((track) =>
@@ -2563,19 +2690,55 @@
               peerConnection.ontrack = (event) => {
                 remoteStream = event.streams[0];
                 const audio = document.createElement("audio");
+                audio.className = "webrtc";
                 audio.srcObject = remoteStream;
                 audio.autoplay = true;
                 document.body.appendChild(audio);
+                console.log("Received remote stream:", remoteStream);
               };
 
               peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
+                if (event.candidate && peerConnection.callId) {
                   socket.emit(
                     "iceCandidate",
-                    { to: selectedUserId, candidate: event.candidate },
+                    {
+                      to: selectedUserId,
+                      candidate: event.candidate,
+                      callId: peerConnection.callId,
+                    },
                     (response) => {
-                      if (response && response.status === "error") {
-                        showToast(response.message);
+                      if (response.status === "error") {
+                        if (response.message === "Receiver is not online") {
+                          iceCandidateQueue.push({
+                            to: selectedUserId,
+                            candidate: event.candidate,
+                            callId: peerConnection.callId,
+                          });
+                          setTimeout(
+                            () =>
+                              tryResendIceCandidates(
+                                selectedUserId,
+                                peerConnection.callId
+                              ),
+                            2000
+                          );
+                          showToast(
+                            "Receiver went offline. Retrying connection..."
+                          );
+                        } else {
+                          showToast(
+                            "Failed to send ICE candidate: " + response.message
+                          );
+                          console.error(
+                            "ICE candidate error:",
+                            response.message
+                          );
+                        }
+                      } else {
+                        console.log("Sent ICE candidate:", {
+                          to: selectedUserId,
+                          callId: peerConnection.callId,
+                        });
                       }
                     }
                   );
@@ -2583,6 +2746,10 @@
               };
 
               peerConnection.onconnectionstatechange = () => {
+                console.log(
+                  "WebRTC connection state:",
+                  peerConnection.connectionState
+                );
                 if (
                   peerConnection.connectionState === "connected" &&
                   callInterface &&
@@ -2591,8 +2758,13 @@
                   callStatus.textContent = "Connected";
                   callStatus.classList.add("connected");
                   startCallTimer();
-                } else if (peerConnection.connectionState === "disconnected") {
-                  endCall();
+                } else if (
+                  ["disconnected", "failed", "closed"].includes(
+                    peerConnection.connectionState
+                  )
+                ) {
+                  showToast("Call failed or disconnected.");
+                  endCall("failed");
                 }
               };
 
@@ -2603,21 +2775,27 @@
                 { to: selectedUserId, offer, callerName: userName },
                 (response) => {
                   if (response.status === "success") {
-                    console.log("Call initiated successfully");
+                    console.log("Call initiated to:", selectedUserId, {
+                      callId: response.callId,
+                    });
+                    peerConnection.callId = response.callId;
                     if (callInterface && callInterfaceName) {
                       callInterfaceName.textContent = `Call with ${chatHeaderName.textContent}`;
                       callInterface.classList.add("active");
+                      callStatus.textContent = "Waiting...";
+                      callStatus.classList.remove("connected");
                     }
                   } else {
-                    showToast(response.message);
-                    endCall();
+                    showToast("Failed to initiate call: " + response.message);
+                    console.error("Call initiation failed:", response.message);
+                    endCall("failed");
                   }
                 }
               );
             } catch (err) {
               showToast("Failed to start call: " + err.message);
               console.error("Call initiation error:", err);
-              endCall();
+              endCall("failed");
             }
           });
         }
@@ -2629,6 +2807,7 @@
                 audio: true,
               });
               peerConnection = new RTCPeerConnection(webrtcConfig);
+              peerConnection.callId = callModal.dataset.callId;
               localStream
                 .getTracks()
                 .forEach((track) =>
@@ -2638,9 +2817,11 @@
               peerConnection.ontrack = (event) => {
                 remoteStream = event.streams[0];
                 const audio = document.createElement("audio");
+                audio.className = "webrtc";
                 audio.srcObject = remoteStream;
                 audio.autoplay = true;
                 document.body.appendChild(audio);
+                console.log("Received remote stream:", remoteStream);
               };
 
               peerConnection.onicecandidate = (event) => {
@@ -2650,10 +2831,41 @@
                     {
                       to: callModal.dataset.callerId,
                       candidate: event.candidate,
+                      callId: peerConnection.callId,
                     },
                     (response) => {
-                      if (response && response.status === "error") {
-                        showToast(response.message);
+                      if (response.status === "error") {
+                        if (response.message === "Receiver is not online") {
+                          iceCandidateQueue.push({
+                            to: callModal.dataset.callerId,
+                            candidate: event.candidate,
+                            callId: peerConnection.callId,
+                          });
+                          setTimeout(
+                            () =>
+                              tryResendIceCandidates(
+                                callModal.dataset.callerId,
+                                peerConnection.callId
+                              ),
+                            2000
+                          );
+                          showToast(
+                            "Caller went offline. Retrying connection..."
+                          );
+                        } else {
+                          showToast(
+                            "Failed to send ICE candidate: " + response.message
+                          );
+                          console.error(
+                            "ICE candidate error:",
+                            response.message
+                          );
+                        }
+                      } else {
+                        console.log("Sent ICE candidate:", {
+                          to: callModal.dataset.callerId,
+                          callId: peerConnection.callId,
+                        });
                       }
                     }
                   );
@@ -2661,6 +2873,10 @@
               };
 
               peerConnection.onconnectionstatechange = () => {
+                console.log(
+                  "WebRTC connection state:",
+                  peerConnection.connectionState
+                );
                 if (
                   peerConnection.connectionState === "connected" &&
                   callInterface &&
@@ -2669,34 +2885,56 @@
                   callStatus.textContent = "Connected";
                   callStatus.classList.add("connected");
                   startCallTimer();
-                } else if (peerConnection.connectionState === "disconnected") {
-                  endCall();
+                } else if (
+                  ["disconnected", "failed", "closed"].includes(
+                    peerConnection.connectionState
+                  )
+                ) {
+                  showToast("Call failed or disconnected.");
+                  endCall("failed");
                 }
               };
 
+              const offer = JSON.parse(callModal.dataset.offer);
               await peerConnection.setRemoteDescription(
-                new RTCSessionDescription(JSON.parse(callModal.dataset.offer))
+                new RTCSessionDescription(offer)
               );
               const answer = await peerConnection.createAnswer();
               await peerConnection.setLocalDescription(answer);
               socket.emit(
                 "answerCall",
-                { to: callModal.dataset.callerId, answer },
+                {
+                  to: callModal.dataset.callerId,
+                  answer,
+                  callId: peerConnection.callId,
+                },
                 (response) => {
                   if (response.status === "success") {
-                    console.log("Call accepted successfully");
+                    console.log(
+                      "Call accepted from:",
+                      callModal.dataset.callerId,
+                      { callId: peerConnection.callId }
+                    );
                     if (callInterface && callInterfaceName) {
                       callInterfaceName.textContent = `Call with ${callerName.textContent.replace(
                         "Incoming Call from ",
                         ""
                       )}`;
                       callInterface.classList.add("active");
+                      callStatus.textContent = "Connected";
+                      callStatus.classList.add("connected");
+                      startCallTimer();
                     }
                     closeCallModal();
+                    tryResendIceCandidates(
+                      callModal.dataset.callerId,
+                      peerConnection.callId
+                    );
                   } else {
-                    showToast(response.message);
+                    showToast("Failed to accept call: " + response.message);
+                    console.error("Call acceptance failed:", response.message);
                     closeCallModal();
-                    endCall();
+                    endCall("failed");
                   }
                 }
               );
@@ -2704,7 +2942,7 @@
               showToast("Failed to accept call: " + err.message);
               console.error("Call acceptance error:", err);
               closeCallModal();
-              endCall();
+              endCall("failed");
             }
           });
         }
@@ -2713,173 +2951,428 @@
           rejectCall.addEventListener("click", () => {
             socket.emit(
               "rejectCall",
-              { to: callModal.dataset.callerId },
+              {
+                to: callModal.dataset.callerId,
+                callId: callModal.dataset.callId,
+              },
               (response) => {
-                if (response && response.status === "error") {
-                  showToast(response.message);
+                if (response.status === "error") {
+                  showToast("Failed to reject call: " + response.message);
+                  console.error("Reject call error:", response.message);
                 }
               }
             );
+            console.log("Call rejected by user", {
+              callId: callModal.dataset.callId,
+            });
             closeCallModal();
-            console.log("Call rejected from:", callModal.dataset.callerId);
+            endCall("rejected");
           });
         }
 
         if (muteButton) {
           muteButton.addEventListener("click", () => {
             if (localStream) {
-              const audioTrack = localStream.getAudioTracks()[0];
-              audioTrack.enabled = !audioTrack.enabled;
-              isMuted = !audioTrack.enabled;
-              muteButton.textContent = audioTrack.enabled ? "Mute" : "Unmute";
+              isMuted = !isMuted;
+              localStream.getAudioTracks().forEach((track) => {
+                track.enabled = !isMuted;
+              });
+              muteButton.textContent = isMuted ? "Unmute" : "Mute";
               muteButton.classList.toggle("muted", isMuted);
-              console.log(
-                "Microphone toggled:",
-                audioTrack.enabled ? "Unmuted" : "Muted"
-              );
+              console.log("Microphone", isMuted ? "muted" : "unmuted");
             }
           });
         }
 
         if (endCallButton) {
-          endCallButton.addEventListener("click", () => {
-            endCall();
-            console.log("Call ended by user");
-          });
+          endCallButton.addEventListener("click", () => endCall("ended"));
         }
 
-        function updateUserList(users) {
-          if (!userList) return;
-          userList.innerHTML = "";
-          let filteredUsers = users;
-          if (currentCategory === "unread") {
-            filteredUsers = users.filter((u) => u.unreadCount > 0);
-          }
-          filteredUsers.forEach((u) => {
-            if (u._id !== userId) {
+        function updateUserList(response) {
+          if (response.status === "success") {
+            let filteredUsers = response.users;
+            if (currentCategory === "unread") {
+              filteredUsers = response.users.filter((u) => u.unreadCount > 0);
+            }
+            const query = searchUsersInput?.value.trim().toLowerCase();
+            if (query) {
+              filteredUsers = filteredUsers.filter(
+                (user) =>
+                  user.name.toLowerCase().includes(query) ||
+                  user.email.toLowerCase().includes(query)
+              );
+            }
+            userList.innerHTML = "";
+            filteredUsers.forEach((user) => {
               const userItem = document.createElement("div");
-              userItem.className = `user-item${
-                u._id === selectedUserId ? " selected" : ""
-              }`;
-              userItem.dataset.userId = u._id;
+              const isOnline = onlineUsers.has(user._id);
+              userItem.className = `user-item ${
+                user._id === selectedUserId ? "selected" : ""
+              } ${isOnline ? "online" : "offline"}`;
+              userItem.dataset.userId = user._id;
               userItem.innerHTML = `
           <img src="${DOMPurify.sanitize(
-            u.profileImage || "https://www.gravatar.com/avatar/?d=retro"
-          )}" alt="User avatar" />
+            user.profileImage
+          )}" alt="${DOMPurify.sanitize(user.name)}'s avatar" />
           <div class="user-info">
-            <h3>${DOMPurify.sanitize(u.name)}</h3>
-            <p>${DOMPurify.sanitize(u.lastMessage || u.role)}</p>
+            <h3>${DOMPurify.sanitize(user.name)} <span class="online-status">${
+                isOnline ? "(Online)" : "(Offline)"
+              }</span></h3>
+            <p>${
+              user.lastMessage
+                ? DOMPurify.sanitize(
+                    user.lastMessage.content.length > 30
+                      ? user.lastMessage.content.substring(0, 30) + "..."
+                      : user.lastMessage.content
+                  )
+                : "No messages yet"
+            }</p>
           </div>
           <span class="message-time">${
-            u.lastMessageTime ? formatMessageTime(u.lastMessageTime) : ""
+            user.lastMessage
+              ? formatMessageTime(user.lastMessage.createdAt)
+              : ""
           }</span>
           ${
-            u.unreadCount > 0
-              ? `<span class="unread-count">${u.unreadCount}</span>`
+            user.unreadCount > 0
+              ? `<span class="unread-count">${user.unreadCount}</span>`
               : ""
           }
           <button class="favorite-btn ${
-            u.isFavorite ? "favorite" : ""
-          }" data-user-id="${u._id}"><i class="fas fa-star"></i></button>
-          <button class="call-btn" data-user-id="${u._id}">Call</button>
+            user.isFavorite ? "favorite" : ""
+          }" data-user-id="${user._id}">
+            <i class="fas fa-star" aria-hidden="true"></i>
+          </button>
+          <button class="call-btn" data-user-id="${user._id}" ${
+                !isOnline ? "disabled" : ""
+              }>Call</button>
         `;
-              userItem.addEventListener("click", () => {
-                selectedUserId = u._id;
+              userList.appendChild(userItem);
+
+              userItem.addEventListener("click", (e) => {
+                if (
+                  e.target.classList.contains("favorite-btn") ||
+                  e.target.parentElement.classList.contains("favorite-btn") ||
+                  e.target.classList.contains("call-btn") ||
+                  e.target.parentElement.classList.contains("call-btn")
+                ) {
+                  return;
+                }
+                selectedUserId = user._id;
                 localStorage.setItem("selectedUserId", selectedUserId);
-                console.log("Selected user ID:", selectedUserId);
-                selectUser(u);
-                if (window.innerWidth <= 768) {
-                  if (userListContainer && chatWindowContainer) {
-                    userListContainer.style.display = "none";
-                    chatWindowContainer.classList.add("active");
+                document
+                  .querySelectorAll(".user-item")
+                  .forEach((item) => item.classList.remove("selected"));
+                userItem.classList.add("selected");
+                if (chatHeaderName && chatHeaderAvatar) {
+                  chatHeaderName.textContent = DOMPurify.sanitize(user.name);
+                  chatHeaderAvatar.src = DOMPurify.sanitize(user.profileImage);
+                }
+                socket.emit(
+                  "getMessages",
+                  { userId: selectedUserId },
+                  (response) => {
+                    if (response.status === "success") {
+                      currentMessages = response.messages;
+                      displayMessages(response.messages);
+                    } else {
+                      showToast(
+                        "Failed to fetch messages: " + response.message
+                      );
+                      console.error("Fetch messages failed:", response.message);
+                    }
                   }
+                );
+                if (
+                  window.innerWidth <= 768 &&
+                  userListContainer &&
+                  chatWindowContainer
+                ) {
+                  userListContainer.style.display = "none";
+                  chatWindowContainer.classList.add("active");
                 }
               });
+
               const favoriteBtn = userItem.querySelector(".favorite-btn");
-              favoriteBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                socket.emit("toggleFavorite", { userId: u._id }, (response) => {
-                  if (response.status === "error") {
-                    showToast(response.message);
+              favoriteBtn.addEventListener("click", () => {
+                socket.emit(
+                  "toggleFavorite",
+                  { userId: user._id },
+                  (response) => {
+                    if (response.status === "success") {
+                      favoriteBtn.classList.toggle(
+                        "favorite",
+                        response.isFavorite
+                      );
+                    } else {
+                      showToast(
+                        "Failed to toggle favorite: " + response.message
+                      );
+                      console.error(
+                        "Toggle favorite failed:",
+                        response.message
+                      );
+                    }
                   }
-                });
+                );
               });
+
               const callBtn = userItem.querySelector(".call-btn");
-              callBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                selectedUserId = u._id;
+              callBtn.addEventListener("click", () => {
+                if (!isOnline) {
+                  showToast(
+                    "User is offline. Please try again when they are online."
+                  );
+                  console.log("Call blocked: User offline", {
+                    userId: user._id,
+                  });
+                  return;
+                }
+                selectedUserId = user._id;
                 localStorage.setItem("selectedUserId", selectedUserId);
+                document
+                  .querySelectorAll(".user-item")
+                  .forEach((item) => item.classList.remove("selected"));
+                userItem.classList.add("selected");
+                if (chatHeaderName && chatHeaderAvatar) {
+                  chatHeaderName.textContent = DOMPurify.sanitize(user.name);
+                  chatHeaderAvatar.src = DOMPurify.sanitize(user.profileImage);
+                }
                 callButton.click();
               });
-              userList.appendChild(userItem);
-            }
-          });
-        }
-
-        function selectUser(user) {
-          document
-            .querySelectorAll(".user-item")
-            .forEach((item) => item.classList.remove("selected"));
-          const userItem = document.querySelector(
-            `.user-item[data-user-id="${user._id}"]`
-          );
-          if (userItem) userItem.classList.add("selected");
-          if (chatHeaderName && chatHeaderAvatar) {
-            chatHeaderName.textContent = DOMPurify.sanitize(user.name);
-            chatHeaderAvatar.src = DOMPurify.sanitize(
-              user.profileImage || "https://www.gravatar.com/avatar/?d=retro"
-            );
-          }
-          chatWindow.innerHTML = "";
-          chatWindow.dataset.lastDate = null;
-          socket.emit("getMessages", { userId: user._id }, (response) => {
-            if (response.status === "success") {
-              console.log(
-                "Received messages:",
-                response.messages.map((m) => ({
-                  id: m._id,
-                  messageType: m.messageType,
-                  content: m.content,
-                  fileMetadata: m.fileMetadata,
-                }))
-              );
-              currentMessages = response.messages;
-              displayMessages(response.messages);
-            } else {
-              showToast("Failed to fetch messages: " + response.message);
-              console.error("Fetch messages failed:", response.message);
-            }
-          });
-        }
-
-        socket.emit("getUsers", (response) => {
-          if (response.status === "success") {
-            console.log("Received users:", response.users);
-            updateUserList(response.users);
+            });
             if (selectedUserId) {
-              const user = response.users.find((u) => u._id === selectedUserId);
-              if (user) {
-                selectUser(user);
-                if (window.innerWidth <= 768) {
-                  if (userListContainer && chatWindowContainer) {
-                    userListContainer.style.display = "none";
-                    chatWindowContainer.classList.add("active");
-                  }
-                }
-              } else {
-                selectedUserId = null;
-                localStorage.removeItem("selectedUserId");
-                if (window.innerWidth <= 768) {
-                  if (userListContainer && chatWindowContainer) {
-                    userListContainer.style.display = "block";
-                    chatWindowContainer.classList.remove("active");
-                  }
-                }
+              const selectedUser = response.users.find(
+                (u) => u._id === selectedUserId
+              );
+              if (selectedUser && chatHeaderName && chatHeaderAvatar) {
+                chatHeaderName.textContent = DOMPurify.sanitize(
+                  selectedUser.name
+                );
+                chatHeaderAvatar.src = DOMPurify.sanitize(
+                  selectedUser.profileImage
+                );
               }
             }
           } else {
             showToast("Failed to fetch users: " + response.message);
             console.error("Fetch users failed:", response.message);
+          }
+        }
+
+        // Socket.IO Event Listeners
+        socket.on("connect", () => {
+          console.log(
+            "Socket.IO connected, socket ID:",
+            socket.id,
+            "userId:",
+            userId
+          );
+          socket.emit("joinRoom", userId);
+          socket.emit("rejoinRooms", { userId });
+          socket.emit("getUsers", updateUserList); // Immediate user list fetch
+          // Fallback if onlineStatus not received within 5 seconds
+          setTimeout(() => {
+            if (Date.now() - lastStatusUpdate > 5000) {
+              console.warn(
+                "No onlineStatus received, assuming all users offline"
+              );
+              onlineUsers.clear();
+              socket.emit("getUsers", updateUserList);
+            }
+          }, 5000);
+        });
+
+        socket.on("connect_error", (err) => {
+          console.error(
+            "Socket.IO connection error:",
+            err.message,
+            "socket ID:",
+            socket.id
+          );
+          showToast("Connection error, retrying...");
+        });
+
+        socket.on("disconnect", () => {
+          console.log("Socket.IO disconnected, socket ID:", socket.id);
+          showToast("Disconnected, attempting to reconnect...");
+          onlineUsers.clear();
+          socket.emit("getUsers", updateUserList);
+        });
+
+        socket.on("rejoinFailed", ({ message }) => {
+          console.error("Rejoin failed:", message);
+          showToast("Failed to reconnect to chat. Please refresh the page.");
+        });
+
+        socket.on("receiveMessage", (msg) => {
+          console.log("Received message:", {
+            messageId: msg.messageId,
+            messageType: msg.messageType,
+            content: msg.content.substring(0, 50) + "...",
+            fileMetadata: msg.fileMetadata,
+            senderId: msg.sender.id,
+            receiverId: msg.receiver.id,
+            selectedUserId,
+            userId,
+            socketId: socket.id,
+          });
+
+          if (msg.sender.id === userId || msg.receiver.id === userId) {
+            if (
+              (msg.sender.id === selectedUserId &&
+                msg.receiver.id === userId) ||
+              (msg.sender.id === userId && msg.receiver.id === selectedUserId)
+            ) {
+              socket.emit(
+                "getMessages",
+                { userId: selectedUserId },
+                (response) => {
+                  if (response.status === "success") {
+                    currentMessages = response.messages;
+                    displayMessages(response.messages);
+                    console.log(
+                      "Refreshed messages for selected user:",
+                      selectedUserId
+                    );
+                  } else {
+                    console.error(
+                      "Failed to refresh messages:",
+                      response.message
+                    );
+                    showToast(
+                      "Failed to refresh messages: " + response.message
+                    );
+                  }
+                }
+              );
+            } else if (msg.receiver.id === userId) {
+              showToast(`New message from ${msg.sender.name}`);
+              socket.emit("getUsers", updateUserList);
+            }
+          }
+        });
+
+        socket.on("updateMessages", (data) => {
+          if (data.userId === selectedUserId) {
+            socket.emit(
+              "getMessages",
+              { userId: selectedUserId },
+              (response) => {
+                if (response.status === "success") {
+                  currentMessages = response.messages;
+                  displayMessages(response.messages);
+                } else {
+                  showToast("Failed to fetch messages: " + response.message);
+                  console.error("Fetch messages failed:", response.message);
+                }
+              }
+            );
+          }
+        });
+
+        socket.on("updateMessageStatus", ({ messageId, status, isRead }) => {
+          updateMessageStatus(messageId, status, isRead);
+        });
+
+        socket.on("updateUsers", (response) => {
+          console.log("Received updateUsers event:", response);
+          updateUserList(response);
+        });
+
+        socket.on("onlineStatus", ({ onlineUsers: users }) => {
+          console.log("Received onlineStatus event:", users);
+          lastStatusUpdate = Date.now();
+          onlineUsers = new Set(users);
+          socket.emit("getUsers", updateUserList);
+        });
+
+        socket.on(
+          "incomingCall",
+          ({ from, callerName: name, offer, callId }) => {
+            console.log("Incoming call from:", from, "Name:", name, { callId });
+            if (!onlineUsers.has(from)) {
+              console.warn("Incoming call from offline user:", from);
+              socket.emit("rejectCall", { to: from, callId }, (response) => {
+                if (response.status === "error") {
+                  console.error(
+                    "Failed to reject invalid call:",
+                    response.message
+                  );
+                }
+              });
+              return;
+            }
+            if (callModal && callerName) {
+              callerName.textContent = `Incoming Call from ${DOMPurify.sanitize(
+                name
+              )}`;
+              callModal.dataset.callerId = from;
+              callModal.dataset.offer = JSON.stringify(offer);
+              callModal.dataset.callId = callId;
+              callModal.classList.add("active");
+            }
+          }
+        );
+
+        socket.on("callAnswered", ({ from, answer, callId }) => {
+          if (peerConnection && peerConnection.callId === callId) {
+            peerConnection
+              .setRemoteDescription(new RTCSessionDescription(answer))
+              .then(() => {
+                console.log("Call answered by:", from, { callId });
+                if (callInterface && callStatus) {
+                  callStatus.textContent = "Connected";
+                  callStatus.classList.add("connected");
+                  startCallTimer();
+                  tryResendIceCandidates(from, callId);
+                }
+              })
+              .catch((err) => {
+                showToast("Failed to set remote description: " + err.message);
+                console.error("Set remote description error:", err);
+                endCall("failed");
+              });
+          } else {
+            console.error(
+              "Call answered but no matching peerConnection for callId:",
+              callId
+            );
+          }
+        });
+
+        socket.on("iceCandidate", ({ from, candidate, callId }) => {
+          if (peerConnection && peerConnection.callId === callId) {
+            peerConnection
+              .addIceCandidate(new RTCIceCandidate(candidate))
+              .then(() => {
+                console.log("ICE candidate added from:", from, { callId });
+              })
+              .catch((err) => {
+                console.error("Add ICE candidate error:", err);
+              });
+          }
+        });
+
+        socket.on("callRejected", ({ from, callId }) => {
+          showToast("Call was rejected by the user.");
+          console.log("Call rejected by:", from, { callId });
+          endCall("rejected");
+        });
+
+        socket.on("callEnded", ({ from, callId }) => {
+          showToast("Call ended by the other user.");
+          console.log("Call ended by:", from, { callId });
+          endCall("ended");
+        });
+
+        socket.on("callAccepted", ({ to, callId }) => {
+          console.log("Call accepted by:", to, { callId });
+          if (callInterface && callStatus) {
+            callStatus.textContent = "Connected";
+            callStatus.classList.add("connected");
+            startCallTimer();
+            tryResendIceCandidates(to, callId);
           }
         });
 
@@ -2890,197 +3383,23 @@
               .forEach((t) => t.classList.remove("active"));
             tab.classList.add("active");
             currentCategory = tab.dataset.category;
-            console.log("Switched to category:", currentCategory);
-            socket.emit("getUsers", (response) => {
-              if (response.status === "success") {
-                const query = searchUsersInput.value.trim().toLowerCase();
-                let filteredUsers = response.users;
-                if (query) {
-                  filteredUsers = response.users.filter(
-                    (user) =>
-                      user.name.toLowerCase().includes(query) ||
-                      user.email.toLowerCase().includes(query)
-                  );
-                }
-                if (currentCategory === "unread") {
-                  filteredUsers = filteredUsers.filter(
-                    (u) => u.unreadCount > 0
-                  );
-                }
-                updateUserList(filteredUsers);
-              }
-            });
+            socket.emit("getUsers", updateUserList);
           });
         });
 
-        socket.on("updateUsers", (response) => {
-          console.log("Updating user list:", response.users);
-          const query = searchUsersInput.value.trim().toLowerCase();
-          let filteredUsers = response.users;
-          if (query) {
-            filteredUsers = response.users.filter(
-              (user) =>
-                user.name.toLowerCase().includes(query) ||
-                user.email.toLowerCase().includes(query)
-            );
-          }
-          updateUserList(filteredUsers);
-          if (selectedUserId) {
-            const user = filteredUsers.find((u) => u._id === selectedUserId);
-            if (user) {
-              document
-                .querySelectorAll(".user-item")
-                .forEach((item) => item.classList.remove("selected"));
-              const userItem = document.querySelector(
-                `.user-item[data-user-id="${selectedUserId}"]`
-              );
-              if (userItem) userItem.classList.add("selected");
+        // Initial Load
+        socket.emit("getUsers", updateUserList);
+        if (selectedUserId) {
+          socket.emit("getMessages", { userId: selectedUserId }, (response) => {
+            if (response.status === "success") {
+              currentMessages = response.messages;
+              displayMessages(response.messages);
             } else {
-              selectedUserId = null;
-              localStorage.removeItem("selectedUserId");
-              if (chatHeaderName && chatHeaderAvatar) {
-                chatHeaderName.textContent = "Select a user";
-                chatHeaderAvatar.src =
-                  "https://www.gravatar.com/avatar/?d=retro";
-              }
-              chatWindow.innerHTML = "";
-              if (window.innerWidth <= 768) {
-                if (userListContainer && chatWindowContainer) {
-                  chatWindowContainer.classList.remove("active");
-                  userListContainer.style.display = "block";
-                }
-              }
+              showToast("Failed to fetch messages: " + response.message);
+              console.error("Fetch messages failed:", response.message);
             }
-          }
-        });
-
-        socket.on("updateMessages", (response) => {
-          console.log(
-            "Updating messages:",
-            response.messages.map((m) => ({
-              id: m._id,
-              messageType: m.messageType,
-              content: m.content,
-              fileMetadata: m.fileMetadata,
-            }))
-          );
-          currentMessages = response.messages;
-          displayMessages(response.messages);
-        });
-
-        socket.on("receiveMessage", (msg) => {
-          console.log("Received message:", {
-            messageId: msg.messageId,
-            messageType: msg.messageType,
-            content: msg.content,
-            fileMetadata: msg.fileMetadata,
-            senderId: msg.sender.id,
-            receiverId: msg.receiver.id,
-            selectedUserId,
-            userId,
           });
-          if (
-            (msg.sender.id === selectedUserId && msg.receiver.id === userId) ||
-            (msg.sender.id === userId && msg.receiver.id === selectedUserId)
-          ) {
-            appendMessage(
-              msg.sender.id === userId,
-              msg.sender.name,
-              msg.content,
-              msg.createdAt,
-              msg.messageId,
-              msg.messageType || "text",
-              msg.isRead,
-              msg.fileMetadata,
-              "delivered"
-            );
-            socket.emit("getUsers", (response) => {
-              if (response.status === "success") {
-                updateUserList(response.users);
-              }
-            });
-          }
-        });
-
-        socket.on("updateMessageStatus", (msg) => {
-          const messageElement = document.getElementById(
-            `message-${msg.messageId}`
-          );
-          if (messageElement) {
-            const readReceipt = messageElement.querySelector(".read-receipt");
-            if (readReceipt) {
-              readReceipt.classList.toggle("read", msg.isRead);
-            }
-          }
-        });
-
-        socket.on("incomingCall", (data) => {
-          if (!selectedUserId || selectedUserId !== data.from) {
-            if (callModal && callerName) {
-              callModal.dataset.callerId = data.from;
-              callModal.dataset.offer = JSON.stringify(data.offer);
-              callerName.textContent = `Incoming Call from ${data.callerName}`;
-              callModal.style.display = "flex";
-              console.log("Received incoming call from:", data.from);
-            }
-          } else {
-            socket.emit("rejectCall", { to: data.from }, (response) => {
-              if (response && response.status === "error") {
-                showToast(response.message);
-              }
-            });
-            console.log("Auto-rejected call from selected user:", data.from);
-          }
-        });
-
-        socket.on("callAnswered", async (data) => {
-          try {
-            await peerConnection.setRemoteDescription(
-              new RTCSessionDescription(data.answer)
-            );
-            console.log("Call answered by:", data.from);
-          } catch (err) {
-            showToast("Failed to process call answer: " + err.message);
-            console.error("Call answer error:", err);
-            endCall();
-          }
-        });
-
-        socket.on("iceCandidate", async (data) => {
-          try {
-            if (peerConnection) {
-              await peerConnection.addIceCandidate(
-                new RTCIceCandidate(data.candidate)
-              );
-              console.log("Added ICE candidate from:", data.from);
-            }
-          } catch (err) {
-            console.error("ICE candidate error:", err);
-          }
-        });
-
-        socket.on("callRejected", () => {
-          showToast("Call was rejected by the user.");
-          endCall();
-          console.log("Call rejected by remote user");
-        });
-
-        socket.on("callEnded", () => {
-          showToast("Call ended by the other user.");
-          endCall();
-          console.log("Call ended by remote user");
-        });
-
-        socket.on("connect_error", (error) => {
-          console.error("Socket connection error:", error);
-          showToast("Connection error. Retrying...");
-          setTimeout(() => socket.connect(), 3000);
-        });
-
-        socket.on("disconnect", () => {
-          console.log("Socket disconnected");
-          socket.emit("rejoinRooms");
-        });
+        }
       });
     </script>
   </body>
