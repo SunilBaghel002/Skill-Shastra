@@ -1410,19 +1410,19 @@
                 content.endsWith(".webm")))
           ) {
             contentHtml = `
-            <div class="audio-container" data-message-id="${messageId}">
-              <button class="play-pause-btn" data-message-id="${messageId}">
-                <i class="fas fa-play" aria-hidden="true"></i>
-              </button>
-              <div class="progress-bar" id="progress-bar-${messageId}">
-                ${Array(20)
-                  .fill()
-                  .map((_, i) => `<div class="bar" data-index="${i}"></div>`)
-                  .join("")}
-              </div>
-              <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
-            </div>
-          `;
+        <div class="audio-container" data-message-id="${messageId}">
+          <button class="play-pause-btn" data-message-id="${messageId}">
+            <i class="fas fa-play" aria-hidden="true"></i>
+          </button>
+          <div class="progress-bar" id="progress-bar-${messageId}">
+            ${Array(20)
+              .fill()
+              .map((_, i) => `<div class="bar" data-index="${i}"></div>`)
+              .join("")}
+          </div>
+          <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
+        </div>
+      `;
           } else if (
             messageType === "document" ||
             (content.startsWith("https://res.cloudinary.com/") &&
@@ -1431,30 +1431,30 @@
                 content.endsWith(".docx")))
           ) {
             contentHtml = `
-            <a href="${DOMPurify.sanitize(
-              content
-            )}" target="_blank" class="document-link">
-              <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
-                fileMetadata?.fileName || "Document"
-              )}
-            </a>
-          `;
+        <a href="${DOMPurify.sanitize(
+          content
+        )}" target="_blank" class="document-link">
+          <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
+            fileMetadata?.fileName || "Document"
+          )}
+        </a>
+      `;
           } else {
             contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
           }
           messageDiv.innerHTML = `
-          <div class="message-content">
-            ${contentHtml}
-            <span class="timestamp">${formatMessageTime(timestamp)}</span>
-            ${
-              isSent
-                ? `<div class="read-receipt ${
-                    status === "delivered" ? (isRead ? "read" : "") : status
-                  }"><span class="dot"></span><span class="dot"></span></div>`
-                : ""
-            }
-          </div>
-        `;
+      <div class="message-content">
+        ${contentHtml}
+        <span class="timestamp">${formatMessageTime(timestamp)}</span>
+        ${
+          isSent
+            ? `<div class="read-receipt ${
+                status === "delivered" ? (isRead ? "read" : "") : status
+              }"><span class="dot"></span><span class="dot"></span></div>`
+            : ""
+        }
+      </div>
+    `;
           chatWindow.appendChild(messageDiv);
           chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -1660,9 +1660,9 @@
             "pending"
           );
 
-          socket.emit("getAdmins", (response) => {
+          socket.emit("getUsers", (response) => {
             if (response.status === "success") {
-              const selectedAdmin = response.admins.find(
+              const selectedAdmin = response.users.find(
                 (u) => u._id === selectedAdminId
               );
               if (selectedAdmin) {
@@ -2314,10 +2314,14 @@
           searchUsersInput.addEventListener(
             "input",
             debounce(() => {
-              socket.emit("getAdmins", (response) => {
-                if (response.status === "success") {
+              socket.emit("getUsers", (response) => {
+                console.log("Search getUsers response:", response);
+                if (
+                  response.status === "success" &&
+                  Array.isArray(response.users)
+                ) {
                   const query = searchUsersInput.value.trim().toLowerCase();
-                  let filteredAdmins = response.admins || [];
+                  let filteredAdmins = response.users;
                   if (query) {
                     filteredAdmins = filteredAdmins.filter(
                       (admin) =>
@@ -2332,8 +2336,11 @@
                   }
                   updateAdminList(filteredAdmins);
                 } else {
-                  showToast("Failed to fetch admins: " + response.message);
-                  console.error("Fetch admins failed:", response.message);
+                  showToast(
+                    "Failed to fetch admins: " +
+                      (response.message || "Unknown error")
+                  );
+                  console.error("Search fetch admins failed:", response);
                   updateAdminList([]);
                 }
               });
@@ -2540,21 +2547,22 @@
           });
         }
 
-        function updateAdminList(admins) {
-          console.log("Updating admin list with:", admins);
+        function updateAdminList(users) {
+          console.log("Updating admin list with:", users);
           if (!userList) {
             console.error("userList element not found");
             return;
           }
           userList.innerHTML = "";
-          if (!Array.isArray(admins) || admins.length === 0) {
+          if (!Array.isArray(users) || users.length === 0) {
+            console.log("No admins to display, setting placeholder");
             userList.innerHTML =
               '<p style="padding: 1rem; color: #6b7280;">No admins found.</p>';
             return;
           }
-          let filteredAdmins = admins;
+          let filteredAdmins = users;
           if (currentCategory === "unread") {
-            filteredAdmins = admins.filter((admin) => admin.unreadCount > 0);
+            filteredAdmins = users.filter((admin) => admin.unreadCount > 0);
           }
           filteredAdmins.forEach((admin) => {
             if (!admin._id || !admin.name) {
@@ -2567,30 +2575,30 @@
             }`;
             adminItem.dataset.adminId = admin._id;
             adminItem.innerHTML = `
-      <img src="${DOMPurify.sanitize(
-        admin.profileImage || "https://www.gravatar.com/avatar/?d=retro"
-      )}" alt="Admin avatar" />
-      <div class="user-info">
-        <h3>${DOMPurify.sanitize(admin.name)}</h3>
-        <p>${DOMPurify.sanitize(admin.role || "Admin")}</p>
-      </div>
-      <span class="message-time">${
-        admin.lastMessageTime ? formatMessageTime(admin.lastMessageTime) : ""
-      }</span>
-      ${
-        admin.unreadCount > 0
-          ? `<span class="unread-count">${admin.unreadCount}</span>`
-          : ""
-      }
-      <button class="favorite-btn ${
-        admin.isFavorite ? "favorite" : ""
-      }" data-admin-id="${admin._id}">
-        <i class="fas fa-star"></i>
-      </button>
-      <button class="call-btn" data-admin-id="${admin._id}">
-        <i class="fas fa-phone"></i>
-      </button>
-    `;
+        <img src="${DOMPurify.sanitize(
+          admin.profileImage || "https://www.gravatar.com/avatar/?d=retro"
+        )}" alt="Admin avatar" />
+        <div class="user-info">
+          <h3>${DOMPurify.sanitize(admin.name)}</h3>
+          <p>${DOMPurify.sanitize(admin.role || "Admin")}</p>
+        </div>
+        <span class="message-time">${
+          admin.lastMessageTime ? formatMessageTime(admin.lastMessageTime) : ""
+        }</span>
+        ${
+          admin.unreadCount > 0
+            ? `<span class="unread-count">${admin.unreadCount}</span>`
+            : ""
+        }
+        <button class="favorite-btn ${
+          admin.isFavorite ? "favorite" : ""
+        }" data-admin-id="${admin._id}">
+          <i class="fas fa-star"></i>
+        </button>
+        <button class="call-btn" data-admin-id="${admin._id}">
+          <i class="fas fa-phone"></i>
+        </button>
+      `;
             adminItem.addEventListener("click", () => {
               selectedAdminId = admin._id;
               localStorage.setItem("selectedAdminId", selectedAdminId);
@@ -2767,60 +2775,78 @@
         }
 
         // Socket.IO Event Listeners
-        socket.emit("getAdmins", (response) => {
-          console.log("Initial getAdmins response:", response);
-          if (response.status === "success" && Array.isArray(response.admins)) {
-            updateAdminList(response.admins);
-            if (selectedAdminId) {
-              const admin = response.admins.find(
-                (u) => u._id === selectedAdminId
-              );
-              if (admin) {
-                selectAdmin(admin);
-                if (window.innerWidth <= 768) {
-                  if (userListContainer && chatWindowContainer) {
-                    userListContainer.style.display = "none";
-                    chatWindowContainer.classList.add("active");
+        socket.on("connect", () => {
+          console.log("Connected to socket, user ID:", socket.id);
+          socket.emit("getUsers", (response) => {
+            console.log(
+              "Initial getUsers response:",
+              JSON.stringify(response, null, 2)
+            );
+            if (
+              response.status === "success" &&
+              Array.isArray(response.users)
+            ) {
+              updateAdminList(response.users);
+              if (selectedAdminId) {
+                const admin = response.users.find(
+                  (u) => u._id === selectedAdminId
+                );
+                if (admin) {
+                  selectAdmin(admin);
+                  if (window.innerWidth <= 768) {
+                    if (userListContainer && chatWindowContainer) {
+                      userListContainer.style.display = "none";
+                      chatWindowContainer.classList.add("active");
+                    }
                   }
-                }
-              } else {
-                selectedAdminId = null;
-                localStorage.removeItem("selectedAdminId");
-                if (chatHeaderName && chatHeaderAvatar) {
-                  chatHeaderName.textContent = "Select an admin";
-                  chatHeaderAvatar.src =
-                    "https://www.gravatar.com/avatar/?d=retro";
-                }
-                if (chatWindow) chatWindow.innerHTML = "";
-                if (window.innerWidth <= 768) {
-                  if (chatWindowContainer && userListContainer) {
-                    chatWindowContainer.classList.remove("active");
-                    userListContainer.style.display = "block";
+                } else {
+                  selectedAdminId = null;
+                  localStorage.removeItem("selectedAdminId");
+                  if (chatHeaderName && chatHeaderAvatar) {
+                    chatHeaderName.textContent = "Select an admin";
+                    chatHeaderAvatar.src =
+                      "https://www.gravatar.com/avatar/?d=retro";
+                  }
+                  if (chatWindow) chatWindow.innerHTML = "";
+                  if (window.innerWidth <= 768) {
+                    if (chatWindowContainer && userListContainer) {
+                      chatWindowContainer.classList.remove("active");
+                      userListContainer.style.display = "block";
+                    }
                   }
                 }
               }
+            } else {
+              showToast(
+                "Failed to fetch admins: " +
+                  (response.message || "Unknown error")
+              );
+              console.error("Initial fetch admins failed:", response);
+              updateAdminList([]);
             }
-          } else {
-            showToast(
-              "Failed to fetch admins: " + (response.message || "Unknown error")
-            );
-            console.error("Initial fetch admins failed:", response);
-            updateAdminList([]);
-          }
+          });
         });
 
-        socket.on("updateAdmins", (response) => {
-          console.log("Received updateAdmins:", response);
-          if (response.status === "success" && Array.isArray(response.admins)) {
+        socket.on("updateUsers", (response) => {
+          console.log(
+            "Received updateUsers:",
+            JSON.stringify(response, null, 2)
+          );
+          if (response.status === "success" && Array.isArray(response.users)) {
             const query = searchUsersInput
               ? searchUsersInput.value.trim().toLowerCase()
               : "";
-            let filteredAdmins = response.admins;
+            let filteredAdmins = response.users;
             if (query) {
               filteredAdmins = filteredAdmins.filter(
                 (admin) =>
                   admin.name?.toLowerCase().includes(query) ||
                   admin.email?.toLowerCase().includes(query)
+              );
+            }
+            if (currentCategory === "unread") {
+              filteredAdmins = filteredAdmins.filter(
+                (admin) => admin.unreadCount > 0
               );
             }
             updateAdminList(filteredAdmins);
@@ -2903,9 +2929,9 @@
               msg.fileMetadata,
               "delivered"
             );
-            socket.emit("getAdmins", (response) => {
+            socket.emit("getUsers", (response) => {
               if (response.status === "success") {
-                updateAdminList(response.admins);
+                updateAdminList(response.users);
               }
             });
           }
@@ -2990,12 +3016,19 @@
               .forEach((t) => t.classList.remove("active"));
             tab.classList.add("active");
             currentCategory = tab.dataset.category;
-            socket.emit("getAdmins", (response) => {
-              if (response.status === "success") {
+            socket.emit("getUsers", (response) => {
+              console.log(
+                "Category getUsers response:",
+                JSON.stringify(response, null, 2)
+              );
+              if (
+                response.status === "success" &&
+                Array.isArray(response.users)
+              ) {
                 const query = searchUsersInput
                   ? searchUsersInput.value.trim().toLowerCase()
                   : "";
-                let filteredAdmins = response.admins || [];
+                let filteredAdmins = response.users;
                 if (query) {
                   filteredAdmins = filteredAdmins.filter(
                     (admin) =>
@@ -3005,8 +3038,11 @@
                 }
                 updateAdminList(filteredAdmins);
               } else {
-                showToast("Failed to fetch admins: " + response.message);
-                console.error("Fetch admins failed:", response.message);
+                showToast(
+                  "Failed to fetch admins: " +
+                    (response.message || "Unknown error")
+                );
+                console.error("Category fetch admins failed:", response);
                 updateAdminList([]);
               }
             });
