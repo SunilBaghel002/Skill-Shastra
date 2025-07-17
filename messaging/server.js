@@ -37,6 +37,9 @@ const initializeMessaging = (httpServer) => {
     maxHttpBufferSize: 10 * 1024 * 1024,
   });
 
+  // Track active calls
+  const activeCalls = new Map();
+
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
@@ -254,18 +257,18 @@ const initializeMessaging = (httpServer) => {
             const allowedTypes = {
               image: ["image/png", "image/jpeg", "image/jpg"],
               audio: ["audio/mpeg", "audio/wav", "audio/webm"],
+              document: [
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ],
             };
 
             if (
               fileType &&
-              ![
-                "image/png",
-                "image/jpeg",
-                "image/jpg",
-                "audio/mpeg",
-                "audio/wav",
-                "audio/webm",
-              ].includes(fileType)
+              !Object.values(allowedTypes)
+                .flat()
+                .includes(fileType)
             ) {
               console.error("SendMessage Error: Invalid file type:", fileType);
               if (typeof callback === "function") {
@@ -312,6 +315,23 @@ const initializeMessaging = (httpServer) => {
                       ? "audio/wav"
                       : "audio/webm"),
                 };
+              } else if (
+                content.endsWith(".pdf") ||
+                content.endsWith(".doc") ||
+                content.endsWith(".docx")
+              ) {
+                finalMessageType = "document";
+                fileMetadata = {
+                  fileName: fileName || "document_file",
+                  fileSize: fileSize || 0,
+                  fileType:
+                    fileType ||
+                    (content.endsWith(".pdf")
+                      ? "application/pdf"
+                      : content.endsWith(".doc")
+                      ? "application/msword"
+                      : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                };
               }
             } else if (content.startsWith("data:")) {
               const maxSizeMB = 5;
@@ -351,7 +371,11 @@ const initializeMessaging = (httpServer) => {
 
               const base64Data = content.replace(base64Regex, "");
               const resourceType =
-                finalMessageType === "image" ? "image" : "video";
+                finalMessageType === "image"
+                  ? "image"
+                  : finalMessageType === "audio"
+                  ? "video"
+                  : "raw";
               try {
                 const uploadResult = await cloudinary.uploader.upload(content, {
                   resource_type: resourceType,
@@ -368,7 +392,9 @@ const initializeMessaging = (httpServer) => {
                     fileType ||
                     (finalMessageType === "image"
                       ? "image/jpeg"
-                      : "audio/webm"),
+                      : finalMessageType === "audio"
+                      ? "audio/webm"
+                      : "application/pdf"),
                 };
                 console.log(
                   `Uploaded ${finalMessageType} to Cloudinary:`,
@@ -771,8 +797,8 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    // WebRTC Signaling for Audio Calls
-    socket.on("callUser", ({ to, offer }, callback) => {
+    // Enhanced WebRTC Signaling for Audio Calls
+    socket.on("callUser", async ({ to, offer }, callback) => {
       try {
         if (!mongoose.Types.ObjectId.isValid(to)) {
           console.error("CallUser Error: Invalid receiver ID:", to);
@@ -784,7 +810,7 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
-        const receiver = User.findById(to);
+        const receiver = await User.findById(to);
         if (!receiver) {
           console.error("CallUser Error: Receiver not found:", to);
           if (typeof callback === "function") {
@@ -792,6 +818,15 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
+        if (activeCalls.has(to) || activeCalls.has(socket.user.id)) {
+          console.error("CallUser Error: User is already in a call", { to, caller: socket.user.id });
+          if (typeof callback === "function") {
+            return callback({ status: "error", message: "User is already in a call" });
+          }
+          return;
+        }
+        activeCalls.set(to, socket.user.id);
+        activeCalls.set(socket.user.id, to);
         io.to(to).emit("incomingCall", {
           from: socket.user.id,
           callerName: socket.user.name,
@@ -881,6 +916,8 @@ const initializeMessaging = (httpServer) => {
           return;
         }
         io.to(to).emit("callRejected");
+        activeCalls.delete(to);
+        activeCalls.delete(socket.user.id);
         console.log(`Call rejected by ${socket.user.id} to ${to}`);
         if (typeof callback === "function") {
           callback({ status: "success", message: "Call rejected" });
@@ -906,6 +943,8 @@ const initializeMessaging = (httpServer) => {
           return;
         }
         io.to(to).emit("callEnded");
+        activeCalls.delete(to);
+        activeCalls.delete(socket.user.id);
         console.log(`Call ended by ${socket.user.id} to ${to}`);
         if (typeof callback === "function") {
           callback({ status: "success", message: "Call ended" });
@@ -918,16 +957,23 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
+    socket.on("disconnect", () => {
+      console.log(
+        `User disconnected: ${socket.user.email} (ID: ${socket.user.id})`
+      );
+      const otherUserId = activeCalls.get(socket.user.id);
+      if (otherUserId) {
+        io.to(otherUserId).emit("callEnded");
+        activeCalls.delete(otherUserId);
+        activeCalls.delete(socket.user.id);
+        console.log(`Cleaned up call state for disconnected user ${socket.user.id}`);
+      }
+    });
+
     socket.on("connect_error", (error) => {
       console.error(
         `Socket.IO Connect Error for user ${socket.user.id}:`,
         error.message
-      );
-    });
-
-    socket.on("disconnect", () => {
-      console.log(
-        `User disconnected: ${socket.user.email} (ID: ${socket.user.id})`
       );
     });
   });
