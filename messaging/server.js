@@ -16,7 +16,7 @@ const CallSchema = new mongoose.Schema({
   offer: { type: Object, required: false },
   status: {
     type: String,
-    enum: ["pending", "accepted", "rejected", "ended"],
+    enum: ["pending", "accepted", "rejected", "ended", "missed"],
     default: "pending",
   },
   createdAt: { type: Date, default: Date.now },
@@ -41,7 +41,7 @@ const initializeMessaging = (httpServer) => {
         const allowedOrigins = [
           "http://localhost:5000",
           "http://localhost:3000",
-          "https://skill-shastra.vercel.app",
+          "https://skill-shastra.onrender.com/",
         ];
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);
@@ -146,9 +146,7 @@ const initializeMessaging = (httpServer) => {
   async function getSocketByUserId(userId) {
     try {
       const user = await User.findById(userId).select("isOnline").lean();
-      if (!user || !user.isOnline) {
-        return null;
-      }
+      if (!user) return null;
       const sockets = await io.in(`room:${userId}`).fetchSockets();
       return sockets.length > 0 ? sockets[0] : null;
     } catch (error) {
@@ -229,20 +227,21 @@ const initializeMessaging = (httpServer) => {
     const checkPendingCalls = async () => {
       const calls = await Call.find({
         receiver: socket.user.id,
-        status: "pending",
+        status: { $in: ["pending", "missed"] },
       })
         .populate("caller", "name")
         .lean();
       calls.forEach((call) => {
         console.log(
           `Emitting pending incomingCall to ${socket.user.id} from ${call.caller._id}`,
-          { callId: call._id.toString() }
+          { callId: call._id.toString(), status: call.status }
         );
         socket.emit("incomingCall", {
           from: call.caller._id.toString(),
           callerName: call.caller.name,
           offer: call.offer,
           callId: call._id.toString(),
+          status: call.status,
         });
       });
     };
@@ -763,6 +762,7 @@ const initializeMessaging = (httpServer) => {
         }
       }
     });
+
     socket.on("getUserProfile", async ({ userId }, callback) => {
       try {
         const user = await User.findById(userId)
@@ -961,21 +961,11 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
-        if (!receiver.isOnline) {
-          console.log(`Receiver ${to} is offline, call rejected`);
-          if (typeof callback === "function") {
-            return callback({
-              status: "error",
-              message: "Receiver is not online",
-            });
-          }
-          return;
-        }
         const call = new Call({
           caller: socket.user.id,
           receiver: to,
           offer,
-          status: "pending",
+          status: receiver.isOnline ? "pending" : "missed",
           createdAt: new Date(),
           updatedAt: new Date(),
         });
@@ -983,18 +973,36 @@ const initializeMessaging = (httpServer) => {
         console.log(
           `Initiating call from ${
             socket.user.id
-          } to ${to}, callId: ${call._id.toString()}`
+          } to ${to}, callId: ${call._id.toString()}, receiver online: ${
+            receiver.isOnline
+          }`
         );
-        io.to(`room:${to}`).emit("incomingCall", {
-          from: socket.user.id,
-          callerName,
-          offer,
-          callId: call._id.toString(),
-        });
+        if (receiver.isOnline) {
+          const receiverSocket = await getSocketByUserId(to);
+          if (receiverSocket) {
+            io.to(`room:${to}`).emit("incomingCall", {
+              from: socket.user.id,
+              callerName,
+              offer,
+              callId: call._id.toString(),
+              status: "pending",
+            });
+          } else {
+            console.warn(
+              `Receiver ${to} is marked online but no socket found, marking call as missed`
+            );
+            call.status = "missed";
+            await call.save();
+          }
+        } else {
+          console.log(`Receiver ${to} is offline, call marked as missed`);
+        }
         if (typeof callback === "function") {
           callback({
             status: "success",
-            message: "Call initiated",
+            message: receiver.isOnline
+              ? "Call initiated"
+              : "Receiver is offline, call marked as missed",
             callId: call._id.toString(),
           });
         }
@@ -1039,9 +1047,9 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
-        const caller = await User.findById(to).select("isOnline");
-        if (!caller.isOnline) {
-          call.status = "ended";
+        const callerSocket = await getSocketByUserId(to);
+        if (!callerSocket) {
+          call.status = "missed";
           call.endTime = new Date();
           call.duration = call.startTime
             ? Math.round((call.endTime - call.startTime) / 1000)
@@ -1059,7 +1067,10 @@ const initializeMessaging = (httpServer) => {
         call.startTime = new Date();
         call.updatedAt = new Date();
         await call.save();
-        console.log(`Call accepted by ${socket.user.id} for callId: ${callId}`);
+        console.log(
+          `Call accepted by ${socket.user.id} for callId: ${callId}, answer:`,
+          JSON.stringify(answer).substring(0, 100)
+        );
         io.to(`room:${to}`).emit("callAnswered", {
           from: socket.user.id,
           answer,
@@ -1091,8 +1102,8 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
-        const receiver = await User.findById(to).select("isOnline");
-        if (!receiver.isOnline) {
+        const receiverSocket = await getSocketByUserId(to);
+        if (!receiverSocket) {
           console.error(`Receiver ${to} is not online for ICE candidate`);
           if (typeof callback === "function") {
             return callback({
@@ -1102,7 +1113,10 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
-        console.log(`Sending ICE candidate to ${to} for callId: ${callId}`);
+        console.log(
+          `Sending ICE candidate to ${to} for callId: ${callId}, candidate:`,
+          JSON.stringify(candidate).substring(0, 100)
+        );
         io.to(`room:${to}`).emit("iceCandidate", {
           from: socket.user.id,
           candidate,

@@ -26,7 +26,7 @@ cloudinary.config({
 
 // Middleware
 app.use(
-  cors({ origin: "https://skill-shastra.vercel.app/", credentials: true })
+  cors({ origin: "https://skill-shastra.onrender.com/", credentials: true })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

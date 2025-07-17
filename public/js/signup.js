@@ -1,4 +1,4 @@
-const API_URL = "https://skill-shastra.vercel.app/api/auth";
+const API_URL = "https://skill-shastra.onrender.com/api/auth";
 let currentEmail = "";
 let isResetPasswordStep = false;
 
