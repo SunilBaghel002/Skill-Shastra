@@ -5,6 +5,25 @@ const { v2: cloudinary } = require("cloudinary");
 const User = mongoose.model("User");
 const Message = mongoose.model("Message");
 
+// Define Call Schema
+const CallSchema = new mongoose.Schema({
+  caller: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  offer: { type: Object, required: false },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "rejected", "ended"],
+    default: "pending",
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+const Call = mongoose.model("Call", CallSchema);
+
 // Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -36,9 +55,6 @@ const initializeMessaging = (httpServer) => {
     pingInterval: 25000,
     maxHttpBufferSize: 10 * 1024 * 1024,
   });
-
-  // Track active calls
-  const activeCalls = new Map();
 
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
@@ -86,14 +102,96 @@ const initializeMessaging = (httpServer) => {
 
   io.on("connection", (socket) => {
     console.log(
-      `User connected: ${socket.user.email} (${socket.user.role}, ID: ${socket.user.id})`
+      `User connected: ${socket.user.email} (${socket.user.role}, ID: ${socket.user.id}, Socket: ${socket.id})`
     );
-    socket.join(socket.user.id);
-    console.log(`User ${socket.user.id} joined room: ${socket.user.id}`);
+    socket.join(`room:${socket.user.id}`);
+    console.log(
+      `User ${socket.user.id} joined room: room:${socket.user.id}, rooms:`,
+      Array.from(io.sockets.adapter.rooms.get(`room:${socket.user.id}`) || [])
+    );
+
+    // Check for pending messages and calls on connection
+    const checkPendingMessages = async () => {
+      const pendingMessages = await Message.find({
+        receiver: socket.user.id,
+        isRead: false,
+      })
+        .populate("sender", "name email profileImage")
+        .populate("receiver", "name email profileImage")
+        .lean();
+      pendingMessages.forEach((msg) => {
+        const messageData = {
+          sender: {
+            id: msg.sender._id.toString(),
+            name: msg.sender.name,
+            email: msg.sender.email,
+            profileImage:
+              msg.sender.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          receiver: {
+            id: msg.receiver._id.toString(),
+            name: msg.receiver.name,
+            email: msg.receiver.email,
+            profileImage:
+              msg.receiver.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          content: msg.content,
+          messageType: msg.messageType || "text",
+          fileMetadata: msg.fileMetadata,
+          createdAt: msg.createdAt,
+          messageId: msg._id.toString(),
+          isRead: msg.isRead,
+        };
+        console.log(
+          `Emitting pending receiveMessage to ${
+            socket.user.id
+          }, messageId: ${msg._id.toString()}`,
+          { content: msg.content.substring(0, 50) + "..." }
+        );
+        socket.emit("receiveMessage", messageData);
+      });
+    };
+
+    const checkPendingCalls = async () => {
+      const calls = await Call.find({
+        receiver: socket.user.id,
+        status: "pending",
+      })
+        .populate("caller", "name")
+        .lean();
+      calls.forEach((call) => {
+        console.log(
+          `Emitting pending incomingCall to ${socket.user.id} from ${call.caller._id}`,
+          { callId: call._id.toString() }
+        );
+        socket.emit("incomingCall", {
+          from: call.caller._id.toString(),
+          callerName: call.caller.name,
+          offer: call.offer,
+          callId: call._id.toString(),
+        });
+      });
+    };
+
+    checkPendingMessages();
+    checkPendingCalls();
 
     socket.on("rejoinRooms", () => {
-      socket.join(socket.user.id);
-      console.log(`User ${socket.user.id} rejoined room: ${socket.user.id}`);
+      if (!socket.user?.id) {
+        console.error("RejoinRooms Error: socket.user.id is undefined", {
+          socketId: socket.id,
+        });
+        return;
+      }
+      socket.join(`room:${socket.user.id}`);
+      console.log(
+        `User ${socket.user.id} rejoined room: room:${socket.user.id}, rooms:`,
+        Array.from(io.sockets.adapter.rooms.get(`room:${socket.user.id}`) || [])
+      );
+      checkPendingMessages();
+      checkPendingCalls();
     });
 
     socket.on("getUsers", async (callback) => {
@@ -127,18 +225,27 @@ const initializeMessaging = (httpServer) => {
               ...user,
               _id: user._id.toString(),
               unreadCount,
-              lastMessageTime: latestMessage
-                ? latestMessage.createdAt
-                : new Date(0),
+              lastMessage: latestMessage
+                ? {
+                    content: latestMessage.content,
+                    createdAt: latestMessage.createdAt,
+                  }
+                : null,
               isFavorite: socket.user.favorites.includes(user._id.toString()),
             };
           })
         );
-        usersWithDetails.sort(
-          (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-        );
+        usersWithDetails.sort((a, b) => {
+          const aTime = a.lastMessage
+            ? new Date(a.lastMessage.createdAt)
+            : new Date(0);
+          const bTime = b.lastMessage
+            ? new Date(b.lastMessage.createdAt)
+            : new Date(0);
+          return bTime - aTime;
+        });
         console.log(
-          "Sending users to client:",
+          `Sending users to ${socket.user.id}:`,
           usersWithDetails.map((u) => ({
             id: u._id,
             name: u.name,
@@ -172,13 +279,17 @@ const initializeMessaging = (httpServer) => {
         socket.user.favorites = currentUser.favorites.map((id) =>
           id.toString()
         );
-        console.log(`Toggled favorite for user ${userId}: ${!isFavorite}`);
+        console.log(
+          `Toggled favorite for user ${userId} by ${
+            socket.user.id
+          }: ${!isFavorite}`
+        );
         if (typeof callback === "function") {
           callback({ status: "success", isFavorite: !isFavorite });
         }
         socket.emit("getUsers", (response) => {
           if (response.status === "success") {
-            io.to(socket.user.id).emit("updateUsers", {
+            io.to(`room:${socket.user.id}`).emit("updateUsers", {
               users: response.users,
             });
           }
@@ -202,6 +313,7 @@ const initializeMessaging = (httpServer) => {
             console.error("SendMessage Error: Missing receiverId or content", {
               receiverId,
               content,
+              sender: socket.user.id,
             });
             if (typeof callback === "function") {
               return callback({
@@ -266,9 +378,7 @@ const initializeMessaging = (httpServer) => {
 
             if (
               fileType &&
-              !Object.values(allowedTypes)
-                .flat()
-                .includes(fileType)
+              !Object.values(allowedTypes).flat().includes(fileType)
             ) {
               console.error("SendMessage Error: Invalid file type:", fileType);
               if (typeof callback === "function") {
@@ -452,17 +562,32 @@ const initializeMessaging = (httpServer) => {
           };
 
           console.log(
-            `Emitting receiveMessage to sender room: ${socket.user.id}, receiver room: ${receiverId}`,
+            `Emitting receiveMessage to sender room: room:${socket.user.id}, receiver room: room:${receiverId}`,
             {
+              senderRoom: Array.from(
+                io.sockets.adapter.rooms.get(`room:${socket.user.id}`) || []
+              ),
+              receiverRoom: Array.from(
+                io.sockets.adapter.rooms.get(`room:${receiverId}`) || []
+              ),
               messageId: messageData.messageId,
               messageType: messageData.messageType,
-              content: messageData.content,
+              content: messageData.content.substring(0, 50) + "...",
               fileMetadata: messageData.fileMetadata,
             }
           );
 
-          io.to(receiverId).emit("receiveMessage", messageData);
-          io.to(socket.user.id).emit("receiveMessage", messageData);
+          io.to(`room:${receiverId}`).emit("receiveMessage", messageData);
+          io.to(`room:${socket.user.id}`).emit("receiveMessage", messageData);
+
+          // Trigger updateMessages for both users to refresh the chat
+          io.to(`room:${receiverId}`).emit("updateMessages", {
+            userId: socket.user.id,
+          });
+          io.to(`room:${socket.user.id}`).emit("updateMessages", {
+            userId: receiverId,
+          });
+
           console.log(
             `Message sent from ${socket.user.id} to ${receiverId}: ${finalMessageType}`
           );
@@ -495,20 +620,41 @@ const initializeMessaging = (httpServer) => {
                   ...user,
                   _id: user._id.toString(),
                   unreadCount,
-                  lastMessageTime: latestMessage
-                    ? latestMessage.createdAt
-                    : new Date(0),
+                  lastMessage: latestMessage
+                    ? {
+                        content: latestMessage.content,
+                        createdAt: latestMessage.createdAt,
+                      }
+                    : null,
                   isFavorite: socket.user.favorites.includes(
                     user._id.toString()
                   ),
                 };
               })
             );
-            usersWithDetails.sort(
-              (a, b) =>
-                new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
+            usersWithDetails.sort((a, b) => {
+              const aTime = a.lastMessage
+                ? new Date(a.lastMessage.createdAt)
+                : new Date(0);
+              const bTime = b.lastMessage
+                ? new Date(b.lastMessage.createdAt)
+                : new Date(0);
+              return bTime - aTime;
+            });
+            console.log(
+              `Emitting updateUsers to room:${userId}, rooms:`,
+              Array.from(io.sockets.adapter.rooms.get(`room:${userId}`) || []),
+              {
+                users: usersWithDetails.map((u) => ({
+                  id: u._id,
+                  name: u.name,
+                  unreadCount: u.unreadCount,
+                })),
+              }
             );
-            io.to(userId).emit("updateUsers", { users: usersWithDetails });
+            io.to(`room:${userId}`).emit("updateUsers", {
+              users: usersWithDetails,
+            });
             console.log(`Updated user list for ${userId}`);
           };
           await updateUsers(socket.user.id);
@@ -541,13 +687,11 @@ const initializeMessaging = (httpServer) => {
         if (typeof callback === "function") {
           callback({ status: "success", message: "Chats cleared" });
         }
-        socket.emit("getMessages", { userId }, (response) => {
-          if (response.status === "success") {
-            io.to(socket.user.id).emit("updateMessages", {
-              messages: response.messages,
-            });
-          }
+        io.to(`room:${socket.user.id}`).emit("updateMessages", { userId });
+        io.to(`room:${userId}`).emit("updateMessages", {
+          userId: socket.user.id,
         });
+
         const updateUsers = async (targetUserId) => {
           const users =
             socket.user.role === "admin"
@@ -576,17 +720,34 @@ const initializeMessaging = (httpServer) => {
                 ...user,
                 _id: user._id.toString(),
                 unreadCount,
-                lastMessageTime: latestMessage
-                  ? latestMessage.createdAt
-                  : new Date(0),
+                lastMessage: latestMessage
+                  ? {
+                      content: latestMessage.content,
+                      createdAt: latestMessage.createdAt,
+                    }
+                  : null,
                 isFavorite: socket.user.favorites.includes(user._id.toString()),
               };
             })
           );
-          usersWithDetails.sort(
-            (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
+          usersWithDetails.sort((a, b) => {
+            const aTime = a.lastMessage
+              ? new Date(a.lastMessage.createdAt)
+              : new Date(0);
+            const bTime = b.lastMessage
+              ? new Date(b.lastMessage.createdAt)
+              : new Date(0);
+            return bTime - aTime;
+          });
+          console.log(
+            `Emitting updateUsers to room:${targetUserId}, rooms:`,
+            Array.from(
+              io.sockets.adapter.rooms.get(`room:${targetUserId}`) || []
+            )
           );
-          io.to(targetUserId).emit("updateUsers", { users: usersWithDetails });
+          io.to(`room:${targetUserId}`).emit("updateUsers", {
+            users: usersWithDetails,
+          });
         };
         await updateUsers(socket.user.id);
         await updateUsers(userId);
@@ -610,6 +771,7 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
+        console.log(`Fetched profile for user ${userId} by ${socket.user.id}`);
         if (typeof callback === "function") {
           callback({
             status: "success",
@@ -637,7 +799,10 @@ const initializeMessaging = (httpServer) => {
     socket.on("getMessages", async ({ userId }, callback) => {
       try {
         console.log(
-          `Fetching messages for user ${socket.user.id} with user ${userId}`
+          `Fetching messages for user ${socket.user.id} with user ${userId}, rooms:`,
+          Array.from(
+            io.sockets.adapter.rooms.get(`room:${socket.user.id}`) || []
+          )
         );
         const messages = await Message.find({
           $or: [
@@ -681,12 +846,12 @@ const initializeMessaging = (httpServer) => {
           isRead: msg.isRead,
         }));
         console.log(
-          `Fetched ${formattedMessages.length} messages for user ${userId}`,
+          `Fetched ${formattedMessages.length} messages for user ${userId} by ${socket.user.id}`,
           {
             messages: formattedMessages.map((m) => ({
               id: m._id,
               messageType: m.messageType,
-              content: m.content,
+              content: m.content.substring(0, 50) + "...",
               fileMetadata: m.fileMetadata,
             })),
           }
@@ -695,6 +860,7 @@ const initializeMessaging = (httpServer) => {
           callback({ status: "success", messages: formattedMessages });
         }
 
+        // Notify sender of read status updates
         const updatedMessages = await Message.find({
           $or: [
             { sender: socket.user.id, receiver: userId },
@@ -733,62 +899,19 @@ const initializeMessaging = (httpServer) => {
             isRead: msg.isRead,
           };
           console.log(
-            `Emitting updateMessageStatus for message ${msg._id.toString()}`,
+            `Emitting updateMessageStatus for message ${msg._id.toString()} to room:${msg.sender._id.toString()}`,
             {
               messageId: messageData.messageId,
               messageType: messageData.messageType,
-              content: messageData.content,
+              content: messageData.content.substring(0, 50) + "...",
               fileMetadata: messageData.fileMetadata,
             }
           );
-          io.to(msg.sender._id.toString()).emit(
+          io.to(`room:${msg.sender._id.toString()}`).emit(
             "updateMessageStatus",
             messageData
           );
         });
-        const updateUsers = async (targetUserId) => {
-          const users =
-            socket.user.role === "admin"
-              ? await User.find({ isVerified: true })
-                  .select("name email role profileImage")
-                  .lean()
-              : await User.find({ role: "admin", isVerified: true })
-                  .select("name email role profileImage")
-                  .lean();
-          const usersWithDetails = await Promise.all(
-            users.map(async (user) => {
-              const unreadCount = await Message.countDocuments({
-                sender: user._id,
-                receiver: targetUserId,
-                isRead: false,
-              });
-              const latestMessage = await Message.findOne({
-                $or: [
-                  { sender: targetUserId, receiver: user._id },
-                  { sender: user._id, receiver: targetUserId },
-                ],
-              })
-                .sort({ createdAt: -1 })
-                .lean();
-              return {
-                ...user,
-                _id: user._id.toString(),
-                unreadCount,
-                lastMessageTime: latestMessage
-                  ? latestMessage.createdAt
-                  : new Date(0),
-                isFavorite: socket.user.favorites.includes(user._id.toString()),
-              };
-            })
-          );
-          usersWithDetails.sort(
-            (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-          );
-          io.to(targetUserId).emit("updateUsers", { users: usersWithDetails });
-          console.log(`Updated user list for ${targetUserId}`);
-        };
-        await updateUsers(socket.user.id);
-        await updateUsers(userId);
       } catch (error) {
         console.error("Error fetching messages:", error);
         if (typeof callback === "function") {
@@ -797,8 +920,8 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    // Enhanced WebRTC Signaling for Audio Calls
-    socket.on("callUser", async ({ to, offer }, callback) => {
+    // WebRTC Signaling for Audio Calls
+    socket.on("callUser", async ({ to, offer, callerName }, callback) => {
       try {
         if (!mongoose.Types.ObjectId.isValid(to)) {
           console.error("CallUser Error: Invalid receiver ID:", to);
@@ -811,30 +934,55 @@ const initializeMessaging = (httpServer) => {
           return;
         }
         const receiver = await User.findById(to);
-        if (!receiver) {
-          console.error("CallUser Error: Receiver not found:", to);
+        if (!receiver || !receiver.isVerified) {
+          console.error(
+            "CallUser Error: Receiver not found or not verified:",
+            to
+          );
           if (typeof callback === "function") {
-            return callback({ status: "error", message: "Receiver not found" });
+            return callback({
+              status: "error",
+              message: "Receiver not found or not verified",
+            });
           }
           return;
         }
-        if (activeCalls.has(to) || activeCalls.has(socket.user.id)) {
-          console.error("CallUser Error: User is already in a call", { to, caller: socket.user.id });
-          if (typeof callback === "function") {
-            return callback({ status: "error", message: "User is already in a call" });
-          }
-          return;
-        }
-        activeCalls.set(to, socket.user.id);
-        activeCalls.set(socket.user.id, to);
-        io.to(to).emit("incomingCall", {
-          from: socket.user.id,
-          callerName: socket.user.name,
+        const call = new Call({
+          caller: socket.user.id,
+          receiver: to,
           offer,
+          status: "pending",
         });
-        console.log(`Call initiated from ${socket.user.id} to ${to}`);
+        await call.save();
+        console.log(
+          `Stored pending call from ${
+            socket.user.id
+          } to ${to}, callId: ${call._id.toString()}`
+        );
+        const receiverRoom = io.sockets.adapter.rooms.get(`room:${to}`);
+        if (receiverRoom && receiverRoom.size > 0) {
+          console.log(
+            `Emitting incomingCall to room:${to}, rooms:`,
+            Array.from(receiverRoom),
+            { callId: call._id.toString(), callerName }
+          );
+          io.to(`room:${to}`).emit("incomingCall", {
+            from: socket.user.id,
+            callerName,
+            offer,
+            callId: call._id.toString(),
+          });
+        } else {
+          console.log(
+            `Receiver ${to} is offline, call queued, callId: ${call._id.toString()}`
+          );
+        }
         if (typeof callback === "function") {
-          callback({ status: "success", message: "Call initiated" });
+          callback({
+            status: "success",
+            message: "Call initiated",
+            callId: call._id.toString(),
+          });
         }
       } catch (error) {
         console.error("CallUser Error:", error);
@@ -844,23 +992,82 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    socket.on("answerCall", ({ to, answer }, callback) => {
+    socket.on("answerCall", async ({ to, answer, callId }, callback) => {
       try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("AnswerCall Error: Invalid receiver ID:", to);
+        if (
+          !mongoose.Types.ObjectId.isValid(to) ||
+          !mongoose.Types.ObjectId.isValid(callId)
+        ) {
+          console.error("AnswerCall Error: Invalid receiver ID or callId:", {
+            to,
+            callId,
+          });
           if (typeof callback === "function") {
             return callback({
               status: "error",
-              message: "Invalid receiver ID",
+              message: "Invalid receiver ID or call ID",
             });
           }
           return;
         }
-        io.to(to).emit("callAnswered", {
+        const call = await Call.findById(callId).populate("caller receiver");
+        if (!call || call.status !== "pending") {
+          console.error(
+            "AnswerCall Error: Call not found or not pending:",
+            callId,
+            { call }
+          );
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Call not found or already processed",
+            });
+          }
+          return;
+        }
+        if (call.caller._id.toString() !== to) {
+          console.error(
+            "AnswerCall Error: Receiver ID does not match caller:",
+            { to, caller: call.caller._id.toString() }
+          );
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID for this call",
+            });
+          }
+          return;
+        }
+        call.status = "accepted";
+        call.updatedAt = new Date();
+        await call.save();
+        const callerRoom = io.sockets.adapter.rooms.get(`room:${to}`);
+        if (!callerRoom || callerRoom.size === 0) {
+          console.error(
+            `AnswerCall Error: Caller ${to} is not online, room:`,
+            callerRoom
+          );
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Caller is not online",
+            });
+          }
+          return;
+        }
+        console.log(
+          `Emitting callAnswered to room:${to}, rooms:`,
+          Array.from(callerRoom),
+          { from: socket.user.id, callId }
+        );
+        io.to(`room:${to}`).emit("callAnswered", {
           from: socket.user.id,
           answer,
+          callId,
         });
-        console.log(`Call answered by ${socket.user.id} to ${to}`);
+        console.log(
+          `Call answered by ${socket.user.id} to ${to}, callId: ${callId}`
+        );
         if (typeof callback === "function") {
           callback({ status: "success", message: "Call answered" });
         }
@@ -872,7 +1079,7 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    socket.on("iceCandidate", ({ to, candidate }, callback) => {
+    socket.on("iceCandidate", ({ to, candidate, callId }, callback) => {
       try {
         if (!mongoose.Types.ObjectId.isValid(to)) {
           console.error("IceCandidate Error: Invalid receiver ID:", to);
@@ -884,11 +1091,33 @@ const initializeMessaging = (httpServer) => {
           }
           return;
         }
-        io.to(to).emit("iceCandidate", {
+        const receiverRoom = io.sockets.adapter.rooms.get(`room:${to}`);
+        if (!receiverRoom || receiverRoom.size === 0) {
+          console.error(
+            `IceCandidate Error: Receiver ${to} is not online, room:`,
+            receiverRoom
+          );
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Receiver is not online",
+            });
+          }
+          return;
+        }
+        console.log(
+          `Emitting iceCandidate to room:${to}, rooms:`,
+          Array.from(receiverRoom),
+          { from: socket.user.id, callId }
+        );
+        io.to(`room:${to}`).emit("iceCandidate", {
           from: socket.user.id,
           candidate,
+          callId,
         });
-        console.log(`ICE candidate sent from ${socket.user.id} to ${to}`);
+        console.log(
+          `ICE candidate sent from ${socket.user.id} to ${to}, callId: ${callId}`
+        );
         if (typeof callback === "function") {
           callback({ status: "success", message: "ICE candidate sent" });
         }
@@ -903,22 +1132,56 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    socket.on("rejectCall", ({ to }, callback) => {
+    socket.on("rejectCall", async ({ to, callId }, callback) => {
       try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("RejectCall Error: Invalid receiver ID:", to);
+        if (
+          !mongoose.Types.ObjectId.isValid(to) ||
+          !mongoose.Types.ObjectId.isValid(callId)
+        ) {
+          console.error("RejectCall Error: Invalid receiver ID or callId:", {
+            to,
+            callId,
+          });
           if (typeof callback === "function") {
             return callback({
               status: "error",
-              message: "Invalid receiver ID",
+              message: "Invalid receiver ID or call ID",
             });
           }
           return;
         }
-        io.to(to).emit("callRejected");
-        activeCalls.delete(to);
-        activeCalls.delete(socket.user.id);
-        console.log(`Call rejected by ${socket.user.id} to ${to}`);
+        const call = await Call.findById(callId);
+        if (!call || call.status !== "pending") {
+          console.error(
+            "RejectCall Error: Call not found or not pending:",
+            callId
+          );
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Call not found or already processed",
+            });
+          }
+          return;
+        }
+        call.status = "rejected";
+        call.updatedAt = new Date();
+        await call.save();
+        const receiverRoom = io.sockets.adapter.rooms.get(`room:${to}`);
+        if (receiverRoom && receiverRoom.size > 0) {
+          console.log(
+            `Emitting callRejected to room:${to}, rooms:`,
+            Array.from(receiverRoom),
+            { callId }
+          );
+          io.to(`room:${to}`).emit("callRejected", {
+            from: socket.user.id,
+            callId,
+          });
+        }
+        console.log(
+          `Call rejected by ${socket.user.id} to ${to}, callId: ${callId}`
+        );
         if (typeof callback === "function") {
           callback({ status: "success", message: "Call rejected" });
         }
@@ -930,22 +1193,53 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    socket.on("endCall", ({ to }, callback) => {
+    socket.on("endCall", async ({ to, callId }, callback) => {
       try {
-        if (!mongoose.Types.ObjectId.isValid(to)) {
-          console.error("EndCall Error: Invalid receiver ID:", to);
+        if (
+          !mongoose.Types.ObjectId.isValid(to) ||
+          !mongoose.Types.ObjectId.isValid(callId)
+        ) {
+          console.error("EndCall Error: Invalid receiver ID or callId:", {
+            to,
+            callId,
+          });
           if (typeof callback === "function") {
             return callback({
               status: "error",
-              message: "Invalid receiver ID",
+              message: "Invalid receiver ID or call ID",
             });
           }
           return;
         }
-        io.to(to).emit("callEnded");
-        activeCalls.delete(to);
-        activeCalls.delete(socket.user.id);
-        console.log(`Call ended by ${socket.user.id} to ${to}`);
+        const call = await Call.findById(callId);
+        if (!call) {
+          console.error("EndCall Error: Call not found:", callId);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Call not found",
+            });
+          }
+          return;
+        }
+        call.status = "ended";
+        call.updatedAt = new Date();
+        await call.save();
+        const receiverRoom = io.sockets.adapter.rooms.get(`room:${to}`);
+        if (receiverRoom && receiverRoom.size > 0) {
+          console.log(
+            `Emitting callEnded to room:${to}, rooms:`,
+            Array.from(receiverRoom),
+            { callId }
+          );
+          io.to(`room:${to}`).emit("callEnded", {
+            from: socket.user.id,
+            callId,
+          });
+        }
+        console.log(
+          `Call ended by ${socket.user.id} to ${to}, callId: ${callId}`
+        );
         if (typeof callback === "function") {
           callback({ status: "success", message: "Call ended" });
         }
@@ -957,23 +1251,19 @@ const initializeMessaging = (httpServer) => {
       }
     });
 
-    socket.on("disconnect", () => {
-      console.log(
-        `User disconnected: ${socket.user.email} (ID: ${socket.user.id})`
-      );
-      const otherUserId = activeCalls.get(socket.user.id);
-      if (otherUserId) {
-        io.to(otherUserId).emit("callEnded");
-        activeCalls.delete(otherUserId);
-        activeCalls.delete(socket.user.id);
-        console.log(`Cleaned up call state for disconnected user ${socket.user.id}`);
-      }
-    });
-
     socket.on("connect_error", (error) => {
       console.error(
-        `Socket.IO Connect Error for user ${socket.user.id}:`,
+        `Socket.IO Connect Error for user ${socket.user?.id || "unknown"}:`,
         error.message
+      );
+      setTimeout(() => {
+        socket.emit("rejoinRooms");
+      }, 1000);
+    });
+
+    socket.on("disconnect", () => {
+      console.log(
+        `User disconnected: ${socket.user.email} (ID: ${socket.user.id}, Socket: ${socket.id})`
       );
     });
   });
