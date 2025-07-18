@@ -41,7 +41,7 @@ const initializeMessaging = (httpServer) => {
         const allowedOrigins = [
           "http://localhost:5000",
           "http://localhost:3000",
-          "https://skill-shastra.onrender.com/",
+          "https://skill-shastra.vercel.app/",
         ];
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);
