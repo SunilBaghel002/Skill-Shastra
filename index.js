@@ -26,7 +26,7 @@ cloudinary.config({
 
 // Middleware
 app.use(
-  cors({ origin: "https://skill-shastra.vercel.app/", credentials: true })
+  cors({ origin: "https://skill-shastra.vercel.app", credentials: true })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -36,13 +36,9 @@ app.use(express.static(path.join(__dirname, "public")));
 // Rate Limiting Middleware
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100,
   message: "Too many announcement attempts, please try again after 15 minutes.",
 });
-// app.use(limiter);
-
-const JUDGE0_API = "https://judge0-ce.p.rapidapi.com/submissions";
-const API_KEY = process.env.API_KEY;
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -85,6 +81,8 @@ const userSchema = new mongoose.Schema(
         return `https://www.gravatar.com/avatar/${emailHash}?s=50&d=retro`;
       },
     },
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Added for messaging
+    isOnline: { type: Boolean, default: false }, // Added for presence
   },
   { timestamps: true }
 );
@@ -101,6 +99,48 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 };
 
 const User = mongoose.model("User", userSchema);
+
+// Message Schema (moved from messaging/server.js to avoid duplication)
+const messageSchema = new mongoose.Schema({
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  content: { type: String, required: true, maxlength: 1000 },
+  messageType: { type: String, default: "text" },
+  fileMetadata: {
+    fileName: String,
+    fileSize: Number,
+    fileType: String,
+  },
+  createdAt: { type: Date, default: Date.now },
+  isRead: { type: Boolean, default: false },
+});
+const Message = mongoose.model("Message", messageSchema);
+
+// Call Schema (for future WebRTC support)
+const callSchema = new mongoose.Schema({
+  caller: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  offer: { type: Object },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "rejected", "ended", "missed"],
+    default: "pending",
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  startTime: { type: Date },
+  endTime: { type: Date },
+  duration: { type: Number },
+});
+const Call = mongoose.model("Call", callSchema);
 
 // Enrollment Schema
 const enrollmentSchema = new mongoose.Schema({
@@ -127,7 +167,6 @@ const enrollmentSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now },
 });
-
 const Enrollment = mongoose.model("Enrollment", enrollmentSchema);
 
 // Feedback Schema
@@ -139,24 +178,7 @@ const feedbackSchema = new mongoose.Schema({
   text: { type: String, required: true, maxlength: 500 },
   createdAt: { type: Date, default: Date.now },
 });
-
 const Feedback = mongoose.model("Feedback", feedbackSchema);
-
-const messageSchema = new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  receiver: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  content: { type: String, required: true, maxlength: 1000 },
-  createdAt: { type: Date, default: Date.now },
-  isRead: { type: Boolean, default: false },
-  // Keep these for backward compatibility with existing messages
-  userName: { type: String, required: false },
-  userEmail: { type: String, required: false },
-});
-const Message = mongoose.model("Message", messageSchema);
 
 // Announcement Schema
 const announcementSchema = new mongoose.Schema({
@@ -192,9 +214,9 @@ const announcementSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now },
 });
-
 const Announcement = mongoose.model("Announcement", announcementSchema);
 
+// Multer Setup
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -219,31 +241,28 @@ const multerErrorHandler = (err, req, res, next) => {
   next();
 };
 
-// Nodemailer Setup with Connection Pooling
+// Nodemailer Setup
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
-  secure: false, // Use STARTTLS
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  pool: true, // Enable connection pooling
-  maxConnections: 5, // Limit concurrent connections
-  maxMessages: 100, // Max messages per connection
-  rateLimit: 14, // Max 14 emails per second (Gmail limit: ~100-150/day)
-  connectionTimeout: 30000, // Increased to 30 seconds
-  greetingTimeout: 30000, // Increased to 30 seconds
-  socketTimeout: 30000, // Increased to 30 seconds
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  rateLimit: 14,
+  connectionTimeout: 30000,
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
 });
 
-// Verify Transporter on Startup
+// Verify Transporter
 transporter.verify((error, success) => {
   if (error) {
-    console.error("SMTP Transporter Verification Failed:", {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error("SMTP Transporter Verification Failed:", error);
   } else {
     console.log("SMTP Transporter Ready");
   }
@@ -255,55 +274,32 @@ const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
-// Send Email Function with Enhanced Retry Logic
+// Send Email Function
 const sendEmail = async (to, subject, html, retries = 3) => {
   if (!isValidEmail(to)) {
-    console.error(`Invalid email address: ${to}`);
     throw new Error(`Invalid email address: ${to}`);
   }
-
   const mailOptions = {
     from: `"Skill Shastra" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
   };
-
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(
-        `Attempt ${attempt} to send email to ${to} at ${new Date().toISOString()}`
-      );
-      const startTime = Date.now();
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("SMTP request timed out")), 30000);
-      });
-      const sendPromise = transporter.sendMail(mailOptions);
-      const info = await Promise.race([sendPromise, timeoutPromise]);
-      console.log(
-        `Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`
-      );
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`Email sent to ${to}: ${info.response}`);
       return info;
     } catch (error) {
       console.error(
-        `Email Error to ${to} (Attempt ${attempt}/${retries}) at ${new Date().toISOString()}:`,
-        {
-          message: error.message,
-          stack: error.stack,
-          code: error.code,
-          response: error.response,
-          responseCode: error.responseCode,
-        }
+        `Email Error to ${to} (Attempt ${attempt}/${retries}):`,
+        error
       );
-
       if (error.responseCode && [550, 551, 553].includes(error.responseCode)) {
-        console.error(`Permanent failure for ${to}, skipping retries`);
         throw new Error(`Permanent failure: ${error.message}`);
       }
-
       if (attempt < retries) {
         const delay = Math.pow(2, attempt) * 2000;
-        console.log(`Retrying email to ${to} after ${delay}ms...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
@@ -312,7 +308,7 @@ const sendEmail = async (to, subject, html, retries = 3) => {
   }
 };
 
-// Throttle Email Sending
+// Throttle Emails
 const throttleEmails = async (
   recipients,
   subject,
@@ -332,27 +328,25 @@ const throttleEmails = async (
     const batchResults = await Promise.all(batchPromises);
     results.push(...batchResults);
     if (i + batchSize < recipients.length) {
-      console.log(`Waiting ${delay}ms before next batch...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
   return results;
 };
 
-// Email Template Functions (Logo Embedded as Base64)
+// Email Templates
 const getBaseEmailTemplate = (content) => `
   <!DOCTYPE html>
-<html lang="en">
-<head>
+  <html lang="en">
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Skill Shastra</title>
-</head>
-<body>
+  </head>
+  <body>
     <div class="content">${content}</div>
-</body>
-</html>
-
+  </body>
+  </html>
 `;
 
 const getAnnouncementEmailTemplate = (title, content, announcementType) =>
@@ -360,9 +354,9 @@ const getAnnouncementEmailTemplate = (title, content, announcementType) =>
     <h1>New Announcement: ${title}</h1>
     <p>Dear Skill Shastra User,</p>
     <p>We have a new ${announcementType.replace(
-    "_",
-    " "
-  )} announcement for you:</p>
+      "_",
+      " "
+    )} announcement for you:</p>
     <p><strong>${title}</strong></p>
     <p>${content}</p>
     <a href="https://skill-shastra.vercel.app/dashboard/announcements" class="cta-button">View Announcements</a>
@@ -431,9 +425,10 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
     <h1>Enrollment Status Update</h1>
     <p>Dear ${fullName},</p>
     <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-    ${status === "approved"
-      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+    ${
+      status === "approved"
+        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
     }
     <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
     <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
@@ -441,7 +436,7 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
 
 // Authentication Middleware
 const protect = async (req, res, next) => {
-  const token = req.cookies.token;
+  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
   const isApiRoute = req.originalUrl.startsWith("/api/");
   const isSignupRoute = req.originalUrl.startsWith("/signup");
 
@@ -450,11 +445,8 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "No token provided" });
     }
     if (isSignupRoute) {
-      return next(); // Avoid redirect loop
+      return next();
     }
-    console.log(
-      `No token provided, redirecting to /signup from ${req.originalUrl}`
-    );
     return res.redirect(
       `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
     );
@@ -471,11 +463,8 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: "Unauthorized" });
       }
       if (isSignupRoute) {
-        return next(); // Avoid redirect loop
+        return next();
       }
-      console.log(
-        `Unauthorized user, redirecting to /signup from ${req.originalUrl}`
-      );
       return res.redirect(
         `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
       );
@@ -488,11 +477,8 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid token" });
     }
     if (isSignupRoute) {
-      return next(); // Avoid redirect loop
+      return next();
     }
-    console.log(
-      `Invalid token, redirecting to /signup from ${req.originalUrl}`
-    );
     return res.redirect(
       `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
     );
@@ -517,22 +503,15 @@ const generateOTP = () =>
 app.post("/api/auth/signup", upload.none(), async (req, res) => {
   const { name, email, password, redirect } = req.body;
   if (!name || !email || !password) {
-    console.log(`Missing signup fields: name=${name}, email=${email}`);
     return res.status(400).json({ message: "All fields are required" });
   }
-
   try {
-    console.log(`Processing signup for email: ${email}`);
     let user = await User.findOne({ email });
     if (user) {
-      console.log(`User already exists: ${email}`);
       return res.status(400).json({ message: "User already exists" });
     }
-
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-    console.log(`Generated OTP for ${email}: ${otp}`);
-
     user = new User({
       name,
       email,
@@ -543,34 +522,15 @@ app.post("/api/auth/signup", upload.none(), async (req, res) => {
         ? "admin"
         : "user",
     });
-
     await user.save();
-    console.log(`User saved: ${email}`);
-
-    try {
-      await sendEmail(
-        email,
-        "Verify Your Skill Shastra Account",
-        getVerifyEmailTemplate(otp)
-      );
-      console.log(`Signup OTP email sent to: ${email}`);
-    } catch (emailError) {
-      console.error(`Failed to send signup OTP email to ${email}:`, {
-        message: emailError.message,
-        stack: emailError.stack,
-        code: emailError.code,
-        response: emailError.response,
-      });
-      // Continue to respond to client, as email failure is non-critical
-    }
-
+    await sendEmail(
+      email,
+      "Verify Your Skill Shastra Account",
+      getVerifyEmailTemplate(otp)
+    );
     res.status(201).json({ message: "OTP sent to your email", redirect });
   } catch (error) {
-    console.error("Signup Error:", {
-      message: error.message,
-      stack: error.stack,
-      email,
-    });
+    console.error("Signup Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -580,43 +540,35 @@ app.post("/api/auth/verify-otp", async (req, res) => {
   if (!email || !otp) {
     return res.status(400).json({ message: "Email and OTP are required" });
   }
-
   try {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     if (user.isVerified) {
       return res.status(400).json({ message: "User already verified" });
     }
-
     if (user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
-
     user.isVerified = true;
     user.otp = null;
     user.otpExpires = null;
     await user.save();
-
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
-
     await sendEmail(
       user.email,
       "Welcome to Skill Shastra!",
       getWelcomeEmailTemplate(user.name)
     );
-
     res.status(200).json({
       user: {
         name: user.name,
@@ -624,7 +576,7 @@ app.post("/api/auth/verify-otp", async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
       },
-      token, // Add token to response
+      token,
       redirect,
     });
   } catch (error) {
@@ -638,7 +590,6 @@ app.post("/api/auth/login", async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
   }
-
   try {
     const token = req.cookies.token;
     if (token) {
@@ -664,29 +615,24 @@ app.post("/api/auth/login", async (req, res) => {
         res.clearCookie("token");
       }
     }
-
     const user = await User.findOne({ email });
     if (!user || !(await user.comparePassword(password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-
     if (!user.isVerified) {
       return res
         .status(400)
         .json({ message: "Please verify your email first" });
     }
-
     const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-
     res.cookie("token", newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
     });
-
     res.status(200).json({
       user: {
         name: user.name,
@@ -694,7 +640,7 @@ app.post("/api/auth/login", async (req, res) => {
         role: user.role,
         profileImage: user.profileImage,
       },
-      token: newToken, // Add token to response
+      token: newToken,
       redirect,
     });
   } catch (error) {
@@ -717,24 +663,20 @@ app.post("/api/auth/forgot-password", async (req, res) => {
   if (!email) {
     return res.status(400).json({ message: "Email is required" });
   }
-
   try {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     const otp = generateOTP();
     user.otp = otp;
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
-
     await sendEmail(
       email,
       "Skill Shastra Password Reset",
       getResetPasswordEmailTemplate(otp)
     );
-
     res
       .status(200)
       .json({ message: "OTP sent to your email for password reset", redirect });
@@ -749,22 +691,18 @@ app.post("/api/auth/reset-password", async (req, res) => {
   if (!email || !otp || !newPassword) {
     return res.status(400).json({ message: "All fields are required" });
   }
-
   try {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
     if (user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
-
     user.password = newPassword;
     user.otp = null;
     user.otpExpires = null;
     await user.save();
-
     res.status(200).json({ message: "Password reset successfully", redirect });
   } catch (error) {
     console.error("Reset Password Error:", error);
@@ -772,7 +710,6 @@ app.post("/api/auth/reset-password", async (req, res) => {
   }
 });
 
-// Add this route after other auth routes
 app.get("/api/auth/validate-session", protect, async (req, res) => {
   try {
     res.status(200).json({
@@ -790,7 +727,7 @@ app.get("/api/auth/validate-session", protect, async (req, res) => {
   }
 });
 
-// Admin Middleware
+// Admin Routes
 app.get("/api/auth/admin-panel", protect, restrictToAdmin, async (req, res) => {
   try {
     const users = await User.find().select("-password -otp -otpExpires");
@@ -801,7 +738,6 @@ app.get("/api/auth/admin-panel", protect, restrictToAdmin, async (req, res) => {
   }
 });
 
-// Admin Routes
 app.get("/api/admin/users", protect, restrictToAdmin, async (req, res) => {
   try {
     const users = await User.find().select("name email profileImage").lean();
@@ -812,10 +748,12 @@ app.get("/api/admin/users", protect, restrictToAdmin, async (req, res) => {
         (e) => e.userId.toString() === user._id.toString()
       ),
     }));
-    res.status(200).json({
-      message: "Users fetched successfully",
-      users: usersWithEnrollments,
-    });
+    res
+      .status(200)
+      .json({
+        message: "Users fetched successfully",
+        users: usersWithEnrollments,
+      });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Server error" });
@@ -843,7 +781,8 @@ app.patch(
       const user = await User.findById(enrollment.userId);
       await sendEmail(
         enrollment.email,
-        `Skill Shastra Enrollment ${status.charAt(0).toUpperCase() + status.slice(1)
+        `Skill Shastra Enrollment ${
+          status.charAt(0).toUpperCase() + status.slice(1)
         }`,
         getEnrollmentStatusEmailTemplate(
           enrollment.fullName,
@@ -880,7 +819,6 @@ app.post("/api/feedback", protect, async (req, res) => {
         .status(400)
         .json({ message: "Feedback text must be 500 characters or less" });
     }
-
     const feedback = new Feedback({
       userId: req.user._id,
       userName: req.user.name,
@@ -888,7 +826,6 @@ app.post("/api/feedback", protect, async (req, res) => {
       rating,
       text,
     });
-
     await feedback.save();
     res.status(201).json({ message: "Feedback submitted successfully" });
   } catch (error) {
@@ -973,13 +910,13 @@ app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
   }
 });
 
+// Course Schema
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   duration: { type: String, required: true },
   slug: { type: String, required: true, unique: true },
 });
-
 const Course = mongoose.model("Course", courseSchema);
 
 // Recommended Courses Route
@@ -1031,16 +968,13 @@ app.post(
           .status(400)
           .json({ message: "Payment proof file is required" });
       }
-
       let studentData;
       try {
         studentData = JSON.parse(req.body.studentData || "{}");
       } catch (error) {
         return res.status(400).json({ message: "Invalid student data format" });
       }
-
       const { transactionId, paymentDate } = req.body;
-
       const requiredFields = [
         "course",
         "fullName",
@@ -1065,7 +999,6 @@ app.post(
           .status(400)
           .json({ message: "Transaction ID and payment date are required" });
       }
-
       const uploadResult = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
@@ -1082,10 +1015,7 @@ app.post(
         );
         stream.end(req.file.buffer);
       });
-
       const paymentProofUrl = uploadResult.secure_url;
-      console.log("Stored payment proof URL:", paymentProofUrl);
-
       const enrollment = new Enrollment({
         userId: req.user._id,
         course: studentData.course,
@@ -1105,9 +1035,7 @@ app.post(
         paymentProof: paymentProofUrl,
         status: "pending",
       });
-
       await enrollment.save();
-
       await sendEmail(
         studentData.email,
         "Skill Shastra Enrollment Confirmation",
@@ -1118,7 +1046,6 @@ app.post(
           paymentProofUrl
         )
       );
-
       res.status(201).json({ message: "Enrollment submitted successfully" });
     } catch (error) {
       console.error("Enrollment Error:", error);
@@ -1169,10 +1096,7 @@ app.get("/api/user/enrollment", protect, async (req, res) => {
       address: enrollment.address || "",
     });
   } catch (error) {
-    console.error("Fetch Enrollment Error:", {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error("Fetch Enrollment Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -1186,22 +1110,9 @@ app.post(
   async (req, res) => {
     try {
       const { title, content, targetAudience, announcementType } = req.body;
-      console.log("Received announcement data:", {
-        title,
-        content,
-        targetAudience,
-        announcementType,
-      });
-
-      // Validate required fields
       if (!title || !content || !targetAudience || !announcementType) {
-        console.log(
-          `Missing announcement fields: title=${title}, content=${content}, targetAudience=${targetAudience}, announcementType=${announcementType}`
-        );
         return res.status(400).json({ message: "All fields are required" });
       }
-
-      // Validate targetAudience against schema enum
       const validAudiences = [
         "all",
         "Frontend Development",
@@ -1216,17 +1127,12 @@ app.post(
         "Gen AI",
       ];
       if (!validAudiences.includes(targetAudience)) {
-        console.log(`Invalid targetAudience: ${targetAudience}`);
         return res.status(400).json({ message: "Invalid target audience" });
       }
-
-      // Validate announcementType against schema enum
       const validTypes = ["general", "class_schedule", "test", "event"];
       if (!validTypes.includes(announcementType)) {
-        console.log(`Invalid announcementType: ${announcementType}`);
         return res.status(400).json({ message: "Invalid announcement type" });
       }
-
       const announcement = await Announcement.create({
         title,
         content,
@@ -1234,69 +1140,30 @@ app.post(
         announcementType,
         createdBy: req.user._id,
       });
-      console.log(`Announcement created: ${title} for ${targetAudience}`);
-
-      // Send email notifications
       let recipients = [];
       if (targetAudience === "all") {
         recipients = await User.find({ isVerified: true }).select("email");
       } else {
-        // Map targetAudience to course names for enrollment lookup
-        const audienceToCourseMap = {
-          all: "All Users",
-          "Frontend Development": "Frontend Development",
-          "Backend Development": "Backend Development",
-          "Full Stack Development": "Full Stack Development",
-          "Digital Marketing": "Digital Marketing",
-          "JavaScript Programming": "JavaScript Programming",
-          "Java Programming": "Java Programming",
-          "Python Programming": "Python Programming",
-          "C++ Programming": "C++ Programming",
-          "Programming Fundamentals": "Programming Fundamentals",
-          "Gen AI": "Gen AI",
-        };
-        const course = audienceToCourseMap[targetAudience];
-        if (course) {
-          recipients = await Enrollment.find({
-            course,
-            status: "approved",
-          }).select("email");
-        }
+        recipients = await Enrollment.find({
+          course: targetAudience,
+          status: "approved",
+        }).select("email");
       }
-
       try {
-        await Promise.all(
-          recipients.map(({ email }) =>
-            sendEmail(
-              email,
-              `New ${announcementType.replace(
-                "_",
-                " "
-              )} Announcement: ${title}`,
-              getAnnouncementEmailTemplate(title, content, announcementType)
-            )
-          )
-        );
-        console.log(
-          `Announcement emails sent for ${title} to ${recipients.length} users`
+        await throttleEmails(
+          recipients,
+          `New ${announcementType.replace("_", " ")} Announcement: ${title}`,
+          getAnnouncementEmailTemplate(title, content, announcementType)
         );
       } catch (emailError) {
-        console.error(`Failed to send announcement emails for ${title}:`, {
-          message: emailError.message,
-          stack: emailError.stack,
-        });
-        // Continue responding to client, as email failure is non-critical
+        console.error(`Failed to send announcement emails:`, emailError);
       }
-
       res
         .status(201)
         .json({ message: "Announcement posted successfully", announcement });
     } catch (error) {
-      console.error("Create Announcement Error:", {
-        message: error.message,
-        stack: error.stack,
-      });
-      res.status(500).json({ message: error.message || "Server error" });
+      console.error("Create Announcement Error:", error);
+      res.status(500).json({ message: "Server error" });
     }
   }
 );
@@ -1320,10 +1187,7 @@ app.get("/api/announcements", protect, async (req, res) => {
       .status(200)
       .json({ message: "Announcements fetched successfully", announcements });
   } catch (error) {
-    console.error("Fetch Announcements Error:", {
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error("Fetch Announcements Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -1342,10 +1206,7 @@ app.get(
         .status(200)
         .json({ message: "Announcements fetched successfully", announcements });
     } catch (error) {
-      console.error("Fetch Admin Announcements Error:", {
-        message: error.message,
-        stack: error.stack,
-      });
+      console.error("Fetch Admin Announcements Error:", error);
       res.status(500).json({ message: "Server error" });
     }
   }
@@ -1355,17 +1216,12 @@ app.patch(
   "/api/admin/announcements/:id",
   protect,
   restrictToAdmin,
-  // announcementLimiter,
   async (req, res) => {
     try {
       const { title, content, targetAudience, announcementType } = req.body;
       if (!title || !content || !targetAudience || !announcementType) {
-        console.log(
-          `Missing update fields: title=${title}, targetAudience=${targetAudience}, announcementType=${announcementType}`
-        );
         return res.status(400).json({ message: "All fields are required" });
       }
-
       const announcement = await Announcement.findByIdAndUpdate(
         req.params.id,
         {
@@ -1377,21 +1233,14 @@ app.patch(
         },
         { new: true }
       );
-
       if (!announcement) {
-        console.log(`Announcement not found: ${req.params.id}`);
         return res.status(404).json({ message: "Announcement not found" });
       }
-
-      console.log(`Announcement updated: ${title} for ${targetAudience}`);
       res
         .status(200)
         .json({ message: "Announcement updated successfully", announcement });
     } catch (error) {
-      console.error("Update Announcement Error:", {
-        message: error.message,
-        stack: error.stack,
-      });
+      console.error("Update Announcement Error:", error);
       res.status(500).json({ message: "Server error" });
     }
   }
@@ -1405,22 +1254,17 @@ app.delete(
     try {
       const announcement = await Announcement.findByIdAndDelete(req.params.id);
       if (!announcement) {
-        console.log(`Announcement not found for deletion: ${req.params.id}`);
         return res.status(404).json({ message: "Announcement not found" });
       }
-
-      console.log(`Announcement deleted: ${announcement.title}`);
       res.status(200).json({ message: "Announcement deleted successfully" });
     } catch (error) {
-      console.error("Delete Announcement Error:", {
-        message: error.message,
-        stack: error.stack,
-      });
+      console.error("Delete Announcement Error:", error);
       res.status(500).json({ message: "Server error" });
     }
   }
 );
 
+// Judge0 Code Execution
 const languageConfig = {
   python: { id: 71, extension: "py" },
   javascript: { id: 63, extension: "js" },
@@ -1429,22 +1273,17 @@ const languageConfig = {
   java: { id: 62, extension: "java" },
 };
 
-// Execute code endpoint
 app.post("/api/execute", protect, async (req, res) => {
   const { language, code, input } = req.body;
-
-  // Validate request
   if (!languageConfig[language]) {
     return res.status(400).json({ error: "Unsupported language" });
   }
   if (!code) {
     return res.status(400).json({ error: "Code is required" });
   }
-
   try {
-    // Submit code to Judge0
     const submissionResponse = await axios.post(
-      `${JUDGE0_API}?base64_encoded=true`,
+      `${process.env.JUDGE0_API}/submissions?base64_encoded=true`,
       {
         source_code: Buffer.from(code).toString("base64"),
         language_id: languageConfig[language].id,
@@ -1453,26 +1292,23 @@ app.post("/api/execute", protect, async (req, res) => {
       {
         headers: {
           "Content-Type": "application/json",
-          "X-RapidAPI-Key": API_KEY,
+          "X-RapidAPI-Key": process.env.API_KEY,
           "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
         },
       }
     );
-
     const token = submissionResponse.data.token;
     if (!token) {
       throw new Error("No submission token received from Judge0");
     }
-
-    // Poll for execution result (max 20 seconds)
     let result;
     for (let i = 0; i < 20; i++) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const statusResponse = await axios.get(
-        `${JUDGE0_API}/${token}?base64_encoded=true`,
+        `${process.env.JUDGE0_API}/submissions/${token}?base64_encoded=true`,
         {
           headers: {
-            "X-RapidAPI-Key": API_KEY,
+            "X-RapidAPI-Key": process.env.API_KEY,
             "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
           },
         }
@@ -1480,25 +1316,19 @@ app.post("/api/execute", protect, async (req, res) => {
       result = statusResponse.data;
       if (result.status && result.status.id > 2) break;
     }
-
-    // Handle execution result
     if (!result || !result.status) {
       throw new Error("No result received from Judge0");
     }
-
     let output = "";
     if (result.status.id === 3) {
-      // Success
       output = result.stdout
         ? Buffer.from(result.stdout, "base64").toString()
         : "No output";
     } else if (result.status.id === 6) {
-      // Compilation error
       output = result.compile_output
         ? Buffer.from(result.compile_output, "base64").toString()
         : "Compilation error occurred";
     } else {
-      // Other errors (e.g., runtime error like NoSuchElementException)
       output = result.stderr
         ? Buffer.from(result.stderr, "base64").toString()
         : `Error: ${result.status.description}`;
@@ -1507,7 +1337,6 @@ app.post("/api/execute", protect, async (req, res) => {
           "\nHint: Ensure input is provided in the input field for Scanner.";
       }
     }
-
     res.json({ output });
   } catch (error) {
     console.error(
@@ -1608,7 +1437,6 @@ app.get("/career", renderPage("resources/career"));
 app.get("/expertProfiles", renderPage("team/ExpertProfile"));
 app.get("/meetTeam", renderPage("team/MeetOurTeam"));
 app.get("/dashboard/compiler", protect, renderPage("dashboard/compiler"));
-
 app.get("/payment", protect, (req, res) => {
   res.render("courses/payment2", {
     user: {
@@ -1620,12 +1448,11 @@ app.get("/payment", protect, (req, res) => {
   });
 });
 
-// Start Server
+// Messaging Integration
 connectDB().then(() => {
+  const server = http.createServer(app);
+  const messaging = require("./messaging/server");
+  app.use("/api/messaging", messaging.router);
   const PORT = process.env.PORT || 5000;
-  const server = http.createServer(app); // Create HTTP server
-  const messaging = require("./messaging/server"); // Import messaging module
-  const { io, router } = messaging(server); // Initialize messaging
-  app.use("/api/messaging", router); // Mount messaging routes
   server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

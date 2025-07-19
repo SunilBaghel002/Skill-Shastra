@@ -1,1132 +1,1338 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
-const path = require("path");
-const multer = require("multer");
-const cookieParser = require("cookie-parser");
-const crypto = require("crypto");
+const mongoose = require("mongoose");
 const { v2: cloudinary } = require("cloudinary");
+const User = mongoose.model("User");
+const Message = mongoose.model("Message");
 
-dotenv.config();
-const app = express();
+// Define Call Schema with logging fields
+const CallSchema = new mongoose.Schema({
+  caller: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  offer: { type: Object, required: false },
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "rejected", "ended", "missed"],
+    default: "pending",
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+  startTime: { type: Date },
+  endTime: { type: Date },
+  duration: { type: Number }, // Duration in seconds
+});
+const Call = mongoose.model("Call", CallSchema);
 
-// Cloudinary Configuration
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Middleware
-app.use(
-  cors({ origin: "https://skill-shastra.vercel.app/", credentials: true })
-);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
-
-cloudinary.uploader.upload(
-  "./public/images/Logo.png",
-  {
-    folder: "public/images",
-    public_id: "logo",
-    resource_type: "image",
-  },
-  (error, result) => {
-    if (error) console.error(error);
-    else console.log("Logo URL:", result.secure_url);
-  }
-);
-
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB Connected");
-  } catch (error) {
-    console.error("MongoDB Connection Error:", error);
-    process.exit(1);
-  }
-};
-
-// User Schema
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: [true, "Name is required"] },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-      minlength: 6,
-    },
-    role: { type: String, enum: ["user", "admin"], default: "user" },
-    otp: { type: String },
-    otpExpires: { type: Date },
-    isVerified: { type: Boolean, default: false },
-    profileImage: {
-      type: String,
-      default: function () {
-        const emailHash = crypto
-          .createHash("md5")
-          .update(this.email.trim().toLowerCase())
-          .digest("hex");
-        return `https://www.gravatar.com/avatar/${emailHash}?s=50&d=retro`;
-      },
-    },
-  },
-  { timestamps: true }
-);
-
-// Hash password
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Compare password
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-const User = mongoose.model("User", userSchema);
-
-// Enrollment Schema
-const enrollmentSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  course: { type: String, required: true },
-  fullName: { type: String, required: true },
-  email: { type: String, required: true, match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
-  phone: { type: String, required: true },
-  age: { type: Number, required: true, min: 15, max: 100 },
-  gender: { type: String, required: true, enum: ["Male", "Female", "Other"] },
-  education: { type: String, required: true },
-  institution: { type: String, required: true },
-  guardianName: { type: String, required: true },
-  guardianPhone: { type: String, required: true },
-  country: { type: String, required: true },
-  address: { type: String, required: true },
-  transactionId: { type: String, required: true },
-  paymentDate: { type: Date, required: true },
-  paymentProof: { type: String, required: true },
-  status: {
-    type: String,
-    default: "pending",
-    enum: ["pending", "approved", "rejected"],
-  },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Enrollment = mongoose.model("Enrollment", enrollmentSchema);
-
-// Feedback Schema
-const feedbackSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  userName: { type: String, required: true },
-  userEmail: { type: String, required: true },
-  rating: { type: Number, required: true, min: 1, max: 5 },
-  text: { type: String, required: true, maxlength: 500 },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Feedback = mongoose.model("Feedback", feedbackSchema);
-
-// Message Schema
-const messageSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  userName: { type: String, required: true },
-  userEmail: { type: String, required: true },
-  content: { type: String, required: true, maxlength: 1000 },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Message = mongoose.model("Message", messageSchema);
-
-// Announcement Schema
-const announcementSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  createdAt: { type: Date, default: Date.now },
-});
-
-const Announcement = mongoose.model("Announcement", announcementSchema);
-
-// Multer Setup (Memory Storage for Cloudinary)
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ["image/png", "image/jpeg", "application/pdf"];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only PNG, JPG, and PDF files are allowed."));
-    }
-  },
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
-
-// Multer Error Handling Middleware
-const multerErrorHandler = (err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    return res.status(400).json({ message: `Multer error: ${err.message}` });
-  } else if (err) {
-    return res.status(400).json({ message: err.message });
-  }
-  next();
-};
-
-// Nodemailer Setup
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-transporter.verify((error, success) => {
-  if (error) console.error("SMTP Configuration Error:", error);
-  else console.log("SMTP Server is ready to send emails");
-});
-
-// sendEmail Function
-const sendEmail = async (to, subject, html) => {
-  const mailOptions = {
-    from: `"Skillshastra" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  };
-
-  try {
-    const startTime = Date.now();
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email sent to ${to} in ${Date.now() - startTime}ms: ${info.response}`);
-    return info;
-  } catch (error) {
-    console.error(`Email Error to ${to}:`, error);
-    throw new Error(`Failed to send email to ${to}: ${error.message}`);
-  }
-};
-
-// Email Template Functions
-const getBaseEmailTemplate = (content) => `
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Skill Shastra</title>
-      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Poppins', sans-serif; background-color: #f8f9ff; color: #1f2937; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #7c3aed; text-align: center; padding: 20px; border-radius: 8px 8px 0 0; }
-        .header img { max-width: 150px; height: auto; }
-        .content { background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        .content h1 { font-size: 24px; color: #7c3aed; margin-bottom: 20px; }
-        .content p { font-size: 16px; line-height: 1.6; margin-bottom: 15px; }
-        .otp { font-size: 28px; font-weight: 600; color: #1f2937; text-align: center; padding: 15px; background-color: #f8f9ff; border-radius: 8px; margin: 20px 0; }
-        .cta-button { display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 500; margin: 15px 0; }
-        .cta-button:hover { background-color: #a855f7; }
-        .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        .table th { font-weight: 600; color: #7c3aed; }
-        .status-approved { color: #10b981; font-weight: 600; }
-        .status-rejected { color: #ef4444; font-weight: 600; }
-        .footer { text-align: center; padding: 20px; font-size: 14px; color: #6b7280; }
-        .footer a { color: #7c3aed; text-decoration: none; margin: 0 10px; }
-        .footer a:hover { text-decoration: underline; }
-        @media (max-width: 600px) {
-          .container { padding: 10px; }
-          .content { padding: 20px; }
-          .header img { max-width: 120px; }
-          .content h1 { font-size: 20px; }
-          .content p { font-size: 14px; }
-          .otp { font-size: 24px; }
-          .cta-button { padding: 10px 20px; }
+const initializeMessaging = (httpServer) => {
+  const io = new Server(httpServer, {
+    cors: {
+      origin: (origin, callback) => {
+        const allowedOrigins = [
+          "http://localhost:5000",
+          "http://localhost:3000",
+          "https://skill-shastra.vercel.app/",
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.error(`CORS Error: Origin ${origin} not allowed`);
+          callback(new Error("Not allowed by CORS"));
         }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <img src="https://res.cloudinary.com/dsk80td7v/image/upload/v1750568168/public/images/logo.png" alt="Skill Shastra Logo" />
-        </div>
-        <div class="content">
-          ${content}
-        </div>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} Skill Shastra. All rights reserved.</p>
-          <p><a href="mailto:support@skillshastra.com">support@skillshastra.com</a> | <a href="https://skill-shastra.vercel.app/">skillshastra.com</a></p>
-          <p>
-            <a href="https://facebook.com/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/facebook.png" alt="Facebook" style="width: 24px; height: 24px;" /></a>
-            <a href="https://linkedin.com/company/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/linkedin.png" alt="LinkedIn" style="width: 24px; height: 24px;" /></a>
-            <a href="https://twitter.com/skillshastra"><img src="https://res.cloudinary.com/your_cloud_name/image/upload/skillshastra/assets/icons/twitter.png" alt="Twitter" style="width: 24px; height: 24px;" /></a>
-          </p>
-          <p><a href="#">Unsubscribe</a></p>
-        </div>
-      </div>
-    </body>
-  </html>
-`;
+      },
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+    transports: ["websocket", "polling"],
+    pingTimeout: 30000,
+    pingInterval: 25000,
+    maxHttpBufferSize: 10 * 1024 * 1024,
+  });
 
-const getVerifyEmailTemplate = (otp) =>
-  getBaseEmailTemplate(`
-    <h1>Verify Your Account</h1>
-    <p>Welcome to Skill Shastra, we're excited to have you!</p>
-    <p>Your One-Time Password (OTP) for email verification is:</p>
-    <div class="otp">${otp}</div>
-    <p>This OTP is valid for 10 minutes. Please use it to complete your verification.</p>
-    <a href="https://skill-shastra.vercel.app/signup" class="cta-button">Verify Now</a>
-    <p>If you didn't request this, please ignore this email.</p>
-  `);
-
-const getResetPasswordEmailTemplate = (otp) =>
-  getBaseEmailTemplate(`
-    <h1>Reset Your Password</h1>
-    <p>Welcome to Skill Shastra! Let's get your password reset.</p>
-    <p>Your One-Time Password (OTP) for password reset is:</p>
-    <div class="otp">${otp}</div>
-    <p>This OTP is valid for 10 minutes. Please use it to complete your password reset.</p>
-    <a href="https://skill-shastra.vercel.app/forgot-password" class="cta-button">Reset Password</a>
-    <p>If you didn't request this, please ignore this email.</p>
-  `);
-
-const getWelcomeEmailTemplate = (name) =>
-  getBaseEmailTemplate(`
-    <h1>Welcome to Skill Shastra</h1>
-    <p>Hello, ${name}!</p>
-    <p>We’re beyond excited to welcome you to <strong>Skill Shastra</strong>! Your account is now verified, and you’re ready to join our vibrant community of learners mastering skills for the future.</p>
-    <p>Dive into our curated courses, designed to empower you to achieve your personal and professional goals. Your journey to success starts today!</p>
-    <p><a href="https://skill-shastra.vercel.app/dashboard/courses" class="cta-button">Start Learning Now</a></p>
-    <p>Need help or have questions? Our support team is here for you at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
-    <p>Connect with us: 
-      <a href="https://twitter.com/skillshastra">Twitter</a> | 
-      <a href="https://linkedin.com/company/skillshastra">LinkedIn</a> | 
-      <a href="https://instagram.com/skillshastra">Instagram</a>
-    </p>
-  `);
-
-const getEnrollmentConfirmationEmailTemplate = (
-  fullName,
-  course,
-  transactionId,
-  paymentProofUrl
-) =>
-  getBaseEmailTemplate(`
-    <h1>Enrollment Confirmation</h1>
-    <p>Dear ${fullName},</p>
-    <p>Thank you for enrolling in <strong>${course}</strong> with Skill Shastra!</p>
-    <p>We have received your enrollment details and payment proof. Our team will verify your payment and update your enrollment status soon.</p>
-    <table class="table">
-      <tr><th>Course</th><td>${course}</td></tr>
-      <tr><th>Transaction ID</th><td>${transactionId}</td></tr>
-      <tr><th>Status</th><td>Pending</td></tr>
-    </table>
-    <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
-    <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a> if you have any questions.</p>
-  `);
-
-const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
-  getBaseEmailTemplate(`
-    <h1>Enrollment Status Update</h1>
-    <p>Dear ${fullName},</p>
-    <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-    ${
-      status === "approved"
-        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+  io.use(async (socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      console.error("Socket.IO Auth Error: No token provided");
+      return next(new Error("Authentication error: No token provided"));
     }
-    <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
-    <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
-  `);
-
-// Authentication Middleware
-const protect = async (req, res, next) => {
-  const token = req.cookies.token;
-  const isApiRoute = req.originalUrl.startsWith('/api/');
-
-  if (!token) {
-    if (isApiRoute) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-    console.log(`No token provided, redirecting to /signup from ${req.originalUrl}`);
-    return res.redirect(`/signup?redirect=${encodeURIComponent(req.originalUrl)}`);
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select(
-      "-password -otp -otpExpires"
-    );
-    if (!user || !user.isVerified) {
-      res.clearCookie("token");
-      if (isApiRoute) {
-        return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select(
+        "name email role isVerified profileImage favorites isOnline"
+      );
+      if (!user || !user.isVerified) {
+        console.error(
+          "Socket.IO Auth Error: User not found or not verified:",
+          decoded.id
+        );
+        return next(
+          new Error("Authentication error: Invalid or unverified user")
+        );
       }
-      console.log(`Unauthorized user, redirecting to /signup from ${req.originalUrl}`);
-      return res.redirect(`/signup?redirect=${encodeURIComponent(req.originalUrl)}`);
-    }
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("JWT Verification Error:", {
-      message: error.message,
-      stack: error.stack,
-    });
-    res.clearCookie("token");
-    if (isApiRoute) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-    console.log(`Invalid token, redirecting to /signup from ${req.originalUrl}`);
-    return res.redirect(`/signup?redirect=${encodeURIComponent(req.originalUrl)}`);
-  }
-};
-
-const restrictToAdmin = async (req, res, next) => {
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
-  if (!req.user || !adminEmails.includes(req.user.email)) {
-    return res.status(403).json({ message: "Access denied. Admin only." });
-  }
-  req.user.role = "admin";
-  next();
-};
-
-// Helper Function
-const generateOTP = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
-
-// Authentication Routes
-app.post("/api/auth/signup", upload.none(), async (req, res) => {
-  const { name, email, password, redirect } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  try {
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    const otp = generateOTP();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-    user = new User({
-      name,
-      email,
-      password,
-      otp,
-      otpExpires,
-      role: process.env.ADMIN_EMAILS.split(",").includes(email)
-        ? "admin"
-        : "user",
-    });
-
-    await user.save();
-
-    await sendEmail(
-      email,
-      "Verify Your Skill Shastra Account",
-      getVerifyEmailTemplate(otp)
-    );
-
-    res.status(201).json({ message: "OTP sent to your email", redirect });
-  } catch (error) {
-    console.error("Signup Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.post("/api/auth/verify-otp", async (req, res) => {
-  const { email, otp, redirect } = req.body;
-  if (!email || !otp) {
-    return res.status(400).json({ message: "Email and OTP are required" });
-  }
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.isVerified) {
-      return res.status(400).json({ message: "User already verified" });
-    }
-
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-
-    user.isVerified = true;
-    user.otp = null;
-    user.otpExpires = null;
-    await user.save();
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-    });
-
-    await sendEmail(
-      user.email,
-      "Welcome to Skill Shastra!",
-      getWelcomeEmailTemplate(user.name)
-    );
-
-    res.status(200).json({
-      user: {
+      socket.user = {
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
-        profileImage: user.profileImage,
-      },
-      redirect,
-    });
-  } catch (error) {
-    console.error("Verify OTP Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+        profileImage:
+          user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        favorites: user.favorites
+          ? user.favorites.map((id) => id.toString())
+          : [],
+      };
+      // Set user as online
+      await User.findByIdAndUpdate(user._id, { isOnline: true });
+      console.log(
+        "Socket.IO Auth Success: User:",
+        socket.user.email,
+        "ID:",
+        socket.user.id
+      );
+      next();
+    } catch (error) {
+      console.error("Socket.IO Auth Error:", error.message, { token });
+      return next(new Error("Authentication error: Invalid token"));
+    }
+  });
 
-app.post("/api/auth/login", async (req, res) => {
-  const { email, password, redirect } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
-  }
-
-  try {
-    const token = req.cookies.token;
-    if (token) {
+  // Utility to ensure user joins room with retries
+  const rejoinRoom = async (socket, maxRetries = 3, retryDelay = 1000) => {
+    if (!socket.user?.id) {
+      console.error("RejoinRoom Error: socket.user.id is undefined", {
+        socketId: socket.id,
+      });
+      return false;
+    }
+    let attempts = 0;
+    while (attempts < maxRetries) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select(
-          "-password -otp -otpExpires"
+        socket.join(`room:${socket.user.id}`);
+        const room = io.sockets.adapter.rooms.get(`room:${socket.user.id}`);
+        if (room && room.size > 0) {
+          console.log(
+            `User ${socket.user.id} joined room: room:${socket.user.id}, sockets:`,
+            Array.from(room)
+          );
+          return true;
+        }
+        console.warn(
+          `Room join attempt ${attempts + 1} failed for user ${socket.user.id}`
         );
-        if (user && user.isVerified) {
-          return res.status(400).json({
-            message: "User already logged in",
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      } catch (error) {
+        console.error(`Error joining room for ${socket.user.id}:`, error);
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+    }
+    console.error(
+      `Failed to join room for user ${socket.user.id} after ${maxRetries} attempts`
+    );
+    return false;
+  };
+
+  // Helper to check if a user is online
+  async function getSocketByUserId(userId) {
+    try {
+      const user = await User.findById(userId).select("isOnline").lean();
+      if (!user) return null;
+      const sockets = await io.in(`room:${userId}`).fetchSockets();
+      return sockets.length > 0 ? sockets[0] : null;
+    } catch (error) {
+      console.error(`Error checking online status for user ${userId}:`, error);
+      return null;
+    }
+  }
+
+  // Broadcast online status using MongoDB
+  const broadcastOnlineStatus = async () => {
+    try {
+      const onlineUsers = await User.find({ isOnline: true })
+        .select("_id")
+        .lean();
+      const onlineUserIds = onlineUsers.map((user) => user._id.toString());
+      console.log("Broadcasting onlineStatus:", onlineUserIds);
+      io.emit("onlineStatus", { onlineUsers: onlineUserIds });
+    } catch (error) {
+      console.error("Error broadcasting onlineStatus:", error);
+    }
+  };
+
+  io.on("connection", (socket) => {
+    console.log(
+      `User connected: ${socket.user.email} (${socket.user.role}, ID: ${socket.user.id}, Socket: ${socket.id})`
+    );
+    rejoinRoom(socket).then(async (success) => {
+      if (success) {
+        await broadcastOnlineStatus();
+      } else {
+        socket.emit("rejoinFailed", { message: "Failed to rejoin room" });
+      }
+    });
+
+    // Check for pending messages and calls
+    const checkPendingMessages = async () => {
+      const pendingMessages = await Message.find({
+        receiver: socket.user.id,
+        isRead: false,
+      })
+        .populate("sender", "name email profileImage")
+        .populate("receiver", "name email profileImage")
+        .lean();
+      pendingMessages.forEach((msg) => {
+        const messageData = {
+          sender: {
+            id: msg.sender._id.toString(),
+            name: msg.sender.name,
+            email: msg.sender.email,
+            profileImage:
+              msg.sender.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          receiver: {
+            id: msg.receiver._id.toString(),
+            name: msg.receiver.name,
+            email: msg.receiver.email,
+            profileImage:
+              msg.receiver.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          content: msg.content,
+          messageType: msg.messageType || "text",
+          fileMetadata: msg.fileMetadata,
+          createdAt: msg.createdAt,
+          messageId: msg._id.toString(),
+          isRead: msg.isRead,
+        };
+        console.log(
+          `Emitting pending receiveMessage to ${
+            socket.user.id
+          }, messageId: ${msg._id.toString()}`
+        );
+        socket.emit("receiveMessage", messageData);
+      });
+    };
+
+    const checkPendingCalls = async () => {
+      const calls = await Call.find({
+        receiver: socket.user.id,
+        status: { $in: ["pending", "missed"] },
+      })
+        .populate("caller", "name")
+        .lean();
+      calls.forEach((call) => {
+        console.log(
+          `Emitting pending incomingCall to ${socket.user.id} from ${call.caller._id}`,
+          { callId: call._id.toString(), status: call.status }
+        );
+        socket.emit("incomingCall", {
+          from: call.caller._id.toString(),
+          callerName: call.caller.name,
+          offer: call.offer,
+          callId: call._id.toString(),
+          status: call.status,
+        });
+      });
+    };
+
+    Promise.all([
+      checkPendingMessages().catch((error) =>
+        console.error("Error checking pending messages:", error)
+      ),
+      checkPendingCalls().catch((error) =>
+        console.error("Error checking pending calls:", error)
+      ),
+    ]);
+
+    socket.on("rejoinRooms", async () => {
+      if (await rejoinRoom(socket)) {
+        console.log(`User ${socket.user.id} successfully rejoined rooms`);
+        Promise.all([
+          checkPendingMessages().catch((error) =>
+            console.error(
+              "Error checking pending messages in rejoinRooms:",
+              error
+            )
+          ),
+          checkPendingCalls().catch((error) =>
+            console.error("Error checking pending calls in rejoinRooms:", error)
+          ),
+        ]);
+        await broadcastOnlineStatus();
+      } else {
+        socket.emit("rejoinFailed", { message: "Failed to rejoin room" });
+      }
+    });
+
+    socket.on("getUsers", async (callback) => {
+      try {
+        let users;
+        if (socket.user.role === "admin") {
+          users = await User.find({ isVerified: true })
+            .select("name email role profileImage isOnline")
+            .lean();
+        } else {
+          users = await User.find({ role: "admin", isVerified: true })
+            .select("name email role profileImage isOnline")
+            .lean();
+        }
+        const usersWithDetails = await Promise.all(
+          users.map(async (user) => {
+            const unreadCount = await Message.countDocuments({
+              sender: user._id,
+              receiver: socket.user.id,
+              isRead: false,
+            });
+            const latestMessage = await Message.findOne({
+              $or: [
+                { sender: socket.user.id, receiver: user._id },
+                { sender: user._id, receiver: socket.user.id },
+              ],
+            })
+              .sort({ createdAt: -1 })
+              .lean();
+            return {
+              ...user,
+              _id: user._id.toString(),
+              unreadCount,
+              lastMessage: latestMessage
+                ? {
+                    content: latestMessage.content,
+                    createdAt: latestMessage.createdAt,
+                  }
+                : null,
+              isFavorite: socket.user.favorites.includes(user._id.toString()),
+              isOnline: user.isOnline || false,
+            };
+          })
+        );
+        usersWithDetails.sort((a, b) => {
+          const aTime = a.lastMessage
+            ? new Date(a.lastMessage.createdAt)
+            : new Date(0);
+          const bTime = b.lastMessage
+            ? new Date(b.lastMessage.createdAt)
+            : new Date(0);
+          return bTime - aTime;
+        });
+        if (typeof callback === "function") {
+          callback({ status: "success", users: usersWithDetails });
+        }
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to fetch users" });
+        }
+      }
+    });
+
+    socket.on("toggleFavorite", async ({ userId }, callback) => {
+      try {
+        const currentUser = await User.findById(socket.user.id);
+        const isFavorite = currentUser.favorites.includes(userId);
+        if (isFavorite) {
+          currentUser.favorites.pull(userId);
+        } else {
+          if (!currentUser.favorites.includes(userId)) {
+            currentUser.favorites.push(userId);
+          }
+        }
+        await currentUser.save();
+        socket.user.favorites = currentUser.favorites.map((id) =>
+          id.toString()
+        );
+        if (typeof callback === "function") {
+          callback({ status: "success", isFavorite: !isFavorite });
+        }
+        socket.emit("getUsers", (response) => {
+          if (response.status === "success") {
+            io.to(`room:${socket.user.id}`).emit("updateUsers", {
+              users: response.users,
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error toggling favorite:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to toggle favorite" });
+        }
+      }
+    });
+
+    socket.on(
+      "sendMessage",
+      async (
+        { receiverId, content, messageType, fileName, fileSize, fileType },
+        callback
+      ) => {
+        try {
+          if (!receiverId || !content) {
+            if (typeof callback === "function") {
+              return callback({
+                status: "error",
+                message: "Receiver ID and content are required",
+              });
+            }
+            return;
+          }
+          const receiver = await User.findById(receiverId);
+          if (!receiver || !receiver.isVerified) {
+            if (typeof callback === "function") {
+              return callback({
+                status: "error",
+                message: "Receiver not found or not verified",
+              });
+            }
+            return;
+          }
+          if (socket.user.role === "user" && receiver.role !== "admin") {
+            if (typeof callback === "function") {
+              return callback({
+                status: "error",
+                message: "Users can only message admins",
+              });
+            }
+            return;
+          }
+
+          let finalMessageType = messageType || "text";
+          let fileMetadata =
+            messageType !== "text"
+              ? {
+                  fileName: fileName || "uploaded_file",
+                  fileSize: fileSize || 0,
+                  fileType: fileType || "application/octet-stream",
+                }
+              : undefined;
+          let secureUrl = content;
+
+          if (
+            content.startsWith("data:") ||
+            content.startsWith("https://res.cloudinary.com/")
+          ) {
+            const allowedTypes = {
+              image: ["image/png", "image/jpeg", "image/jpg"],
+              audio: ["audio/mpeg", "audio/wav", "audio/webm"],
+              document: [
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ],
+            };
+
+            if (
+              fileType &&
+              !Object.values(allowedTypes).flat().includes(fileType)
+            ) {
+              if (typeof callback === "function") {
+                return callback({
+                  status: "error",
+                  message: `Invalid file type. Allowed: ${Object.values(
+                    allowedTypes
+                  )
+                    .flat()
+                    .join(", ")}`,
+                });
+              }
+              return;
+            }
+
+            if (content.startsWith("https://res.cloudinary.com/")) {
+              if (
+                content.endsWith(".jpg") ||
+                content.endsWith(".png") ||
+                content.endsWith(".jpeg")
+              ) {
+                finalMessageType = "image";
+                fileMetadata = {
+                  fileName: fileName || "image_file",
+                  fileSize: fileSize || 0,
+                  fileType:
+                    fileType ||
+                    (content.endsWith(".png") ? "image/png" : "image/jpeg"),
+                };
+              } else if (
+                content.endsWith(".mp3") ||
+                content.endsWith(".wav") ||
+                content.endsWith(".webm")
+              ) {
+                finalMessageType = "audio";
+                fileMetadata = {
+                  fileName: fileName || "audio_file",
+                  fileSize: fileSize || 0,
+                  fileType:
+                    fileType ||
+                    (content.endsWith(".mp3")
+                      ? "audio/mpeg"
+                      : content.endsWith(".wav")
+                      ? "audio/wav"
+                      : "audio/webm"),
+                };
+              } else if (
+                content.endsWith(".pdf") ||
+                content.endsWith(".doc") ||
+                content.endsWith(".docx")
+              ) {
+                finalMessageType = "document";
+                fileMetadata = {
+                  fileName: fileName || "document_file",
+                  fileSize: fileSize || 0,
+                  fileType:
+                    fileType ||
+                    (content.endsWith(".pdf")
+                      ? "application/pdf"
+                      : content.endsWith(".doc")
+                      ? "application/msword"
+                      : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+                };
+              }
+            } else if (content.startsWith("data:")) {
+              const maxSizeMB = 5;
+              const base64Size = (content.length * 3) / 4 / (1024 * 1024);
+              if (base64Size > maxSizeMB) {
+                if (typeof callback === "function") {
+                  return callback({
+                    status: "error",
+                    message: `${
+                      finalMessageType.charAt(0).toUpperCase() +
+                      finalMessageType.slice(1)
+                    } size must be less than ${maxSizeMB}MB`,
+                  });
+                }
+                return;
+              }
+
+              const base64Regex = new RegExp(
+                `^data:${fileType?.replace("/", "\\/") || "[^;]+"};base64,`
+              );
+              if (!base64Regex.test(content)) {
+                if (typeof callback === "function") {
+                  return callback({
+                    status: "error",
+                    message: `Invalid ${finalMessageType} format`,
+                  });
+                }
+                return;
+              }
+
+              const base64Data = content.replace(base64Regex, "");
+              const resourceType =
+                finalMessageType === "image"
+                  ? "image"
+                  : finalMessageType === "audio"
+                  ? "video"
+                  : "raw";
+              try {
+                const uploadResult = await cloudinary.uploader.upload(content, {
+                  resource_type: resourceType,
+                  folder: `skillshastra/${finalMessageType}s`,
+                  public_id: `${socket.user.id}_${Date.now()}_${
+                    fileName || finalMessageType
+                  }`,
+                });
+                secureUrl = uploadResult.secure_url;
+                fileMetadata = {
+                  fileName: fileName || finalMessageType + "_file",
+                  fileSize: fileSize || uploadResult.bytes || 0,
+                  fileType:
+                    fileType ||
+                    (finalMessageType === "image"
+                      ? "image/jpeg"
+                      : finalMessageType === "audio"
+                      ? "audio/webm"
+                      : "application/pdf"),
+                };
+              } catch (uploadError) {
+                console.error(
+                  `Error uploading ${finalMessageType} to Cloudinary:`,
+                  uploadError
+                );
+                if (typeof callback === "function") {
+                  return callback({
+                    status: "error",
+                    message: `Failed to upload ${finalMessageType}`,
+                  });
+                }
+                return;
+              }
+            }
+          }
+
+          const message = new Message({
+            sender: socket.user.id,
+            receiver: receiverId,
+            content: secureUrl,
+            messageType: finalMessageType,
+            fileMetadata,
+            createdAt: new Date(),
+            isRead: false,
+          });
+          await message.save();
+
+          const messageData = {
+            sender: {
+              id: socket.user.id,
+              name: socket.user.name,
+              email: socket.user.email,
+              profileImage: socket.user.profileImage,
+            },
+            receiver: {
+              id: receiver._id.toString(),
+              name: receiver.name,
+              email: receiver.email,
+              profileImage:
+                receiver.profileImage ||
+                "https://www.gravatar.com/avatar/?d=retro",
+            },
+            content: secureUrl,
+            messageType: finalMessageType,
+            fileMetadata,
+            createdAt: message.createdAt,
+            messageId: message._id.toString(),
+            isRead: false,
+          };
+
+          io.to(`room:${receiverId}`).emit("receiveMessage", messageData);
+          io.to(`room:${socket.user.id}`).emit("receiveMessage", messageData);
+
+          io.to(`room:${receiverId}`).emit("updateMessages", {
+            userId: socket.user.id,
+          });
+          io.to(`room:${socket.user.id}`).emit("updateMessages", {
+            userId: receiverId,
+          });
+
+          const updateUsers = async (userId) => {
+            const users =
+              socket.user.role === "admin"
+                ? await User.find({ isVerified: true })
+                    .select("name email role profileImage isOnline")
+                    .lean()
+                : await User.find({ role: "admin", isVerified: true })
+                    .select("name email role profileImage isOnline")
+                    .lean();
+            const usersWithDetails = await Promise.all(
+              users.map(async (user) => {
+                const unreadCount = await Message.countDocuments({
+                  sender: user._id,
+                  receiver: userId,
+                  isRead: false,
+                });
+                const latestMessage = await Message.findOne({
+                  $or: [
+                    { sender: userId, receiver: user._id },
+                    { sender: user._id, receiver: userId },
+                  ],
+                })
+                  .sort({ createdAt: -1 })
+                  .lean();
+                return {
+                  ...user,
+                  _id: user._id.toString(),
+                  unreadCount,
+                  lastMessage: latestMessage
+                    ? {
+                        content: latestMessage.content,
+                        createdAt: latestMessage.createdAt,
+                      }
+                    : null,
+                  isFavorite: socket.user.favorites.includes(
+                    user._id.toString()
+                  ),
+                  isOnline: user.isOnline || false,
+                };
+              })
+            );
+            usersWithDetails.sort((a, b) => {
+              const aTime = a.lastMessage
+                ? new Date(a.lastMessage.createdAt)
+                : new Date(0);
+              const bTime = b.lastMessage
+                ? new Date(b.lastMessage.createdAt)
+                : new Date(0);
+              return bTime - aTime;
+            });
+            io.to(`room:${userId}`).emit("updateUsers", {
+              users: usersWithDetails,
+            });
+          };
+          await updateUsers(socket.user.id);
+          await updateUsers(receiverId);
+          if (typeof callback === "function") {
+            callback({
+              status: "success",
+              message: "Message sent",
+              messageId: message._id.toString(),
+            });
+          }
+        } catch (error) {
+          console.error("Error sending message:", error);
+          if (typeof callback === "function") {
+            callback({ status: "error", message: "Failed to send message" });
+          }
+        }
+      }
+    );
+
+    socket.on("clearChats", async ({ userId }, callback) => {
+      try {
+        await Message.deleteMany({
+          $or: [
+            { sender: socket.user.id, receiver: userId },
+            { sender: userId, receiver: socket.user.id },
+          ],
+        });
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Chats cleared" });
+        }
+        io.to(`room:${socket.user.id}`).emit("updateMessages", { userId });
+        io.to(`room:${userId}`).emit("updateMessages", {
+          userId: socket.user.id,
+        });
+
+        const updateUsers = async (targetUserId) => {
+          const users =
+            socket.user.role === "admin"
+              ? await User.find({ isVerified: true })
+                  .select("name email role profileImage isOnline")
+                  .lean()
+              : await User.find({ role: "admin", isVerified: true })
+                  .select("name email role profileImage isOnline")
+                  .lean();
+          const usersWithDetails = await Promise.all(
+            users.map(async (user) => {
+              const unreadCount = await Message.countDocuments({
+                sender: user._id,
+                receiver: targetUserId,
+                isRead: false,
+              });
+              const latestMessage = await Message.findOne({
+                $or: [
+                  { sender: targetUserId, receiver: user._id },
+                  { sender: user._id, receiver: targetUserId },
+                ],
+              })
+                .sort({ createdAt: -1 })
+                .lean();
+              return {
+                ...user,
+                _id: user._id.toString(),
+                unreadCount,
+                lastMessage: latestMessage
+                  ? {
+                      content: latestMessage.content,
+                      createdAt: latestMessage.createdAt,
+                    }
+                  : null,
+                isFavorite: socket.user.favorites.includes(user._id.toString()),
+                isOnline: user.isOnline || false,
+              };
+            })
+          );
+          usersWithDetails.sort((a, b) => {
+            const aTime = a.lastMessage
+              ? new Date(a.lastMessage.createdAt)
+              : new Date(0);
+            const bTime = b.lastMessage
+              ? new Date(b.lastMessage.createdAt)
+              : new Date(0);
+            return bTime - aTime;
+          });
+          io.to(`room:${targetUserId}`).emit("updateUsers", {
+            users: usersWithDetails,
+          });
+        };
+        await updateUsers(socket.user.id);
+        await updateUsers(userId);
+      } catch (error) {
+        console.error("Error clearing chats:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to clear chats" });
+        }
+      }
+    });
+
+    socket.on("getUserProfile", async ({ userId }, callback) => {
+      try {
+        const user = await User.findById(userId)
+          .select("name email role profileImage isOnline")
+          .lean();
+        if (!user) {
+          if (typeof callback === "function") {
+            return callback({ status: "error", message: "User not found" });
+          }
+          return;
+        }
+        if (typeof callback === "function") {
+          callback({
+            status: "success",
             user: {
+              id: user._id.toString(),
               name: user.name,
               email: user.email,
               role: user.role,
-              profileImage: user.profileImage,
+              profileImage:
+                user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+              isOnline: user.isOnline || false,
             },
-            redirect,
           });
         }
-        res.clearCookie("token");
       } catch (error) {
-        res.clearCookie("token");
-      }
-    }
-
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    if (!user.isVerified) {
-      return res
-        .status(400)
-        .json({ message: "Please verify your email first" });
-    }
-
-    const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    res.cookie("token", newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-    });
-
-    res.status(200).json({
-      user: {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        profileImage: user.profileImage,
-      },
-      redirect,
-    });
-  } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.post("/api/auth/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  });
-  res.status(200).json({ message: "Logged out successfully" });
-});
-
-app.post("/api/auth/forgot-password", async (req, res) => {
-  const { email, redirect } = req.body;
-  if (!email) {
-    return res.status(400).json({ message: "Email is required" });
-  }
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const otp = generateOTP();
-    user.otp = otp;
-    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-    await user.save();
-
-    await sendEmail(
-      email,
-      "Skill Shastra Password Reset",
-      getResetPasswordEmailTemplate(otp)
-    );
-
-    res
-      .status(200)
-      .json({ message: "OTP sent to your email for password reset", redirect });
-  } catch (error) {
-    console.error("Forgot Password Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.post("/api/auth/reset-password", async (req, res) => {
-  const { email, otp, newPassword, redirect } = req.body;
-  if (!email || !otp || !newPassword) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  try {
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
-
-    user.password = newPassword;
-    user.otp = null;
-    user.otpExpires = null;
-    await user.save();
-
-    res.status(200).json({ message: "Password reset successfully", redirect });
-  } catch (error) {
-    console.error("Reset Password Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Admin Middleware
-app.get("/api/auth/admin-panel", protect, restrictToAdmin, async (req, res) => {
-  try {
-    const users = await User.find().select("-password -otp -otpExpires");
-    res.status(200).json({ message: "Welcome to Admin Panel", users });
-  } catch (error) {
-    console.error("Admin Panel Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Admin Routes
-app.get("/api/admin/users", protect, restrictToAdmin, async (req, res) => {
-  try {
-    const users = await User.find().select("name email profileImage").lean();
-    const enrollments = await Enrollment.find().lean();
-    const usersWithEnrollments = users.map((user) => ({
-      ...user,
-      enrollments: enrollments.filter(
-        (e) => e.userId.toString() === user._id.toString()
-      ),
-    }));
-    res.status(200).json({
-      message: "Users fetched successfully",
-      users: usersWithEnrollments,
-    });
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.patch(
-  "/api/admin/enrollments/:id",
-  protect,
-  restrictToAdmin,
-  async (req, res) => {
-    try {
-      const { status } = req.body;
-      if (!["approved", "rejected"].includes(status)) {
-        return res.status(400).json({ message: "Invalid status" });
-      }
-      const enrollment = await Enrollment.findByIdAndUpdate(
-        req.params.id,
-        { status },
-        { new: true }
-      );
-      if (!enrollment) {
-        return res.status(404).json({ message: "Enrollment not found" });
-      }
-      const user = await User.findById(enrollment.userId);
-      await sendEmail(
-        enrollment.email,
-        `Skill Shastra Enrollment ${
-          status.charAt(0).toUpperCase() + status.slice(1)
-        }`,
-        getEnrollmentStatusEmailTemplate(
-          enrollment.fullName,
-          enrollment.course,
-          status
-        )
-      );
-      res
-        .status(200)
-        .json({ message: `Enrollment ${status} successfully`, enrollment });
-    } catch (error) {
-      console.error("Error updating enrollment:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
-// Feedback Routes
-app.post("/api/feedback", protect, async (req, res) => {
-  try {
-    const { rating, text } = req.body;
-    if (!rating || !text) {
-      return res
-        .status(400)
-        .json({ message: "Rating and feedback text are required" });
-    }
-    if (rating < 1 || rating > 5) {
-      return res
-        .status(400)
-        .json({ message: "Rating must be between 1 and 5" });
-    }
-    if (text.length > 500) {
-      return res
-        .status(400)
-        .json({ message: "Feedback text must be 500 characters or less" });
-    }
-
-    const feedback = new Feedback({
-      userId: req.user._id,
-      userName: req.user.name,
-      userEmail: req.user.email,
-      rating,
-      text,
-    });
-
-    await feedback.save();
-    res.status(201).json({ message: "Feedback submitted successfully" });
-  } catch (error) {
-    console.error("Error submitting feedback:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.get("/api/admin/feedback", protect, restrictToAdmin, async (req, res) => {
-  try {
-    const feedback = await Feedback.find().lean();
-    res.status(200).json({ feedback });
-  } catch (error) {
-    console.error("Error fetching feedback:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Analytics Route
-app.get("/api/admin/analytics", protect, restrictToAdmin, async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    const totalEnrollments = await Enrollment.countDocuments();
-    const enrollmentsByStatus = await Enrollment.aggregate([
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
-    const avgFeedbackRating = await Feedback.aggregate([
-      { $group: { _id: null, avgRating: { $avg: "$rating" } } },
-    ]);
-    const analytics = {
-      totalUsers,
-      totalEnrollments,
-      enrollmentsByStatus: enrollmentsByStatus.reduce(
-        (acc, curr) => ({ ...acc, [curr._id]: curr.count }),
-        {}
-      ),
-      avgFeedbackRating: avgFeedbackRating[0]?.avgRating || 0,
-    };
-    res
-      .status(200)
-      .json({ message: "Analytics fetched successfully", analytics });
-  } catch (error) {
-    console.error("Error fetching analytics:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Enrollment Details Route
-app.get(
-  "/api/admin/enrollments/:id",
-  protect,
-  restrictToAdmin,
-  async (req, res) => {
-    try {
-      const enrollment = await Enrollment.findById(req.params.id).lean();
-      if (!enrollment) {
-        return res.status(404).json({ message: "Enrollment not found" });
-      }
-      res
-        .status(200)
-        .json({ message: "Enrollment fetched successfully", enrollment });
-    } catch (error) {
-      console.error("Error fetching enrollment:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
-// Messages Route
-app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
-  try {
-    const messages = await Message.find().lean();
-    res
-      .status(200)
-      .json({ message: "Messages fetched successfully", messages });
-  } catch (error) {
-    console.error("Error fetching messages:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-const courseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-});
-
-const Course = mongoose.model("Course", courseSchema);
-
-// Recommended Courses Route
-app.get("/api/courses/recommended", protect, async (req, res) => {
-  try {
-    const recommendedCourses = [
-      {
-        title: "Frontend Development",
-        description: "Learn React, HTML, CSS.",
-        duration: "6 weeks",
-        slug: "frontend",
-      },
-      {
-        title: "Backend Development",
-        description: "Master Node.js, Express, MongoDB.",
-        duration: "6 weeks",
-        slug: "backend",
-      },
-      {
-        title: "Full Stack Development",
-        description: "Build full-stack apps with MERN.",
-        duration: "8 weeks",
-        slug: "full-stack",
-      },
-      {
-        title: "Digital Marketing",
-        description: "Master SEO, PPC, and social media.",
-        duration: "4 weeks",
-        slug: "digital-marketing",
-      },
-      {
-        title: "Data Science",
-        description: "Explore Python, Pandas, and ML.",
-        duration: "8 weeks",
-        slug: "data-science",
-      },
-    ];
-    res.status(200).json({ courses: recommendedCourses });
-  } catch (error) {
-    console.error("Error fetching recommended courses:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.post(
-  "/api/admin/announcements",
-  protect,
-  restrictToAdmin,
-  async (req, res) => {
-    try {
-      const { title, content } = req.body;
-      if (!title || !content) {
-        return res
-          .status(400)
-          .json({ message: "Title and content are required" });
-      }
-      const announcement = await Announcement.create({
-        title,
-        content,
-        createdBy: req.user._id,
-      });
-      res
-        .status(201)
-        .json({ message: "Announcement posted successfully", announcement });
-    } catch (error) {
-      console.error("Error posting announcement:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
-// Enrollment Route
-app.post(
-  "/api/enroll",
-  protect,
-  upload.single("paymentProof"),
-  multerErrorHandler,
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res
-          .status(400)
-          .json({ message: "Payment proof file is required" });
-      }
-
-      let studentData;
-      try {
-        studentData = JSON.parse(req.body.studentData || "{}");
-      } catch (error) {
-        return res.status(400).json({ message: "Invalid student data format" });
-      }
-
-      const { transactionId, paymentDate } = req.body;
-
-      const requiredFields = [
-        "course",
-        "fullName",
-        "email",
-        "phone",
-        "age",
-        "gender",
-        "education",
-        "institution",
-        "guardianName",
-        "guardianPhone",
-        "country",
-        "address",
-      ];
-      for (const field of requiredFields) {
-        if (!studentData[field]) {
-          return res.status(400).json({ message: `${field} is required` });
+        console.error("Error fetching user profile:", error);
+        if (typeof callback === "function") {
+          callback({
+            status: "error",
+            message: "Failed to fetch user profile",
+          });
         }
       }
-      if (!transactionId || !paymentDate) {
-        return res
-          .status(400)
-          .json({ message: "Transaction ID and payment date are required" });
-      }
+    });
 
-      const uploadResult = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: "skillshastra/enrollments",
-            public_id: `payment_proof_${studentData.email}_${Date.now()}`,
-            resource_type:
-              req.file.mimetype === "application/pdf" ? "raw" : "image",
-            format: req.file.mimetype.split("/")[1],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
+    socket.on("getMessages", async ({ userId }, callback) => {
+      try {
+        const messages = await Message.find({
+          $or: [
+            { sender: socket.user.id, receiver: userId },
+            { sender: userId, receiver: socket.user.id },
+          ],
+        })
+          .populate("sender", "name email profileImage")
+          .populate("receiver", "name email profileImage")
+          .select(
+            "sender receiver content messageType createdAt isRead fileMetadata"
+          )
+          .sort({ createdAt: 1 })
+          .lean();
+        await Message.updateMany(
+          { receiver: socket.user.id, sender: userId, isRead: false },
+          { isRead: true }
         );
-        stream.end(req.file.buffer);
-      });
+        const formattedMessages = messages.map((msg) => ({
+          sender: {
+            _id: msg.sender._id.toString(),
+            name: msg.sender.name,
+            email: msg.sender.email,
+            profileImage:
+              msg.sender.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          receiver: {
+            _id: msg.receiver._id.toString(),
+            name: msg.receiver.name,
+            email: msg.receiver.email,
+            profileImage:
+              msg.receiver.profileImage ||
+              "https://www.gravatar.com/avatar/?d=retro",
+          },
+          content: msg.content,
+          messageType: msg.messageType || "text",
+          fileMetadata: msg.fileMetadata,
+          createdAt: msg.createdAt,
+          _id: msg._id.toString(),
+          isRead: msg.isRead,
+        }));
+        if (typeof callback === "function") {
+          callback({ status: "success", messages: formattedMessages });
+        }
 
-      const paymentProofUrl = uploadResult.secure_url;
-      console.log("Stored payment proof URL:", paymentProofUrl);
+        const updatedMessages = await Message.find({
+          $or: [
+            { sender: socket.user.id, receiver: userId },
+            { sender: userId, receiver: socket.user.id },
+          ],
+        })
+          .populate("sender", "name email profileImage")
+          .populate("receiver", "name email profileImage")
+          .select(
+            "sender receiver content messageType createdAt isRead fileMetadata _id"
+          )
+          .lean();
+        updatedMessages.forEach((msg) => {
+          const messageData = {
+            sender: {
+              id: msg.sender._id.toString(),
+              name: msg.sender.name,
+              email: msg.sender.email,
+              profileImage:
+                msg.sender.profileImage ||
+                "https://www.gravatar.com/avatar/?d=retro",
+            },
+            receiver: {
+              id: msg.receiver._id.toString(),
+              name: msg.receiver.name,
+              email: msg.receiver.email,
+              profileImage:
+                msg.receiver.profileImage ||
+                "https://www.gravatar.com/avatar/?d=retro",
+            },
+            content: msg.content,
+            messageType: msg.messageType || "text",
+            fileMetadata: msg.fileMetadata,
+            createdAt: msg.createdAt,
+            messageId: msg._id.toString(),
+            isRead: msg.isRead,
+          };
+          io.to(`room:${msg.sender._id.toString()}`).emit(
+            "updateMessageStatus",
+            messageData
+          );
+        });
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to fetch messages" });
+        }
+      }
+    });
 
-      const enrollment = new Enrollment({
-        userId: req.user._id,
-        course: studentData.course,
-        fullName: studentData.fullName,
-        email: studentData.email,
-        phone: studentData.phone,
-        age: parseInt(studentData.age),
-        gender: studentData.gender,
-        education: studentData.education,
-        institution: studentData.institution,
-        guardianName: studentData.guardianName,
-        guardianPhone: studentData.guardianPhone,
-        country: studentData.country,
-        address: studentData.address,
-        transactionId,
-        paymentDate: new Date(paymentDate),
-        paymentProof: paymentProofUrl,
-        status: "pending",
-      });
+    socket.on("getCallLogs", async ({ userId }, callback) => {
+      try {
+        const calls = await Call.find({
+          $or: [
+            { caller: socket.user.id, receiver: userId },
+            { caller: userId, receiver: socket.user.id },
+          ],
+        })
+          .populate("caller", "name email")
+          .populate("receiver", "name email")
+          .sort({ createdAt: -1 })
+          .lean();
+        const formattedCalls = calls.map((call) => ({
+          callId: call._id.toString(),
+          caller: {
+            id: call.caller._id.toString(),
+            name: call.caller.name,
+            email: call.caller.email,
+          },
+          receiver: {
+            id: call.receiver._id.toString(),
+            name: call.receiver.name,
+            email: call.receiver.email,
+          },
+          status: call.status,
+          createdAt: call.createdAt,
+          startTime: call.startTime,
+          endTime: call.endTime,
+          duration: call.duration || 0,
+        }));
+        if (typeof callback === "function") {
+          callback({
+            status: "success",
+            logs: formattedCalls,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching call logs:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to fetch call logs" });
+        }
+      }
+    });
 
-      await enrollment.save();
+    socket.on("callUser", async ({ to, offer, callerName }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        const receiver = await User.findById(to).select("isVerified isOnline");
+        if (!receiver || !receiver.isVerified) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Receiver not found or not verified",
+            });
+          }
+          return;
+        }
+        const call = new Call({
+          caller: socket.user.id,
+          receiver: to,
+          offer,
+          status: receiver.isOnline ? "pending" : "missed",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        await call.save();
+        console.log(
+          `Initiating call from ${
+            socket.user.id
+          } to ${to}, callId: ${call._id.toString()}, receiver online: ${
+            receiver.isOnline
+          }`
+        );
+        if (receiver.isOnline) {
+          const receiverSocket = await getSocketByUserId(to);
+          if (receiverSocket) {
+            io.to(`room:${to}`).emit("incomingCall", {
+              from: socket.user.id,
+              callerName,
+              offer,
+              callId: call._id.toString(),
+              status: "pending",
+            });
+          } else {
+            console.warn(
+              `Receiver ${to} is marked online but no socket found, marking call as missed`
+            );
+            call.status = "missed";
+            await call.save();
+          }
+        } else {
+          console.log(`Receiver ${to} is offline, call marked as missed`);
+        }
+        if (typeof callback === "function") {
+          callback({
+            status: "success",
+            message: receiver.isOnline
+              ? "Call initiated"
+              : "Receiver is offline, call marked as missed",
+            callId: call._id.toString(),
+          });
+        }
+      } catch (error) {
+        console.error("CallUser Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to initiate call" });
+        }
+      }
+    });
 
-      await sendEmail(
-        studentData.email,
-        "Skill Shastra Enrollment Confirmation",
-        getEnrollmentConfirmationEmailTemplate(
-          studentData.fullName,
-          studentData.course,
-          transactionId,
-          paymentProofUrl
-        )
+    socket.on("answerCall", async ({ to, answer, callId }, callback) => {
+      try {
+        if (
+          !mongoose.Types.ObjectId.isValid(to) ||
+          !mongoose.Types.ObjectId.isValid(callId)
+        ) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID or call ID",
+            });
+          }
+          return;
+        }
+        const call = await Call.findById(callId).populate("caller receiver");
+        if (!call || call.status !== "pending") {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Call not found or already processed",
+            });
+          }
+          return;
+        }
+        if (call.caller._id.toString() !== to) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID for this call",
+            });
+          }
+          return;
+        }
+        const callerSocket = await getSocketByUserId(to);
+        if (!callerSocket) {
+          call.status = "missed";
+          call.endTime = new Date();
+          call.duration = call.startTime
+            ? Math.round((call.endTime - call.startTime) / 1000)
+            : 0;
+          await call.save();
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Caller is not online",
+            });
+          }
+          return;
+        }
+        call.status = "accepted";
+        call.startTime = new Date();
+        call.updatedAt = new Date();
+        await call.save();
+        console.log(
+          `Call accepted by ${socket.user.id} for callId: ${callId}, answer:`,
+          JSON.stringify(answer).substring(0, 100)
+        );
+        io.to(`room:${to}`).emit("callAnswered", {
+          from: socket.user.id,
+          answer,
+          callId,
+        });
+        io.to(`room:${socket.user.id}`).emit("callAccepted", {
+          to,
+          callId,
+        });
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call answered" });
+        }
+      } catch (error) {
+        console.error("AnswerCall Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to answer call" });
+        }
+      }
+    });
+
+    socket.on("iceCandidate", async ({ to, candidate, callId }, callback) => {
+      try {
+        if (!mongoose.Types.ObjectId.isValid(to)) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID",
+            });
+          }
+          return;
+        }
+        const receiverSocket = await getSocketByUserId(to);
+        if (!receiverSocket) {
+          console.error(`Receiver ${to} is not online for ICE candidate`);
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Receiver is not online",
+            });
+          }
+          return;
+        }
+        console.log(
+          `Sending ICE candidate to ${to} for callId: ${callId}, candidate:`,
+          JSON.stringify(candidate).substring(0, 100)
+        );
+        io.to(`room:${to}`).emit("iceCandidate", {
+          from: socket.user.id,
+          candidate,
+          callId,
+        });
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "ICE candidate sent" });
+        }
+      } catch (error) {
+        console.error("IceCandidate Error:", error);
+        if (typeof callback === "function") {
+          callback({
+            status: "error",
+            message: "Failed to send ICE candidate",
+          });
+        }
+      }
+    });
+
+    socket.on("rejectCall", async ({ to, callId }, callback) => {
+      try {
+        if (
+          !mongoose.Types.ObjectId.isValid(to) ||
+          !mongoose.Types.ObjectId.isValid(callId)
+        ) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID or call ID",
+            });
+          }
+          return;
+        }
+        const call = await Call.findById(callId);
+        if (!call || call.status !== "pending") {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Call not found or already processed",
+            });
+          }
+          return;
+        }
+        call.status = "rejected";
+        call.endTime = new Date();
+        call.updatedAt = new Date();
+        call.duration = call.startTime
+          ? Math.round((call.endTime - call.startTime) / 1000)
+          : 0;
+        await call.save();
+        console.log(`Call rejected by ${socket.user.id} for callId: ${callId}`);
+        io.to(`room:${to}`).emit("callRejected", {
+          from: socket.user.id,
+          callId,
+        });
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call rejected" });
+        }
+      } catch (error) {
+        console.error("RejectCall Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to reject call" });
+        }
+      }
+    });
+
+    socket.on("endCall", async ({ to, callId }, callback) => {
+      try {
+        if (
+          !mongoose.Types.ObjectId.isValid(to) ||
+          !mongoose.Types.ObjectId.isValid(callId)
+        ) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Invalid receiver ID or call ID",
+            });
+          }
+          return;
+        }
+        const call = await Call.findById(callId);
+        if (!call) {
+          if (typeof callback === "function") {
+            return callback({
+              status: "error",
+              message: "Call not found",
+            });
+          }
+          return;
+        }
+        call.status = "ended";
+        call.endTime = new Date();
+        call.updatedAt = new Date();
+        call.duration = call.startTime
+          ? Math.round((call.endTime - call.startTime) / 1000)
+          : 0;
+        await call.save();
+        console.log(
+          `Call ended by ${socket.user.id} for callId: ${callId}, duration: ${call.duration}s`
+        );
+        io.to(`room:${to}`).emit("callEnded", {
+          from: socket.user.id,
+          callId,
+        });
+        io.to(`room:${socket.user.id}`).emit("callEnded", {
+          from: to,
+          callId,
+        });
+        if (typeof callback === "function") {
+          callback({ status: "success", message: "Call ended" });
+        }
+      } catch (error) {
+        console.error("EndCall Error:", error);
+        if (typeof callback === "function") {
+          callback({ status: "error", message: "Failed to end call" });
+        }
+      }
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error(
+        `Socket.IO Connect Error for user ${socket.user?.id || "unknown"}:`,
+        error.message
       );
+      setTimeout(async () => {
+        if (await rejoinRoom(socket)) {
+          socket.emit("rejoinRooms");
+          await broadcastOnlineStatus();
+        }
+      }, 1000);
+    });
 
-      res.status(201).json({ message: "Enrollment submitted successfully" });
-    } catch (error) {
-      console.error("Enrollment Error:", error);
-      res.status(500).json({ message: error.message || "Server error" });
-    }
-  }
-);
+    socket.on("disconnect", async () => {
+      console.log(
+        `User disconnected: ${socket.user.email} (ID: ${socket.user.id}, Socket: ${socket.id})`
+      );
+      try {
+        await User.findByIdAndUpdate(socket.user.id, { isOnline: false });
+        await broadcastOnlineStatus();
+      } catch (error) {
+        console.error(
+          `Error updating isOnline to false for user ${socket.user.id}:`,
+          error
+        );
+      }
+    });
 
-// Get Enrollments Route
-app.get("/api/enrollments", protect, async (req, res) => {
-  try {
-    const enrollments = await Enrollment.find({ userId: req.user._id }).select(
-      "course status paymentProof"
-    );
-    res
-      .status(200)
-      .json({ message: "Enrollments fetched successfully", enrollments });
-  } catch (error) {
-    console.error("Error fetching enrollments:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// EJS Setup
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-
-// Routes for EJS Templates
-const renderPage = (page) => (req, res) =>
-  res.render(page, { user: req.user || null, request: req });
-
-app.get("/", renderPage("index"));
-app.get("/signup", renderPage("signup"));
-app.get("/admin", protect, restrictToAdmin, renderPage("admin"));
-app.get(
-  "/admin/feedback",
-  protect,
-  restrictToAdmin,
-  renderPage("admin/feedback")
-);
-app.get(
-  "/admin/analytics",
-  protect,
-  restrictToAdmin,
-  renderPage("admin/analytics")
-);
-app.get(
-  "/admin/messages",
-  protect,
-  restrictToAdmin,
-  renderPage("admin/messages")
-);
-app.get(
-  "/admin/announcements",
-  protect,
-  restrictToAdmin,
-  renderPage("admin/announcements")
-);
-app.get("/dashboard", protect, renderPage("dashboard"));
-app.get("/dashboard/courses", protect, renderPage("dashboard/courses"));
-app.get(
-  "/dashboard/coding-Challenge",
-  protect,
-  renderPage("dashboard/coding-Challenge")
-);
-app.get(
-  "/dashboard/practiceProject",
-  protect,
-  renderPage("dashboard/practiceProject")
-);
-app.get(
-  "/dashboard/studyMaterials",
-  protect,
-  renderPage("dashboard/studyMaterials")
-);
-app.get("/dashboard/messages", protect, renderPage("dashboard/messages"));
-app.get("/dashboard/feedback", protect, renderPage("dashboard/feedback"));
-app.get("/dashboard/feed", protect, renderPage("dashboard/feed"));
-app.get("/digital-marketing", renderPage("courses/digitalMarketing"));
-app.get(
-  "/details-digital-marketing",
-  renderPage("courses/course-details/digital-marketing")
-);
-app.get("/web-dev", renderPage("courses/webdev"));
-app.get("/frontend", renderPage("courses/course-details/frontend"));
-app.get("/backend", renderPage("courses/course-details/backend"));
-app.get("/fullstack", renderPage("courses/course-details/fullstack"));
-app.get("/ai-fundamentals", renderPage("courses/course-details/details-genai"));
-app.get("/java", renderPage("courses/course-details/java"));
-app.get("/cpp", renderPage("courses/course-details/cpp"));
-app.get("/python", renderPage("courses/course-details/python"));
-app.get("/fundamentals", renderPage("courses/course-details/fundamentals"));
-app.get("/javaScript", renderPage("courses/course-details/javaScript"));
-app.get("/programming", renderPage("courses/Programming"));
-app.get("/genai", renderPage("courses/genai"));
-app.get("/codingChallenge", renderPage("resources/CodingChallenge"));
-app.get("/practiceProject", renderPage("resources/PracticeProject"));
-app.get("/studyMaterials", renderPage("resources/StudyMaterials"));
-app.get("/expertProfiles", renderPage("team/ExpertProfile"));
-app.get("/meetTeam", renderPage("team/MeetOurTeam"));
-
-app.get("/payment", protect, (req, res) => {
-  res.render("courses/payment2", {
-    user: {
-      name: req.user.name,
-      email: req.user.email,
-      profileImage: req.user.profileImage,
-    },
-    request: req,
+    // Periodic online status broadcast
+    setInterval(broadcastOnlineStatus, 5000);
   });
-});
 
-// Start Server
-connectDB().then(() => {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-});
+  const router = require("express").Router();
+
+  router.get("/messages", async (req, res) => {
+    try {
+      const messages = await Message.find()
+        .populate("sender", "name email role profileImage")
+        .populate("receiver", "name email role profileImage")
+        .sort({ createdAt: -1 })
+        .lean();
+      res
+        .status(200)
+        .json({ message: "Messages fetched successfully", messages });
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  router.get("/call-logs", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+      if (!user || !user.isVerified) {
+        return res.status(401).json({ message: "Invalid or unverified user" });
+      }
+      const calls = await Call.find({
+        $or: [{ caller: user._id }, { receiver: user._id }],
+      })
+        .populate("caller", "name email")
+        .populate("receiver", "name email")
+        .sort({ createdAt: -1 })
+        .lean();
+      const formattedCalls = calls.map((call) => ({
+        callId: call._id.toString(),
+        caller: {
+          id: call.caller._id.toString(),
+          name: call.caller.name,
+          email: call.caller.email,
+        },
+        receiver: {
+          id: call.receiver._id.toString(),
+          name: call.receiver.name,
+          email: call.receiver.email,
+        },
+        status: call.status,
+        createdAt: call.createdAt,
+        startTime: call.startTime,
+        endTime: call.endTime,
+        duration: call.duration || 0,
+      }));
+      res.status(200).json({
+        message: "Call logs fetched successfully",
+        calls: formattedCalls,
+      });
+    } catch (error) {
+      console.error("Error fetching call logs:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  return { io, router };
+};
+
+module.exports = initializeMessaging;

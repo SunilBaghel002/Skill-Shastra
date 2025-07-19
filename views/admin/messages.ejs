@@ -25,7 +25,7 @@
       href="/images/Logo_Black_Bg-2.png"
       type="image/x-icon"
     />
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.ably.io/lib/ably.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
     <link rel="stylesheet" href="/css/styles.css" />
     <link rel="stylesheet" href="/css/sidebar.css" />
@@ -208,21 +208,6 @@
         color: gold;
       }
 
-      .user-item .call-btn {
-        background: #22c55e;
-        color: #ffffff;
-        border: none;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-        cursor: pointer;
-        margin-left: 0.5rem;
-      }
-
-      .user-item .call-btn:hover {
-        background: #16a34a;
-      }
-
       .chat-window-container {
         width: 66.67%;
         height: 100%;
@@ -303,14 +288,6 @@
 
       .action-button.back-button:hover {
         background: #4b5563;
-      }
-
-      .action-button.call-button {
-        background: #22c55e;
-      }
-
-      .action-button.call-button:hover {
-        background: #16a34a;
       }
 
       .search-bar {
@@ -744,8 +721,7 @@
       .attach-button,
       .voice-button,
       .camera-button,
-      .send-button,
-      .call-button {
+      .send-button {
         background: #4f46e5;
         color: #ffffff;
         border: none;
@@ -759,14 +735,6 @@
         transition: background 0.2s;
       }
 
-      .call-button {
-        background: #22c55e;
-      }
-
-      .voice-button.recording {
-        background: #ef4444;
-      }
-
       .attach-button:hover,
       .voice-button:hover,
       .camera-button:hover,
@@ -774,8 +742,8 @@
         background: #4338ca;
       }
 
-      .call-button:hover {
-        background: #16a34a;
+      .voice-button.recording {
+        background: #ef4444;
       }
 
       .voice-button.recording:hover {
@@ -891,149 +859,6 @@
         background: #4b5563;
       }
 
-      .call-modal {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #ffffff;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        text-align: center;
-      }
-
-      .call-modal.active {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .call-modal h3 {
-        font-size: 1.25rem;
-        color: #1f2937;
-        margin: 0;
-      }
-
-      .call-modal .button-container {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-      }
-
-      .call-modal button {
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 4px;
-        font-size: 0.875rem;
-        cursor: pointer;
-      }
-
-      .call-modal #acceptCall {
-        background: #22c55e;
-        color: #ffffff;
-      }
-
-      .call-modal #acceptCall:hover {
-        background: #16a34a;
-      }
-
-      .call-modal #rejectCall {
-        background: #ef4444;
-        color: #ffffff;
-      }
-
-      .call-modal #rejectCall:hover {
-        background: #dc2626;
-      }
-
-      .call-interface {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: #ffffff;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        z-index: 1000;
-        text-align: center;
-        max-width: 400px;
-        width: 90%;
-      }
-
-      .call-interface.active {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .call-interface h3 {
-        font-size: 1.5rem;
-        color: #1f2937;
-        margin: 0;
-      }
-
-      .call-interface #callStatus {
-        font-size: 1rem;
-        color: #6b7280;
-      }
-
-      .call-interface #callStatus.connected {
-        color: #22c55e;
-      }
-
-      .call-interface #callTimer {
-        font-size: 1rem;
-        color: #1f2937;
-        font-weight: 600;
-      }
-
-      .call-interface .button-container {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-      }
-
-      .call-interface button {
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 4px;
-        font-size: 0.875rem;
-        cursor: pointer;
-      }
-
-      .call-interface #muteButton {
-        background: #4f46e5;
-        color: #ffffff;
-      }
-
-      .call-interface #muteButton:hover {
-        background: #4338ca;
-      }
-
-      .call-interface #muteButton.muted {
-        background: #6b7280;
-      }
-
-      .call-interface #muteButton.muted:hover {
-        background: #4b5563;
-      }
-
-      .call-interface #endCallButton {
-        background: #ef4444;
-        color: #ffffff;
-      }
-
-      .call-interface #endCallButton:hover {
-        background: #dc2626;
-      }
-
       .toast {
         position: fixed;
         top: 20px;
@@ -1119,6 +944,18 @@
         border-radius: 8px;
       }
 
+      .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #6b7280;
+        margin-left: 0.5rem;
+      }
+
+      .status-indicator.online {
+        background: #22c55e;
+      }
+
       @media (max-width: 768px) {
         body {
           margin-left: 0;
@@ -1170,12 +1007,6 @@
           width: 95%;
           max-width: 350px;
         }
-
-        .call-modal,
-        .call-interface {
-          width: 90%;
-          max-width: 350px;
-        }
       }
 
       @media (min-width: 769px) {
@@ -1210,21 +1041,7 @@
             <div class="category-tab active" data-category="all">All</div>
             <div class="category-tab" data-category="unread">Unread</div>
           </div>
-          <div class="user-list" id="userList">
-            <!-- Sample user item for reference -->
-            <div class="user-item" data-user-id="sample-user-id">
-              <img
-                src="https://www.gravatar.com/avatar/?d=retro"
-                alt="User avatar"
-              />
-              <div class="user-info">
-                <h3>Sample User</h3>
-                <p>Last message preview...</p>
-              </div>
-              <span class="message-time">12:00</span>
-              <span class="unread-count">2</span>
-            </div>
-          </div>
+          <div class="user-list" id="userList"></div>
         </div>
         <div class="chat-window-container" id="chatWindowContainer">
           <div class="chat-header">
@@ -1256,16 +1073,12 @@
                   placeholder="Search messages..."
                 />
               </div>
-              <button class="action-button call-button" id="callButton">
-                <span class="material-icons">phone</span>
-              </button>
               <button class="action-button" id="moreOptions">
                 <span class="material-icons">more_vert</span>
               </button>
               <div class="dropdown-menu" id="dropdownMenu">
                 <button id="clearChatsBtn">Clear Chats</button>
                 <button id="viewProfileBtn">View Profile</button>
-                <button id="callLogsBtn">Call Logs</button>
               </div>
             </div>
           </div>
@@ -1361,59 +1174,12 @@
           </div>
         </div>
       </div>
-      <div id="callModal" class="call-modal">
-        <h3 id="callerName">Incoming Call</h3>
-        <div class="button-container">
-          <button id="acceptCall">Accept</button>
-          <button id="rejectCall">Reject</button>
-        </div>
-      </div>
-      <div id="callInterface" class="call-interface">
-        <h3 id="callInterfaceName">Call in Progress</h3>
-        <p id="callStatus">Waiting...</p>
-        <p id="callTimer">00:00:00</p>
-        <div class="button-container">
-          <button id="muteButton">Mute</button>
-          <button id="endCallButton">End Call</button>
-        </div>
-      </div>
-      <div id="callLogsModal" class="modal">
-        <div class="modal-content" style="max-width: 600px; width: 90%">
-          <h2>Call Logs</h2>
-          <table
-            style="width: 100%; border-collapse: collapse; margin-bottom: 1rem"
-          >
-            <thead>
-              <tr style="background: #f3f4f6">
-                <th style="padding: 0.5rem; text-align: left">Caller</th>
-                <th style="padding: 0.5rem; text-align: left">Receiver</th>
-                <th style="padding: 0.5rem; text-align: left">Time</th>
-                <th style="padding: 0.5rem; text-align: left">Duration</th>
-                <th style="padding: 0.5rem; text-align: left">Status</th>
-              </tr>
-            </thead>
-            <tbody id="callLogsTable"></tbody>
-          </table>
-          <button
-            id="closeCallLogsModal"
-            style="
-              background: #4f46e5;
-              color: #ffffff;
-              padding: 0.5rem 1rem;
-              border: none;
-              border-radius: 4px;
-              cursor: pointer;
-            "
-          >
-            Close
-          </button>
-        </div>
-      </div>
     </main>
 
     <script src="/js/sidebar.js"></script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Authentication and Authorization
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         const token = localStorage.getItem("token");
         const userId = "<%= user._id || '' %>";
@@ -1435,14 +1201,38 @@
           return;
         }
 
-        const socket = io(window.location.origin, {
-          auth: { token },
-          transports: ["websocket", "polling"],
-          reconnection: true,
-          reconnectionAttempts: 15,
-          reconnectionDelay: 500,
-          maxHttpBufferSize: 10 * 1024 * 1024,
-        });
+        // Initialize Ably
+        let ably;
+        try {
+          const response = await fetch("/api/messaging/ably-auth", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const tokenRequest = await response.json();
+          if (!response.ok) {
+            throw new Error(
+              tokenRequest.message || "Failed to authenticate with Ably"
+            );
+          }
+          ably = new Ably.Realtime({
+            authCallback: async (tokenParams, callback) => {
+              try {
+                const authResponse = await fetch("/api/messaging/ably-auth", {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const authData = await authResponse.json();
+                if (!authResponse.ok) {
+                  throw new Error(authData.message || "Failed to authenticate");
+                }
+                callback(null, authData);
+              } catch (error) {
+                callback(error, null);
+              }
+            },
+          });
+        } catch (error) {
+          showToast("Failed to connect to Ably: " + error.message);
+          return;
+        }
 
         // DOM Elements
         const userList = document.getElementById("userList");
@@ -1466,7 +1256,6 @@
         const dropdownMenu = document.getElementById("dropdownMenu");
         const clearChatsBtn = document.getElementById("clearChatsBtn");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
-        const callLogsBtn = document.getElementById("callLogsBtn");
         const profileModal = document.getElementById("profileModal");
         const closeModal = document.getElementById("closeModal");
         const imageModal = document.getElementById("imageModal");
@@ -1489,19 +1278,6 @@
         const capturePhoto = document.getElementById("capturePhoto");
         const sendPhoto = document.getElementById("sendPhoto");
         const cancelCamera = document.getElementById("cancelCamera");
-        const callButton = document.getElementById("callButton");
-        const callModal = document.getElementById("callModal");
-        const callerName = document.getElementById("callerName");
-        const acceptCall = document.getElementById("acceptCall");
-        const rejectCall = document.getElementById("rejectCall");
-        const callInterface = document.getElementById("callInterface");
-        const callInterfaceName = document.getElementById("callInterfaceName");
-        const callStatus = document.getElementById("callStatus");
-        const callTimer = document.getElementById("callTimer");
-        const muteButton = document.getElementById("muteButton");
-        const endCallButton = document.getElementById("endCallButton");
-        const closeCallLogsModal =
-          document.getElementById("closeCallLogsModal");
 
         // State Variables
         let selectedUserId = localStorage.getItem("selectedUserId") || null;
@@ -1512,48 +1288,18 @@
         let isSending = false;
         let currentMessages = [];
         let audioElements = new Map();
-        let peerConnection = null;
-        let localStream = null;
-        let remoteStream = null;
-        let isMuted = false;
-        let callStartTime = null;
-        let callTimerInterval = null;
-        let iceCandidateQueue = [];
         let typingTimeout = null;
         const speedOptions = [1, 1.2, 1.5, 2];
-        const webrtcConfig = {
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" },
-          ],
-        };
         let onlineUsers = new Set();
-        let lastStatusUpdate = 0;
         const MAX_RETRIES = 3;
         const RETRY_DELAY = 2000;
 
-        // Polling for messages and users as a fallback
+        // Polling for users as a fallback
         setInterval(() => {
-          if (selectedUserId) {
-            socket.emit(
-              "getMessages",
-              { userId: selectedUserId },
-              (response) => {
-                if (response.status === "success") {
-                  currentMessages = response.messages;
-                  displayMessages(response.messages);
-                }
-              }
-            );
-          }
-          socket.emit("getUsers", updateUserList);
+          fetchUsers();
         }, 10000);
 
-        // Periodically ensure socket room membership
-        setInterval(() => {
-          socket.emit("rejoinRooms", { userId });
-        }, 5000);
-
+        // Utility Functions
         function showToast(message, duration = 3000) {
           const toast = document.getElementById("toast");
           if (toast) {
@@ -1593,67 +1339,6 @@
             console.error("Error formatting time:", err);
             return "Unknown Time";
           }
-        }
-
-        function formatCallTime(seconds) {
-          try {
-            const hrs = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${hrs.toString().padStart(2, "0")}:${mins
-              .toString()
-              .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-          } catch (err) {
-            console.error("Error formatting call time:", err);
-            return "00:00:00";
-          }
-        }
-
-        function startCallTimer() {
-          callStartTime = Date.now();
-          callTimerInterval = setInterval(() => {
-            if (callTimer) {
-              const seconds = Math.floor((Date.now() - callStartTime) / 1000);
-              callTimer.textContent = formatCallTime(seconds);
-            }
-          }, 1000);
-        }
-
-        function stopCallTimer() {
-          if (callTimerInterval) {
-            clearInterval(callTimerInterval);
-            callTimerInterval = null;
-          }
-          if (callTimer) {
-            callTimer.textContent = "00:00:00";
-          }
-        }
-
-        function displayCallLogs(logs) {
-          const callLogsTable = document.getElementById("callLogsTable");
-          callLogsTable.innerHTML = "";
-          logs.forEach((log) => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-              <td style="padding: 0.5rem;">${DOMPurify.sanitize(
-                log.caller.name
-              )}</td>
-              <td style="padding: 0.5rem;">${DOMPurify.sanitize(
-                log.receiver.name
-              )}</td>
-              <td style="padding: 0.5rem;">${formatMessageTime(
-                log.createdAt
-              )}</td>
-              <td style="padding: 0.5rem;">${formatCallTime(
-                log.duration || 0
-              )}</td>
-              <td style="padding: 0.5rem;">${DOMPurify.sanitize(
-                log.status
-              )}</td>
-            `;
-            callLogsTable.appendChild(row);
-          });
-          callLogsModal.style.display = "flex";
         }
 
         function debounce(func, wait) {
@@ -1895,82 +1580,31 @@
           });
         }
 
-        function closeCallModal() {
-          if (callModal) {
-            callModal.classList.remove("active");
-            callerName.textContent = "Incoming Call";
-            callModal.dataset.callerId = "";
-            callModal.dataset.offer = "";
-            callModal.dataset.callId = "";
-          }
-        }
-
-        function endCall(status = "ended") {
-          let duration = 0;
-          if (callStartTime) {
-            duration = Math.floor((Date.now() - callStartTime) / 1000);
-          }
-          if (peerConnection) {
-            socket.emit(
-              "endCall",
-              { to: selectedUserId, callId: peerConnection.callId, duration },
-              (response) => {
-                if (response.status === "error") {
-                  showToast("Failed to end call: " + response.message);
-                }
-              }
+        async function fetchUsers(query = "") {
+          try {
+            const response = await fetch(
+              `/api/messaging/users${
+                query ? `?query=${encodeURIComponent(query)}` : ""
+              }`,
+              { headers: { Authorization: `Bearer ${token}` } }
             );
-            peerConnection.close();
-            peerConnection = null;
+            const data = await response.json();
+            if (data.status === "success") {
+              updateUserList({ users: data.users });
+            } else {
+              showToast("Failed to fetch users: " + data.message);
+            }
+          } catch (error) {
+            showToast("Error fetching users: " + error.message);
           }
-          if (localStream) {
-            localStream.getTracks().forEach((track) => track.stop());
-            localStream = null;
-          }
-          if (remoteStream) {
-            remoteStream.getTracks().forEach((track) => track.stop());
-            remoteStream = null;
-          }
-          if (callInterface) {
-            callInterface.classList.remove("active");
-          }
-          if (muteButton) {
-            muteButton.textContent = "Mute";
-            muteButton.classList.remove("muted");
-          }
-          isMuted = false;
-          stopCallTimer();
-          document
-            .querySelectorAll("audio.webrtc")
-            .forEach((audio) => audio.remove());
-          iceCandidateQueue = [];
         }
 
-        function tryResendIceCandidates(to, callId) {
-          const candidates = iceCandidateQueue.filter(
-            (c) => c.to === to && c.callId === callId
-          );
-          iceCandidateQueue = iceCandidateQueue.filter(
-            (c) => c.to !== to || c.callId !== callId
-          );
-          candidates.forEach(({ candidate }) => {
-            socket.emit(
-              "iceCandidate",
-              { to, candidate, callId },
-              (response) => {
-                if (response.status !== "success") {
-                  console.error("Retry ICE candidate error:", response.message);
-                  if (response.message === "Receiver is not online") {
-                    showToast("Receiver is offline.");
-                    endCall("failed");
-                  }
-                }
-              }
-            );
-          });
-        }
-
-        function retryMessage(messageId, content, messageType, fileMetadata) {
+        async function retryMessage(
+          messageId,
+          content,
+          messageType,
+          fileMetadata
+        ) {
           const messageElement = document.getElementById(
             `message-${messageId}`
           );
@@ -1982,7 +1616,7 @@
           sendMessage(content, messageType, fileMetadata, 0, messageId);
         }
 
-        function sendMessage(
+        async function sendMessage(
           content,
           messageType = "text",
           fileMetadata = {},
@@ -2017,105 +1651,103 @@
             );
           }
 
-          socket.emit("getUsers", (response) => {
-            if (response.status === "success") {
-              const selectedUser = response.users.find(
-                (u) => u._id === selectedUserId
-              );
-              if (selectedUser) {
-                if (
-                  messageType === "image" ||
-                  messageType === "audio" ||
-                  messageType === "document"
-                ) {
-                  const base64Size = (content.length * 3) / 4 / 1024 / 1024;
-                  if (base64Size > 5) {
-                    showToast(`${messageType} size exceeds 5MB.`);
-                    sentMessageIds.delete(tempMessageId);
-                    isSending = false;
-                    document
-                      .getElementById(`message-${tempMessageId}`)
-                      ?.remove();
-                    return;
-                  }
-                }
+          try {
+            const response = await fetch(`/api/messaging/users`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const userData = await response.json();
+            if (userData.status !== "success") {
+              throw new Error("Failed to verify user: " + userData.message);
+            }
+            const selectedUser = userData.users.find(
+              (u) => u._id === selectedUserId
+            );
+            if (!selectedUser) {
+              throw new Error("Selected user not found.");
+            }
 
-                socket.emit(
-                  "sendMessage",
-                  {
-                    receiverId: selectedUserId,
-                    content,
-                    messageType,
-                    fileName: fileMetadata.fileName || "file",
-                    fileSize: fileMetadata.fileSize || 0,
-                    fileType: fileMetadata.fileType || "",
-                  },
-                  (response) => {
-                    isSending = false;
-                    if (response.status === "success") {
-                      messageInput.value = "";
-                      imageInput.value = "";
-                      audioInput.value = "";
-                      documentInput.value = "";
-                      sentMessageIds.delete(tempMessageId);
-                      document
-                        .getElementById(`message-${tempMessageId}`)
-                        ?.remove();
-                      socket.emit(
-                        "getMessages",
-                        { userId: selectedUserId },
-                        (msgResponse) => {
-                          if (msgResponse.status === "success") {
-                            currentMessages = msgResponse.messages;
-                            displayMessages(msgResponse.messages);
-                          } else {
-                            showToast(
-                              "Failed to refresh messages: " +
-                                msgResponse.message
-                            );
-                          }
-                        }
-                      );
-                    } else {
-                      showToast(
-                        `Failed to send ${messageType}: ${response.message}`
-                      );
-                      updateMessageStatus(tempMessageId, "failed");
-                      if (retryCount < MAX_RETRIES) {
-                        setTimeout(
-                          () =>
-                            sendMessage(
-                              content,
-                              messageType,
-                              fileMetadata,
-                              retryCount + 1,
-                              tempMessageId
-                            ),
-                          RETRY_DELAY
-                        );
-                      } else {
-                        showToast(
-                          `Failed to send ${messageType} after ${MAX_RETRIES} attempts`
-                        );
-                      }
-                    }
-                  }
-                );
-              } else {
-                showToast("Selected user not found.");
+            if (
+              messageType === "image" ||
+              messageType === "audio" ||
+              messageType === "document"
+            ) {
+              const base64Size = (content.length * 3) / 4 / 1024 / 1024;
+              if (base64Size > 5) {
+                showToast(`${messageType} size exceeds 5MB.`);
                 sentMessageIds.delete(tempMessageId);
                 isSending = false;
-                updateMessageStatus(tempMessageId, "failed");
+                document.getElementById(`message-${tempMessageId}`)?.remove();
+                return;
+              }
+            }
+
+            const sendResponse = await fetch("/api/messaging/send-message", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                receiverId: selectedUserId,
+                content,
+                messageType,
+                fileName: fileMetadata.fileName || "file",
+                fileSize: fileMetadata.fileSize || 0,
+                fileType: fileMetadata.fileType || "",
+              }),
+            });
+            const sendData = await sendResponse.json();
+            isSending = false;
+            if (sendData.status === "success") {
+              messageInput.value = "";
+              imageInput.value = "";
+              audioInput.value = "";
+              documentInput.value = "";
+              sentMessageIds.delete(tempMessageId);
+              document.getElementById(`message-${tempMessageId}`)?.remove();
+              const messagesResponse = await fetch(
+                `/api/messaging/messages/${selectedUserId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              const messagesData = await messagesResponse.json();
+              if (messagesData.status === "success") {
+                currentMessages = messagesData.messages;
+                displayMessages(messagesData.messages);
+              } else {
+                showToast(
+                  "Failed to refresh messages: " + messagesData.message
+                );
               }
             } else {
-              showToast("Failed to verify user: " + response.message);
-              sentMessageIds.delete(tempMessageId);
-              isSending = false;
-              updateMessageStatus(tempMessageId, "failed");
+              throw new Error(
+                `Failed to send ${messageType}: ${sendData.message}`
+              );
             }
-          });
+          } catch (error) {
+            isSending = false;
+            showToast(error.message);
+            updateMessageStatus(tempMessageId, "failed");
+            if (retryCount < MAX_RETRIES) {
+              setTimeout(
+                () =>
+                  sendMessage(
+                    content,
+                    messageType,
+                    fileMetadata,
+                    retryCount + 1,
+                    tempMessageId
+                  ),
+                RETRY_DELAY
+              );
+            } else {
+              showToast(
+                `Failed to send ${messageType} after ${MAX_RETRIES} attempts`
+              );
+            }
+          }
         }
 
+        // Event Listeners
         sendButton.addEventListener(
           "click",
           debounce(() => sendMessage(messageInput.value.trim()), 300)
@@ -2123,10 +1755,13 @@
 
         messageInput.addEventListener("input", () => {
           if (selectedUserId) {
-            socket.emit("typing", { to: selectedUserId, isTyping: true });
+            const channel = ably.channels.get(
+              `chat:${[userId, selectedUserId].sort().join(":")}`
+            );
+            channel.publish("typing", { senderId: userId, isTyping: true });
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
-              socket.emit("typing", { to: selectedUserId, isTyping: false });
+              channel.publish("typing", { senderId: userId, isTyping: false });
             }, 2000);
           }
         });
@@ -2139,7 +1774,7 @@
         });
 
         attachButton.addEventListener("click", () => {
-          if (fileMenu) fileMenu.classList.toggle("active");
+          fileMenu.classList.toggle("active");
         });
 
         document.addEventListener("click", (e) => {
@@ -2165,35 +1800,22 @@
           ) {
             dropdownMenu.classList.remove("active");
           }
-          if (
-            callLogsModal &&
-            !callLogsModal.contains(e.target) &&
-            callLogsModal.style.display === "flex"
-          ) {
-            callLogsModal.style.display = "none";
-          }
         });
 
-        if (photoOption) {
-          photoOption.addEventListener("click", () => {
-            fileMenu.classList.remove("active");
-            imageInput.click();
-          });
-        }
+        photoOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          imageInput.click();
+        });
 
-        if (documentOption) {
-          documentOption.addEventListener("click", () => {
-            fileMenu.classList.remove("active");
-            documentInput.click();
-          });
-        }
+        documentOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          documentInput.click();
+        });
 
-        if (audioOption) {
-          audioOption.addEventListener("click", () => {
-            fileMenu.classList.remove("active");
-            audioInput.click();
-          });
-        }
+        audioOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          audioInput.click();
+        });
 
         let cameraStreamObj = null;
         function closeCameraModal() {
@@ -2201,383 +1823,306 @@
             cameraStreamObj.getTracks().forEach((track) => track.stop());
             cameraStreamObj = null;
           }
-          if (cameraStream) cameraStream.style.display = "none";
-          if (cameraPreview) cameraPreview.style.display = "none";
-          if (cameraPreview) cameraPreview.src = "";
-          if (capturePhoto) capturePhoto.style.display = "block";
-          if (sendPhoto) sendPhoto.style.display = "none";
-          if (cancelCamera) cancelCamera.style.display = "block";
-          if (cameraModal) cameraModal.style.display = "none";
+          cameraStream.style.display = "none";
+          cameraPreview.style.display = "none";
+          cameraPreview.src = "";
+          capturePhoto.style.display = "block";
+          sendPhoto.style.display = "none";
+          cancelCamera.style.display = "block";
+          cameraModal.style.display = "none";
         }
 
-        if (cameraButton) {
-          cameraButton.addEventListener("click", () => {
-            if (
-              !navigator.mediaDevices ||
-              !navigator.mediaDevices.getUserMedia
-            ) {
-              showToast("Camera is not supported in this browser.");
+        cameraButton.addEventListener("click", () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Camera is not supported in this browser.");
+            return;
+          }
+          navigator.mediaDevices
+            .getUserMedia({
+              video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+            })
+            .then((stream) => {
+              cameraStreamObj = stream;
+              cameraStream.srcObject = stream;
+              cameraStream.style.display = "block";
+              cameraPreview.style.display = "none";
+              capturePhoto.style.display = "block";
+              sendPhoto.style.display = "none";
+              cancelCamera.style.display = "block";
+              cameraModal.style.display = "flex";
+            })
+            .catch((err) => {
+              showToast("Failed to access camera: " + err.message);
+            });
+        });
+
+        capturePhoto.addEventListener("click", () => {
+          const context = cameraCanvas.getContext("2d");
+          cameraCanvas.width = cameraStream.videoWidth;
+          cameraCanvas.height = cameraStream.videoHeight;
+          context.drawImage(
+            cameraStream,
+            0,
+            0,
+            cameraCanvas.width,
+            cameraCanvas.height
+          );
+          cameraPreview.src = cameraCanvas.toDataURL("image/jpeg", 0.8);
+          cameraStream.style.display = "none";
+          cameraPreview.style.display = "block";
+          capturePhoto.style.display = "none";
+          sendPhoto.style.display = "block";
+          cancelCamera.style.display = "block";
+        });
+
+        sendPhoto.addEventListener("click", () => {
+          const base64 = cameraPreview.src;
+          const fileSize = (base64.length * 3) / 4;
+          sendMessage(base64, "image", {
+            fileName: `photo_${Date.now()}.jpg`,
+            fileSize: fileSize,
+            fileType: "image/jpeg",
+          });
+          closeCameraModal();
+        });
+
+        cancelCamera.addEventListener("click", closeCameraModal);
+
+        imageInput.addEventListener("change", () => {
+          const file = imageInput.files[0];
+          if (file) {
+            if (!["image/png", "image/jpeg"].includes(file.type)) {
+              showToast("Only PNG and JPEG images are allowed.");
               return;
             }
-            navigator.mediaDevices
-              .getUserMedia({
-                video: {
-                  facingMode: { ideal: "environment" },
-                  width: { ideal: 1280 },
-                  height: { ideal: 720 },
-                },
-              })
-              .then((stream) => {
-                cameraStreamObj = stream;
-                if (cameraStream) {
-                  cameraStream.srcObject = stream;
-                  cameraStream.style.display = "block";
-                }
-                if (cameraPreview) cameraPreview.style.display = "none";
-                if (capturePhoto) capturePhoto.style.display = "block";
-                if (sendPhoto) sendPhoto.style.display = "none";
-                if (cancelCamera) cancelCamera.style.display = "block";
-                if (cameraModal) cameraModal.style.display = "flex";
-              })
-              .catch((err) => {
-                showToast("Failed to access camera: " + err.message);
-              });
-          });
-        }
-
-        if (capturePhoto) {
-          capturePhoto.addEventListener("click", () => {
-            if (cameraCanvas && cameraStream) {
-              const context = cameraCanvas.getContext("2d");
-              cameraCanvas.width = cameraStream.videoWidth;
-              cameraCanvas.height = cameraStream.videoHeight;
-              context.drawImage(
-                cameraStream,
-                0,
-                0,
-                cameraCanvas.width,
-                cameraCanvas.height
-              );
-              if (cameraPreview) {
-                cameraPreview.src = cameraCanvas.toDataURL("image/jpeg", 0.8);
-                cameraStream.style.display = "none";
-                cameraPreview.style.display = "block";
-                capturePhoto.style.display = "none";
-                sendPhoto.style.display = "block";
-                cancelCamera.style.display = "block";
-              }
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Image size must be less than 5MB.");
+              return;
             }
-          });
-        }
-
-        if (sendPhoto) {
-          sendPhoto.addEventListener("click", () => {
-            if (cameraPreview) {
-              const base64 = cameraPreview.src;
-              const fileSize = (base64.length * 3) / 4;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
               sendMessage(base64, "image", {
-                fileName: `photo_${Date.now()}.jpg`,
-                fileSize: fileSize,
-                fileType: "image/jpeg",
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
               });
-              closeCameraModal();
-            }
-          });
-        }
+            };
+            reader.onerror = () => {
+              showToast("Failed to read image file.");
+            };
+            reader.readAsDataURL(file);
+          }
+        });
 
-        if (cancelCamera) {
-          cancelCamera.addEventListener("click", closeCameraModal);
-        }
-
-        if (imageInput) {
-          imageInput.addEventListener("change", () => {
-            const file = imageInput.files[0];
-            if (file) {
-              if (!["image/png", "image/jpeg"].includes(file.type)) {
-                showToast("Only PNG and JPEG images are allowed.");
-                return;
-              }
-              if (file.size > 5 * 1024 * 1024) {
-                showToast("Image size must be less than 5MB.");
-                return;
-              }
-              const reader = new FileReader();
-              reader.onload = () => {
-                const base64 = reader.result;
-                sendMessage(base64, "image", {
-                  fileName: file.name,
-                  fileSize: file.size,
-                  fileType: file.type,
-                });
-              };
-              reader.onerror = () => {
-                showToast("Failed to read image file.");
-              };
-              reader.readAsDataURL(file);
-            }
-          });
-        }
-
-        if (audioInput) {
-          audioInput.addEventListener("change", () => {
-            const file = audioInput.files[0];
-            if (file) {
-              if (
-                !["audio/mpeg", "audio/wav", "audio/webm"].includes(file.type)
-              ) {
-                showToast("Only MP3, WAV, and WebM audio files are allowed.");
-                return;
-              }
-              if (file.size > 5 * 1024 * 1024) {
-                showToast("Audio size must be less than 5MB.");
-                return;
-              }
-              const reader = new FileReader();
-              reader.onload = () => {
-                const base64 = reader.result;
-                sendMessage(base64, "audio", {
-                  fileName: file.name,
-                  fileSize: file.size,
-                  fileType: file.type,
-                });
-              };
-              reader.onerror = () => {
-                showToast("Failed to read audio file.");
-              };
-              reader.readAsDataURL(file);
-            }
-          });
-        }
-
-        if (documentInput) {
-          documentInput.addEventListener("change", () => {
-            const file = documentInput.files[0];
-            if (file) {
-              if (
-                ![
-                  "application/pdf",
-                  "application/msword",
-                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                ].includes(file.type)
-              ) {
-                showToast("Only PDF, DOC, and DOCX files are allowed.");
-                return;
-              }
-              if (file.size > 5 * 1024 * 1024) {
-                showToast("Document size must be less than 5MB.");
-                return;
-              }
-              const reader = new FileReader();
-              reader.onload = () => {
-                const base64 = reader.result;
-                sendMessage(base64, "document", {
-                  fileName: file.name,
-                  fileSize: file.size,
-                  fileType: file.type,
-                });
-              };
-              reader.onerror = () => {
-                showToast("Failed to read document file.");
-              };
-              reader.readAsDataURL(file);
-            }
-          });
-        }
-
-        if (voiceButton) {
-          voiceButton.addEventListener("mousedown", () => {
+        audioInput.addEventListener("change", () => {
+          const file = audioInput.files[0];
+          if (file) {
             if (
-              !navigator.mediaDevices ||
-              !navigator.mediaDevices.getUserMedia
+              !["audio/mpeg", "audio/wav", "audio/webm"].includes(file.type)
             ) {
-              showToast("Voice recording is not supported in this browser.");
+              showToast("Only MP3, WAV, and WebM audio files are allowed.");
               return;
             }
-            navigator.mediaDevices
-              .getUserMedia({ audio: true })
-              .then((stream) => {
-                mediaRecorder = new MediaRecorder(stream, {
-                  mimeType: "audio/webm;codecs=opus",
-                });
-                audioChunks = [];
-                mediaRecorder.start();
-                voiceButton.classList.add("recording");
-                mediaRecorder.ondataavailable = (e) => {
-                  if (e.data.size > 0) {
-                    audioChunks.push(e.data);
-                  }
-                };
-                mediaRecorder.onstop = () => {
-                  const audioBlob = new Blob(audioChunks, {
-                    type: "audio/webm",
-                  });
-                  if (audioBlob.size > 5 * 1024 * 1024) {
-                    showToast("Voice message size must be less than 5MB.");
-                    stream.getTracks().forEach((track) => track.stop());
-                    voiceButton.classList.remove("recording");
-                    return;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const base64 = reader.result;
-                    sendMessage(base64, "audio", {
-                      fileName: `voice_${Date.now()}.webm`,
-                      fileSize: audioBlob.size,
-                      fileType: "audio/webm",
-                    });
-                  };
-                  reader.onerror = () => {
-                    showToast("Failed to process voice message.");
-                  };
-                  reader.readAsDataURL(audioBlob);
-                  stream.getTracks().forEach((track) => track.stop());
-                  voiceButton.classList.remove("recording");
-                };
-                mediaRecorder.onerror = (e) => {
-                  showToast("Error recording audio: " + e.error);
-                  stream.getTracks().forEach((track) => track.stop());
-                  voiceButton.classList.remove("recording");
-                };
-              })
-              .catch((err) => {
-                showToast("Failed to access microphone: " + err.message);
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Audio size must be less than 5MB.");
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "audio", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
               });
-          });
+            };
+            reader.onerror = () => {
+              showToast("Failed to read audio file.");
+            };
+            reader.readAsDataURL(file);
+          }
+        });
 
-          voiceButton.addEventListener("mouseup", () => {
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-              mediaRecorder.stop();
+        documentInput.addEventListener("change", () => {
+          const file = documentInput.files[0];
+          if (file) {
+            if (
+              ![
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ].includes(file.type)
+            ) {
+              showToast("Only PDF, DOC, and DOCX files are allowed.");
+              return;
             }
-          });
-
-          voiceButton.addEventListener("mouseleave", () => {
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-              mediaRecorder.stop();
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Document size must be less than 5MB.");
+              return;
             }
-          });
-        }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "document", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+              });
+            };
+            reader.onerror = () => {
+              showToast("Failed to read document file.");
+            };
+            reader.readAsDataURL(file);
+          }
+        });
 
-        if (moreOptions) {
-          moreOptions.addEventListener("click", () => {
-            dropdownMenu.classList.toggle("active");
-          });
-        }
+        voiceButton.addEventListener("mousedown", () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Voice recording is not supported in this browser.");
+            return;
+          }
+          navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then((stream) => {
+              mediaRecorder = new MediaRecorder(stream, {
+                mimeType: "audio/webm;codecs=opus",
+              });
+              audioChunks = [];
+              mediaRecorder.start();
+              voiceButton.classList.add("recording");
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                  audioChunks.push(e.data);
+                }
+              };
+              mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, {
+                  type: "audio/webm",
+                });
+                if (audioBlob.size > 5 * 1024 * 1024) {
+                  showToast("Voice message size must be less than 5MB.");
+                  stream.getTracks().forEach((track) => track.stop());
+                  voiceButton.classList.remove("recording");
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const base64 = reader.result;
+                  sendMessage(base64, "audio", {
+                    fileName: `voice_${Date.now()}.webm`,
+                    fileSize: audioBlob.size,
+                    fileType: "audio/webm",
+                  });
+                };
+                reader.onerror = () => {
+                  showToast("Failed to process voice message.");
+                };
+                reader.readAsDataURL(audioBlob);
+                stream.getTracks().forEach((track) => track.stop());
+                voiceButton.classList.remove("recording");
+              };
+              mediaRecorder.onerror = (e) => {
+                showToast("Error recording audio: " + e.error);
+                stream.getTracks().forEach((track) => track.stop());
+                voiceButton.classList.remove("recording");
+              };
+            })
+            .catch((err) => {
+              showToast("Failed to access microphone: " + err.message);
+            });
+        });
 
-        if (clearChatsBtn) {
-          clearChatsBtn.addEventListener("click", () => {
-            if (selectedUserId) {
-              if (
-                confirm("Are you sure you want to clear chats with this user?")
-              ) {
-                socket.emit(
-                  "clearChats",
-                  { userId: selectedUserId },
-                  (response) => {
-                    if (response.status === "success") {
-                      showToast("Chats cleared successfully");
-                      chatWindow.innerHTML = "";
-                      chatWindow.dataset.lastDate = null;
-                      socket.emit("getUsers", updateUserList);
-                    } else {
-                      showToast("Failed to clear chats: " + response.message);
-                    }
-                  }
-                );
+        voiceButton.addEventListener("mouseup", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+        });
+
+        voiceButton.addEventListener("mouseleave", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+        });
+
+        moreOptions.addEventListener("click", () => {
+          dropdownMenu.classList.toggle("active");
+        });
+
+        clearChatsBtn.addEventListener("click", async () => {
+          if (selectedUserId) {
+            if (
+              confirm("Are you sure you want to clear chats with this user?")
+            ) {
+              try {
+                const response = await fetch("/api/messaging/clear-chats", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ userId: selectedUserId }),
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                  showToast("Chats cleared successfully");
+                  chatWindow.innerHTML = "";
+                  chatWindow.dataset.lastDate = null;
+                  fetchUsers();
+                } else {
+                  showToast("Failed to clear chats: " + data.message);
+                }
+              } catch (error) {
+                showToast("Error clearing chats: " + error.message);
               }
-            } else {
-              showToast("Please select a user.");
             }
-          });
-        }
+          } else {
+            showToast("Please select a user.");
+          }
+        });
 
-        if (viewProfileBtn) {
-          viewProfileBtn.addEventListener("click", () => {
-            if (selectedUserId) {
-              socket.emit(
-                "getUserProfile",
-                { userId: selectedUserId },
-                (response) => {
-                  if (response.status === "success") {
-                    if (modalAvatar && modalName && modalEmail && modalRole) {
-                      modalAvatar.src = DOMPurify.sanitize(
-                        response.user.profileImage
-                      );
-                      modalName.textContent = DOMPurify.sanitize(
-                        response.user.name
-                      );
-                      modalEmail.textContent = DOMPurify.sanitize(
-                        response.user.email
-                      );
-                      modalRole.textContent = DOMPurify.sanitize(
-                        response.user.role.charAt(0).toUpperCase() +
-                          response.user.role.slice(1)
-                      );
-                      profileModal.style.display = "flex";
-                    }
-                  } else {
-                    showToast("Failed to fetch profile: " + response.message);
-                  }
+        viewProfileBtn.addEventListener("click", async () => {
+          if (selectedUserId) {
+            try {
+              const response = await fetch(
+                `/api/messaging/user/${selectedUserId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
                 }
               );
-            } else {
-              showToast("Please select a user.");
+              const data = await response.json();
+              if (data.status === "success") {
+                modalAvatar.src = DOMPurify.sanitize(data.user.profileImage);
+                modalName.textContent = DOMPurify.sanitize(data.user.name);
+                modalEmail.textContent = DOMPurify.sanitize(data.user.email);
+                modalRole.textContent = DOMPurify.sanitize(
+                  data.user.role.charAt(0).toUpperCase() +
+                    data.user.role.slice(1)
+                );
+                profileModal.style.display = "flex";
+              } else {
+                showToast("Failed to fetch profile: " + data.message);
+              }
+            } catch (error) {
+              showToast("Error fetching profile: " + error.message);
             }
-          });
-        }
+          } else {
+            showToast("Please select a user.");
+          }
+        });
 
-        if (callLogsBtn) {
-          callLogsBtn.addEventListener("click", () => {
-            if (selectedUserId) {
-              socket.emit(
-                "getCallLogs",
-                { userId: selectedUserId },
-                (response) => {
-                  if (response.status === "success") {
-                    displayCallLogs(response.logs);
-                  } else {
-                    showToast("Failed to fetch call logs: " + response.message);
-                  }
-                }
-              );
-            } else {
-              showToast("Please select a user.");
-            }
-          });
-        }
+        closeModal.addEventListener("click", () => {
+          profileModal.style.display = "none";
+        });
 
-        if (callLogsBtn) {
-          callLogsBtn.addEventListener("click", () => {
-            if (selectedUserId) {
-              socket.emit(
-                "getCallLogs",
-                { userId: selectedUserId },
-                (response) => {
-                  if (response.status === "success") {
-                    displayCallLogs(response.logs);
-                  } else {
-                    showToast("Failed to fetch call logs: " + response.message);
-                  }
-                }
-              );
-            } else {
-              showToast("Please select a user to view call logs.");
-            }
-            dropdownMenu.classList.remove("active");
-          });
-        }
-
-        if (closeModal) {
-          closeModal.addEventListener("click", () => {
-            profileModal.style.display = "none";
-          });
-        }
-
-        if (imageModal) {
-          imageModal.addEventListener("click", () => {
-            imageModal.style.display = "none";
-            enlargedImage.src = "";
-          });
-        }
+        imageModal.addEventListener("click", () => {
+          imageModal.style.display = "none";
+          enlargedImage.src = "";
+        });
 
         chatWindow.addEventListener("click", (e) => {
           if (
@@ -2589,311 +2134,61 @@
           }
         });
 
-        if (searchButton) {
-          searchButton.addEventListener("click", () => {
-            searchMessagesBar.classList.toggle("active");
-            if (searchMessagesBar.classList.contains("active")) {
-              searchMessagesInput.focus();
+        searchButton.addEventListener("click", () => {
+          searchMessagesBar.classList.toggle("active");
+          if (searchMessagesBar.classList.contains("active")) {
+            searchMessagesInput.focus();
+          } else {
+            searchMessagesInput.value = "";
+            displayMessages(currentMessages);
+          }
+        });
+
+        searchMessagesInput.addEventListener(
+          "input",
+          debounce(() => {
+            const query = searchMessagesInput.value.trim().toLowerCase();
+            if (query) {
+              const filteredMessages = currentMessages.filter(
+                (msg) =>
+                  msg.content.toLowerCase().includes(query) ||
+                  msg.sender.name.toLowerCase().includes(query)
+              );
+              displayMessages(filteredMessages);
             } else {
-              searchMessagesInput.value = "";
               displayMessages(currentMessages);
             }
-          });
-        }
+          }, 300)
+        );
 
-        if (searchMessagesInput) {
-          searchMessagesInput.addEventListener(
-            "input",
-            debounce(() => {
-              const query = searchMessagesInput.value.trim().toLowerCase();
-              if (query) {
-                const filteredMessages = currentMessages.filter(
-                  (msg) =>
-                    msg.content.toLowerCase().includes(query) ||
-                    msg.sender.name.toLowerCase().includes(query)
-                );
-                displayMessages(filteredMessages);
-              } else {
-                displayMessages(currentMessages);
-              }
-            }, 300)
-          );
-        }
+        searchUsersInput.addEventListener(
+          "input",
+          debounce(() => {
+            const query = searchUsersInput.value.trim().toLowerCase();
+            fetchUsers(query);
+          }, 300)
+        );
 
-        if (searchUsersInput) {
-          searchUsersInput.addEventListener(
-            "input",
-            debounce(() => {
-              const query = searchUsersInput.value.trim().toLowerCase();
-              socket.emit("getUsers", (response) => {
-                if (response.status === "success") {
-                  const filteredUsers = response.users.filter(
-                    (user) =>
-                      user.name.toLowerCase().includes(query) ||
-                      user.email.toLowerCase().includes(query)
-                  );
-                  updateUserList({ users: filteredUsers });
-                } else {
-                  showToast("Failed to fetch users: " + response.message);
-                }
-              });
-            }, 300)
-          );
-        }
-
-        if (backButton) {
-          backButton.addEventListener("click", () => {
-            chatWindowContainer.classList.remove("active");
-            userListContainer.style.display = "flex";
-            selectedUserId = null;
-            localStorage.removeItem("selectedUserId");
-            chatHeaderName.textContent = "Select a user";
-            chatHeaderAvatar.src = "https://www.gravatar.com/avatar/?d=retro";
-            chatWindow.innerHTML = "";
-            chatWindow.dataset.lastDate = null;
-            audioElements.forEach((audio) => audio.pause());
-            audioElements.clear();
-          });
-        }
-
-        if (callButton) {
-          callButton.addEventListener("click", () => {
-            if (!selectedUserId) {
-              showToast("Please select a user to call.");
-              return;
-            }
-            socket.emit("getUsers", (response) => {
-              if (response.status === "success") {
-                const selectedUser = response.users.find(
-                  (u) => u._id === selectedUserId
-                );
-                if (selectedUser && !onlineUsers.has(selectedUserId)) {
-                  showToast("User is offline.");
-                  return;
-                }
-                navigator.mediaDevices
-                  .getUserMedia({ audio: true })
-                  .then((stream) => {
-                    localStream = stream;
-                    peerConnection = new RTCPeerConnection(webrtcConfig);
-                    peerConnection.callId = `${Date.now()}-${Math.random()
-                      .toString(36)
-                      .substr(2, 9)}`;
-                    localStream
-                      .getTracks()
-                      .forEach((track) =>
-                        peerConnection.addTrack(track, localStream)
-                      );
-                    peerConnection.onicecandidate = (event) => {
-                      if (event.candidate) {
-                        socket.emit(
-                          "iceCandidate",
-                          {
-                            to: selectedUserId,
-                            candidate: event.candidate,
-                            callId: peerConnection.callId,
-                          },
-                          (response) => {
-                            if (response.status !== "success") {
-                              console.error(
-                                "ICE candidate error:",
-                                response.message
-                              );
-                              iceCandidateQueue.push({
-                                to: selectedUserId,
-                                candidate: event.candidate,
-                                callId: peerConnection.callId,
-                              });
-                            }
-                          }
-                        );
-                      }
-                    };
-                    peerConnection.ontrack = (event) => {
-                      remoteStream = event.streams[0];
-                      const audio = document.createElement("audio");
-                      audio.className = "webrtc";
-                      audio.srcObject = remoteStream;
-                      audio.play().catch((err) => {
-                        showToast(
-                          "Failed to play remote audio: " + err.message
-                        );
-                      });
-                      document.body.appendChild(audio);
-                    };
-                    peerConnection
-                      .createOffer()
-                      .then((offer) =>
-                        peerConnection.setLocalDescription(offer)
-                      )
-                      .then(() => {
-                        socket.emit(
-                          "callUser",
-                          {
-                            to: selectedUserId,
-                            offer: peerConnection.localDescription,
-                            callId: peerConnection.callId,
-                          },
-                          (response) => {
-                            if (response.status !== "success") {
-                              showToast(
-                                "Failed to initiate call: " + response.message
-                              );
-                              endCall("failed");
-                            } else {
-                              callInterfaceName.textContent = `Calling ${
-                                selectedUser ? selectedUser.name : "User"
-                              }`;
-                              callStatus.textContent =
-                                "Waiting for response...";
-                              callInterface.classList.add("active");
-                            }
-                          }
-                        );
-                      })
-                      .catch((err) => {
-                        showToast("Failed to create offer: " + err.message);
-                        endCall("failed");
-                      });
-                  })
-                  .catch((err) => {
-                    showToast("Failed to access microphone: " + err.message);
-                  });
-              } else {
-                showToast("Failed to verify user: " + response.message);
-              }
-            });
-          });
-        }
-
-        if (acceptCall) {
-          acceptCall.addEventListener("click", () => {
-            const callerId = callModal.dataset.callerId;
-            const offer = JSON.parse(callModal.dataset.offer);
-            const callId = callModal.dataset.callId;
-            if (!callerId || !offer || !callId) {
-              showToast("Invalid call data.");
-              closeCallModal();
-              return;
-            }
-            navigator.mediaDevices
-              .getUserMedia({ audio: true })
-              .then((stream) => {
-                localStream = stream;
-                peerConnection = new RTCPeerConnection(webrtcConfig);
-                peerConnection.callId = callId;
-                localStream
-                  .getTracks()
-                  .forEach((track) =>
-                    peerConnection.addTrack(track, localStream)
-                  );
-                peerConnection.onicecandidate = (event) => {
-                  if (event.candidate) {
-                    socket.emit(
-                      "iceCandidate",
-                      { to: callerId, candidate: event.candidate, callId },
-                      (response) => {
-                        if (response.status !== "success") {
-                          console.error(
-                            "ICE candidate error:",
-                            response.message
-                          );
-                          iceCandidateQueue.push({
-                            to: callerId,
-                            candidate: event.candidate,
-                            callId,
-                          });
-                        }
-                      }
-                    );
-                  }
-                };
-                peerConnection.ontrack = (event) => {
-                  remoteStream = event.streams[0];
-                  const audio = document.createElement("audio");
-                  audio.className = "webrtc";
-                  audio.srcObject = remoteStream;
-                  audio.play().catch((err) => {
-                    showToast("Failed to play remote audio: " + err.message);
-                  });
-                  document.body.appendChild(audio);
-                };
-                peerConnection
-                  .setRemoteDescription(new RTCSessionDescription(offer))
-                  .then(() => peerConnection.createAnswer())
-                  .then((answer) => peerConnection.setLocalDescription(answer))
-                  .then(() => {
-                    socket.emit(
-                      "answerCall",
-                      {
-                        to: callerId,
-                        answer: peerConnection.localDescription,
-                        callId,
-                      },
-                      (response) => {
-                        if (response.status === "success") {
-                          callInterfaceName.textContent = `In Call with ${callerName.textContent}`;
-                          callStatus.textContent = "Connected";
-                          callStatus.classList.add("connected");
-                          callInterface.classList.add("active");
-                          closeCallModal();
-                          startCallTimer();
-                          tryResendIceCandidates(callerId, callId);
-                        } else {
-                          showToast(
-                            "Failed to answer call: " + response.message
-                          );
-                          endCall("failed");
-                        }
-                      }
-                    );
-                  })
-                  .catch((err) => {
-                    showToast("Failed to process call: " + err.message);
-                    endCall("failed");
-                  });
-              })
-              .catch((err) => {
-                showToast("Failed to access microphone: " + err.message);
-                closeCallModal();
-              });
-          });
-        }
-
-        if (rejectCall) {
-          rejectCall.addEventListener("click", () => {
-            const callerId = callModal.dataset.callerId;
-            const callId = callModal.dataset.callId;
-            socket.emit("rejectCall", { to: callerId, callId }, (response) => {
-              if (response.status !== "success") {
-                showToast("Failed to reject call: " + response.message);
-              }
-            });
-            closeCallModal();
-          });
-        }
-
-        if (muteButton) {
-          muteButton.addEventListener("click", () => {
-            if (localStream) {
-              isMuted = !isMuted;
-              localStream.getAudioTracks().forEach((track) => {
-                track.enabled = !isMuted;
-              });
-              muteButton.textContent = isMuted ? "Unmute" : "Mute";
-              muteButton.classList.toggle("muted", isMuted);
-            }
-          });
-        }
-
-        if (endCallButton) {
-          endCallButton.addEventListener("click", () => {
-            endCall();
-          });
-        }
+        backButton.addEventListener("click", () => {
+          chatWindowContainer.classList.remove("active");
+          userListContainer.style.display = "flex";
+          selectedUserId = null;
+          localStorage.removeItem("selectedUserId");
+          chatHeaderName.textContent = "Select a user";
+          chatHeaderAvatar.src = "https://www.gravatar.com/avatar/?d=retro";
+          chatWindow.innerHTML = "";
+          chatWindow.dataset.lastDate = null;
+          audioElements.forEach((audio) => audio.pause());
+          audioElements.clear();
+          if (selectedUserId) {
+            const channel = ably.channels.get(
+              `chat:${[userId, selectedUserId].sort().join(":")}`
+            );
+            channel.detach();
+          }
+        });
 
         function updateUserList({ users }) {
-          if (!userList) return;
           userList.innerHTML = "";
           users.forEach((user) => {
             if (user._id === userId) return;
@@ -2930,18 +2225,16 @@
               }" data-user-id="${user._id}">
                 <i class="fas fa-star"></i>
               </button>
-              <button class="call-btn" data-user-id="${user._id}">Call</button>
               <span class="status-indicator${
                 onlineUsers.has(user._id) ? " online" : ""
               }"></span>
             `;
             userList.appendChild(userItem);
 
-            userItem.addEventListener("click", (e) => {
+            userItem.addEventListener("click", async (e) => {
               if (
                 e.target.classList.contains("favorite-btn") ||
-                e.target.classList.contains("fa-star") ||
-                e.target.classList.contains("call-btn")
+                e.target.classList.contains("fa-star")
               )
                 return;
               selectedUserId = user._id;
@@ -2956,51 +2249,114 @@
                 .querySelectorAll(".user-item")
                 .forEach((item) => item.classList.remove("selected"));
               userItem.classList.add("selected");
-              socket.emit(
-                "getMessages",
-                { userId: selectedUserId },
-                (response) => {
-                  if (response.status === "success") {
-                    currentMessages = response.messages;
-                    displayMessages(response.messages);
-                  } else {
-                    showToast("Failed to fetch messages: " + response.message);
+              try {
+                const response = await fetch(
+                  `/api/messaging/messages/${selectedUserId}`,
+                  {
+                    headers: { Authorization: `Bearer ${token}` },
                   }
+                );
+                const data = await response.json();
+                if (data.status === "success") {
+                  currentMessages = data.messages;
+                  displayMessages(data.messages);
+                } else {
+                  showToast("Failed to fetch messages: " + data.message);
                 }
-              );
+              } catch (error) {
+                showToast("Error fetching messages: " + error.message);
+              }
               if (window.innerWidth <= 768) {
                 chatWindowContainer.classList.add("active");
                 userListContainer.style.display = "none";
               }
+              const channel = ably.channels.get(
+                `chat:${[userId, selectedUserId].sort().join(":")}`
+              );
+              await channel.subscribe("message", (msg) => {
+                if (
+                  msg.data.sender.id === selectedUserId ||
+                  msg.data.receiver.id === selectedUserId
+                ) {
+                  currentMessages.push(msg.data);
+                  appendMessage(
+                    msg.data.sender.id === userId,
+                    msg.data.sender.name,
+                    msg.data.content,
+                    msg.data.createdAt,
+                    msg.data.messageId,
+                    msg.data.messageType || "text",
+                    msg.data.isRead,
+                    msg.data.fileMetadata,
+                    "delivered"
+                  );
+                  if (msg.data.sender.id !== userId) {
+                    fetch(`/api/messaging/messages/${selectedUserId}`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    })
+                      .then((res) => res.json())
+                      .then((data) => {
+                        if (data.status === "success") {
+                          currentMessages = data.messages;
+                          displayMessages(data.messages);
+                        }
+                      })
+                      .catch((err) =>
+                        showToast("Error updating messages: " + err.message)
+                      );
+                  }
+                }
+                fetchUsers();
+              });
+              await channel.subscribe("typing", (msg) => {
+                if (msg.data.senderId === selectedUserId && typingIndicator) {
+                  typingIndicator.classList.toggle("active", msg.data.isTyping);
+                }
+              });
+              await channel.subscribe("messageStatusUpdate", (msg) => {
+                updateMessageStatus(
+                  msg.data.messageId,
+                  msg.data.status,
+                  msg.data.isRead
+                );
+              });
+              await channel.subscribe("chatsCleared", (msg) => {
+                if (msg.data.status === "success") {
+                  chatWindow.innerHTML = "";
+                  chatWindow.dataset.lastDate = null;
+                  currentMessages = [];
+                  fetchUsers();
+                }
+              });
             });
 
             const favoriteBtn = userItem.querySelector(".favorite-btn");
-            favoriteBtn.addEventListener("click", () => {
-              socket.emit(
-                "toggleFavorite",
-                { userId: user._id },
-                (response) => {
-                  if (response.status === "success") {
-                    favoriteBtn.classList.toggle("favorite");
-                    showToast(
-                      response.isFavorite
-                        ? "Added to favorites"
-                        : "Removed from favorites"
-                    );
-                  } else {
-                    showToast(
-                      "Failed to update favorite status: " + response.message
-                    );
-                  }
+            favoriteBtn.addEventListener("click", async () => {
+              try {
+                const response = await fetch("/api/messaging/toggle-favorite", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ userId: user._id }),
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                  favoriteBtn.classList.toggle("favorite");
+                  showToast(
+                    data.isFavorite
+                      ? "Added to favorites"
+                      : "Removed from favorites"
+                  );
+                } else {
+                  showToast(
+                    "Failed to update favorite status: " + data.message
+                  );
                 }
-              );
-            });
-
-            const callBtn = userItem.querySelector(".call-btn");
-            callBtn.addEventListener("click", () => {
-              selectedUserId = user._id;
-              localStorage.setItem("selectedUserId", selectedUserId);
-              callButton.click();
+              } catch (error) {
+                showToast("Error toggling favorite: " + error.message);
+              }
             });
           });
         }
@@ -3012,196 +2368,58 @@
               .forEach((t) => t.classList.remove("active"));
             tab.classList.add("active");
             currentCategory = tab.dataset.category;
-            socket.emit("getUsers", updateUserList);
+            fetchUsers();
           });
         });
 
-        socket.on("connect", () => {
-          socket.emit("rejoinRooms", { userId });
-          socket.emit("getUsers", updateUserList);
-          if (selectedUserId) {
-            socket.emit(
-              "getMessages",
-              { userId: selectedUserId },
-              (response) => {
-                if (response.status === "success") {
-                  currentMessages = response.messages;
-                  displayMessages(response.messages);
-                } else {
-                  showToast("Failed to fetch messages: " + response.message);
+        ably.connection.on("connected", () => {
+          console.log("Connected to Ably");
+          const presenceChannel = ably.channels.get("online-status");
+          presenceChannel.presence.enter();
+          presenceChannel.subscribe("onlineStatus", (msg) => {
+            msg.data.forEach(({ userId: id, isOnline }) => {
+              if (isOnline) {
+                onlineUsers.add(id);
+              } else {
+                onlineUsers.delete(id);
+              }
+              const userItem = document.querySelector(
+                `.user-item[data-user-id="${id}"]`
+              );
+              if (userItem) {
+                const statusIndicator =
+                  userItem.querySelector(".status-indicator");
+                if (statusIndicator) {
+                  statusIndicator.classList.toggle("online", isOnline);
                 }
               }
-            );
-          }
+              if (id === selectedUserId) {
+                document.querySelector(".online-status").textContent = isOnline
+                  ? "Online"
+                  : "Offline";
+              }
+            });
+          });
         });
 
-        socket.on("connect_error", (err) => {
-          console.error("Socket connection error:", err);
-          showToast("Connection error. Retrying...");
+        ably.connection.on("disconnected", () => {
+          showToast("Disconnected from Ably. Attempting to reconnect...");
         });
 
-        socket.on("disconnect", () => {
-          showToast("Disconnected from server. Attempting to reconnect...");
+        ably.connection.on("failed", () => {
+          showToast("Failed to connect to Ably. Please try again later.");
         });
 
-        socket.on("newMessage", (message) => {
-          if (
-            message.sender._id === selectedUserId ||
-            message.receiver._id === selectedUserId
-          ) {
-            currentMessages.push(message);
-            appendMessage(
-              message.sender._id === userId,
-              message.sender.name,
-              message.content,
-              message.createdAt,
-              message._id,
-              message.messageType || "text",
-              message.isRead,
-              message.fileMetadata,
-              "delivered"
-            );
-            if (
-              message.sender._id !== userId &&
-              selectedUserId === message.sender._id
-            ) {
-              socket.emit("markMessagesAsRead", { userId: selectedUserId });
-            }
-          }
-          socket.emit("getUsers", updateUserList);
-        });
-
-        socket.on("messageStatusUpdate", ({ messageId, status, isRead }) => {
-          updateMessageStatus(messageId, status, isRead);
-        });
-
-        socket.on("typing", ({ from, isTyping }) => {
-          if (from === selectedUserId && typingIndicator) {
-            typingIndicator.classList.toggle("active", isTyping);
-          }
-        });
-
-        socket.on("userStatus", ({ userId: id, isOnline }) => {
-          if (Date.now() - lastStatusUpdate < 1000) return;
-          lastStatusUpdate = Date.now();
-          if (isOnline) {
-            onlineUsers.add(id);
-          } else {
-            onlineUsers.delete(id);
-          }
+        // Initial Fetch
+        await fetchUsers();
+        if (selectedUserId) {
           const userItem = document.querySelector(
-            `.user-item[data-user-id="${id}"]`
+            `.user-item[data-user-id="${selectedUserId}"]`
           );
           if (userItem) {
-            const statusIndicator = userItem.querySelector(".status-indicator");
-            if (statusIndicator) {
-              statusIndicator.classList.toggle("online", isOnline);
-            }
+            userItem.click();
           }
-          if (id === selectedUserId) {
-            document.querySelector(".online-status").textContent = isOnline
-              ? "Online"
-              : "Offline";
-          }
-        });
-
-        socket.on(
-          "incomingCall",
-          ({ from, callerName: name, offer, callId }) => {
-            if (callModal) {
-              callerName.textContent = DOMPurify.sanitize(name);
-              callModal.dataset.callerId = from;
-              callModal.dataset.offer = JSON.stringify(offer);
-              callModal.dataset.callId = callId;
-              callModal.classList.add("active");
-            }
-          }
-        );
-
-        socket.on("callAnswered", ({ from, answer, callId }) => {
-          if (peerConnection && peerConnection.callId === callId) {
-            peerConnection
-              .setRemoteDescription(new RTCSessionDescription(answer))
-              .then(() => {
-                callStatus.textContent = "Connected";
-                callStatus.classList.add("connected");
-                startCallTimer();
-                tryResendIceCandidates(from, callId);
-              })
-              .catch((err) => {
-                showToast("Failed to set remote description: " + err.message);
-                endCall("failed");
-              });
-          }
-        });
-
-        socket.on("callRejected", ({ from, callId }) => {
-          if (peerConnection && peerConnection.callId === callId) {
-            showToast("Call rejected by user.");
-            endCall("rejected");
-          }
-        });
-
-        socket.on("callEnded", ({ from, callId }) => {
-          if (peerConnection && peerConnection.callId === callId) {
-            showToast("Call ended by user.");
-            endCall();
-          }
-        });
-
-        socket.on("iceCandidate", ({ candidate, callId }) => {
-          if (
-            peerConnection &&
-            peerConnection.callId === callId &&
-            peerConnection.remoteDescription
-          ) {
-            peerConnection
-              .addIceCandidate(new RTCIceCandidate(candidate))
-              .catch((err) => {
-                console.error("Error adding ICE candidate:", err);
-              });
-          } else {
-            iceCandidateQueue.push({ to: userId, candidate, callId });
-          }
-        });
-
-        socket.on("error", ({ message }) => {
-          showToast("Error: " + message);
-        });
-
-        // Initialize user list and messages
-        socket.emit("getUsers", updateUserList);
-        if (selectedUserId) {
-          socket.emit("getMessages", { userId: selectedUserId }, (response) => {
-            if (response.status === "success") {
-              currentMessages = response.messages;
-              displayMessages(response.messages);
-              if (window.innerWidth <= 768) {
-                chatWindowContainer.classList.add("active");
-                userListContainer.style.display = "none";
-              }
-            } else {
-              showToast("Failed to fetch messages: " + response.message);
-            }
-          });
         }
-
-        // Handle window resize for responsive design
-        window.addEventListener("resize", () => {
-          if (window.innerWidth > 768) {
-            userListContainer.style.display = "flex";
-            chatWindowContainer.style.display = "flex";
-            if (!selectedUserId) {
-              chatWindowContainer.classList.remove("active");
-            }
-          } else if (selectedUserId) {
-            chatWindowContainer.classList.add("active");
-            userListContainer.style.display = "none";
-          } else {
-            chatWindowContainer.classList.remove("active");
-            userListContainer.style.display = "flex";
-          }
-        });
       });
     </script>
   </body>
