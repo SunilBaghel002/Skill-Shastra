@@ -1054,20 +1054,37 @@
             <button class="attach-button" id="attachButton">
               <span class="material-icons">attach_file</span>
             </button>
-            <div class="file-menu" id="fileMenu">
-              <button id="photoOption">
-                <i class="fas fa-image" aria-hidden="true"></i> Photos
-              </button>
-              <button id="documentOption">
-                <i class="fas fa-file" aria-hidden="true"></i> Documents
-              </button>
-              <button id="audioOption">
-                <i class="fas fa-file-audio" aria-hidden="true"></i> Audio
-              </button>
-              <button id="cameraOption">
-                <i class="fas fa-camera" aria-hidden="true"></i> Camera
-              </button>
+            <div id="fileMenu" class="file-menu">
+              <div id="photoOption">Photo</div>
+              <div id="documentOption">Document</div>
+              <div id="audioOption">Audio</div>
             </div>
+            <div id="cameraModal" class="modal">
+              <video id="cameraStream"></video>
+              <img id="cameraPreview" style="display: none" />
+              <canvas id="cameraCanvas" style="display: none"></canvas>
+              <button id="capturePhoto">Capture</button>
+              <button id="sendPhoto" style="display: none">Send</button>
+              <button id="cancelCamera">Cancel</button>
+            </div>
+            <div id="dropdownMenu" class="dropdown-menu">
+              <button id="searchMessagesBtn">Search Messages</button>
+              <button id="audioCallBtn">Audio Call</button>
+              <button id="videoCallBtn">Video Call</button>
+              <button id="clearChatsBtn">Clear Chats</button>
+              <button id="viewProfileBtn">View Profile</button>
+            </div>
+            <div id="callModal" class="modal">
+              <p id="callStatus"></p>
+              <video id="localVideo" autoplay playsinline muted></video>
+              <video id="remoteVideo" autoplay playsinline></video>
+              <button id="acceptCall">Accept</button>
+              <button id="rejectCall">Reject</button>
+              <button id="endCall">End Call</button>
+            </div>
+            <button id="attachButton">Attach</button>
+            <button id="cameraButton">Camera</button>
+            <button id="moreOptions">More</button>
             <input
               type="file"
               id="imageInput"
@@ -1163,254 +1180,251 @@
       </div>
     </main>
     <script src="https://cdn.ably.io/lib/ably.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.0/purify.min.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
-document.addEventListener("DOMContentLoaded", async () => {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const token = localStorage.getItem("token");
-  const userId = "<%= user._id || '' %>";
-  const userName = "<%= user.name || '' %>";
-  if (!user.name || !user.email || !token || !userId || !userName) {
-    showToast("Please log in to access this page.");
-    setTimeout(() => {
-      window.location.href = "/signup?redirect=" + encodeURIComponent(window.location.pathname);
-    }, 1000);
-    return;
-  }
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Authentication and Authorization
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const token = localStorage.getItem("token");
+        const userId = "<%= user._id || '' %>";
+        const userName = "<%= user.name || '' %>";
+        if (!user.name || !user.email || !token || !userId || !userName) {
+          showToast("Please log in to access this page.");
+          setTimeout(() => {
+            window.location.href =
+              "/signup?redirect=" +
+              encodeURIComponent(window.location.pathname);
+          }, 1000);
+          return;
+        }
+        if (user.role !== "user") {
+          showToast("This page is for admins only.");
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 1000);
+          return;
+        }
 
-  const sidebar = document.querySelector(".sidebar");
-  const mainContent = document.querySelector(".main-content");
-  if (sidebar && mainContent) {
-    if (sidebar.classList.contains("hidden")) {
-      mainContent.classList.add("full");
-    }
-    sidebar.addEventListener("transitionend", () => {
-      mainContent.classList.toggle("full", sidebar.classList.contains("hidden"));
-    });
-  }
+        // Initialize Ably
+        let ably;
+        try {
+          const response = await fetch("/api/messaging/ably-auth", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          console.log("Ably auth response:", response.status); // Debug
+          const tokenRequest = await response.json();
+          if (!response.ok) {
+            throw new Error(
+              tokenRequest.message || "Failed to authenticate with Ably"
+            );
+          }
+          ably = new Ably.Realtime({
+            authCallback: async (tokenParams, callback) => {
+              try {
+                const authResponse = await fetch("/api/messaging/ably-auth", {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const authData = await authResponse.json();
+                if (!authResponse.ok) {
+                  throw new Error(authData.message || "Failed to authenticate");
+                }
+                callback(null, authData);
+              } catch (error) {
+                callback(error, null);
+              }
+            },
+          });
+          ably.connection.on("connected", () => {
+            console.log("Ably connected successfully"); // Debug
+          });
+          ably.connection.on("failed", (err) => {
+            console.error("Ably connection failed:", err);
+            showToast("Ably connection failed: " + err.message);
+          });
+        } catch (error) {
+          console.error("Ably init error:", error);
+          showToast("Failed to connect to Ably: " + error.message);
+          return;
+        }
 
-  // Initialize Ably
-  const ably = new Ably.Realtime({
-    authUrl: "/api/messaging/ably-auth",
-    authHeaders: {
-      Authorization: `Bearer ${token}`,
-    },
-    clientId: userId,
-    echoMessages: false,
-  });
+        // DOM Elements
+        const userList = document.getElementById("userList");
+        const chatWindow = document.getElementById("chatWindow");
+        const messageInput = document.getElementById("messageInput");
+        const sendButton = document.getElementById("sendButton");
+        const attachButton = document.getElementById("attachButton");
+        const fileMenu = document.getElementById("fileMenu");
+        const photoOption = document.getElementById("photoOption");
+        const documentOption = document.getElementById("documentOption");
+        const audioOption = document.getElementById("audioOption");
+        const cameraButton = document.getElementById("cameraButton");
+        const imageInput = document.getElementById("imageInput");
+        const audioInput = document.getElementById("audioInput");
+        const documentInput = document.getElementById("documentInput");
+        const voiceButton = document.getElementById("voiceButton");
+        const chatHeaderName = document.getElementById("chatHeaderName");
+        const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
+        const typingIndicator = document.getElementById("typingIndicator");
+        const moreOptions = document.getElementById("moreOptions");
+        const dropdownMenu = document.getElementById("dropdownMenu");
+        const searchMessagesBtn = document.getElementById("searchMessagesBtn");
+        const audioCallBtn = document.getElementById("audioCallBtn");
+        const videoCallBtn = document.getElementById("videoCallBtn");
+        const clearChatsBtn = document.getElementById("clearChatsBtn");
+        const viewProfileBtn = document.getElementById("viewProfileBtn");
+        const profileModal = document.getElementById("profileModal");
+        const closeModal = document.getElementById("closeModal");
+        const imageModal = document.getElementById("imageModal");
+        const enlargedImage = document.getElementById("enlargedImage");
+        const userListContainer = document.getElementById("userListContainer");
+        const chatWindowContainer = document.getElementById(
+          "chatWindowContainer"
+        );
+        const backButton = document.getElementById("backButton");
+        const searchButton = document.getElementById("searchButton");
+        const searchMessagesBar = document.getElementById("searchMessagesBar");
+        const searchMessagesInput = document.getElementById(
+          "searchMessagesInput"
+        );
+        const searchUsersInput = document.getElementById("searchUsersInput");
+        const cameraModal = document.getElementById("cameraModal");
+        const cameraStream = document.getElementById("cameraStream");
+        const cameraPreview = document.getElementById("cameraPreview");
+        const cameraCanvas = document.getElementById("cameraCanvas");
+        const capturePhoto = document.getElementById("capturePhoto");
+        const sendPhoto = document.getElementById("sendPhoto");
+        const cancelCamera = document.getElementById("cancelCamera");
+        const callModal = document.getElementById("callModal");
+        const callStatus = document.getElementById("callStatus");
+        const localVideo = document.getElementById("localVideo");
+        const remoteVideo = document.getElementById("remoteVideo");
+        const acceptCall = document.getElementById("acceptCall");
+        const rejectCall = document.getElementById("rejectCall");
+        const endCall = document.getElementById("endCall");
 
-  ably.connection.on("connected", () => {
-    console.log("Ably connected successfully");
-  });
-  ably.connection.on("failed", (err) => {
-    console.error("Ably connection failed:", err);
-    showToast("Failed to connect to real-time service: " + err.message);
-  });
+        // State Variables
+        let selectedUserId = localStorage.getItem("selectedUserId") || null;
+        let currentCategory = "all";
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let sentMessageIds = new Set();
+        let isSending = false;
+        let currentMessages = [];
+        let audioElements = new Map();
+        let typingTimeout = null;
+        const speedOptions = [1, 1.2, 1.5, 2];
+        let onlineUsers = new Set();
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 2000;
+        let peerConnection = null;
+        let callStream = null;
+        let callType = null;
 
-  // DOM Elements
-  const userList = document.getElementById("userList");
-  const chatWindow = document.getElementById("chatWindow");
-  const messageInput = document.getElementById("messageInput");
-  const sendButton = document.getElementById("sendButton");
-  const attachButton = document.getElementById("attachButton");
-  const fileMenu = document.getElementById("fileMenu");
-  const photoOption = document.getElementById("photoOption");
-  const documentOption = document.getElementById("documentOption");
-  const audioOption = document.getElementById("audioOption");
-  const cameraOption = document.getElementById("cameraOption");
-  const imageInput = document.getElementById("imageInput");
-  const audioInput = document.getElementById("audioInput");
-  const documentInput = document.getElementById("documentInput");
-  const voiceButton = document.getElementById("voiceButton");
-  const chatHeaderName = document.getElementById("chatHeaderName");
-  const chatHeaderAvatar = document.getElementById("chatHeaderAvatar");
-  const moreOptions = document.getElementById("moreOptions");
-  const dropdownMenu = document.getElementById("dropdownMenu");
-  const clearChatsBtn = document.getElementById("clearChatsBtn");
-  const viewProfileBtn = document.getElementById("viewProfileBtn");
-  const profileModal = document.getElementById("profileModal");
-  const modalAvatar = document.getElementById("modalAvatar");
-  const modalName = document.getElementById("modalName");
-  const modalEmail = document.getElementById("modalEmail");
-  const modalRole = document.getElementById("modalRole");
-  const closeModal = document.getElementById("closeModal");
-  const imageModal = document.getElementById("imageModal");
-  const enlargedImage = document.getElementById("enlargedImage");
-  const userListContainer = document.getElementById("userListContainer");
-  const chatWindowContainer = document.getElementById("chatWindowContainer");
-  const backButton = document.getElementById("backButton");
-  const searchButton = document.getElementById("searchButton");
-  const searchMessagesBar = document.getElementById("searchMessagesBar");
-  const searchMessagesInput = document.getElementById("searchMessagesInput");
-  const searchUsersInput = document.getElementById("searchUsersInput");
-  const cameraModal = document.getElementById("cameraModal");
-  const cameraStream = document.getElementById("cameraStream");
-  const cameraPreview = document.getElementById("cameraPreview");
-  const cameraCanvas = document.getElementById("cameraCanvas");
-  const capturePhoto = document.getElementById("capturePhoto");
-  const sendPhoto = document.getElementById("sendPhoto");
-  const cancelCamera = document.getElementById("cancelCamera");
-  const callButton = document.getElementById("callButton");
-  const callModal = document.getElementById("callModal");
-  const callerName = document.getElementById("callerName");
-  const acceptCall = document.getElementById("acceptCall");
-  const rejectCall = document.getElementById("rejectCall");
-  const callInterface = document.getElementById("callInterface");
-  const callInterfaceName = document.getElementById("callInterfaceName");
-  const callStatus = document.getElementById("callStatus");
-  const callTimer = document.getElementById("callTimer");
-  const muteButton = document.getElementById("muteButton");
-  const endCallButton = document.getElementById("endCallButton");
-  const categoryTabs = document.querySelectorAll(".category-tab");
+        // Polling for users as a fallback
+        setInterval(() => {
+          fetchUsers();
+        }, 10000);
 
-  // State Variables
-  let selectedUserId = localStorage.getItem("selectedUserId") || null;
-  let currentCategory = "all";
-  let mediaRecorder = null;
-  let audioChunks = [];
-  let sentMessageIds = new Set();
-  let isSending = false;
-  let currentMessages = [];
-  let audioElements = new Map();
-  let peerConnection = null;
-  let localStream = null;
-  let remoteStream = null;
-  let isMuted = false;
-  let callStartTime = null;
-  let callTimerInterval = null;
-  const speedOptions = [1, 1.2, 1.5, 2];
-  const webrtcConfig = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  };
+        // Utility Functions
+        function showToast(message, duration = 3000) {
+          const toast = document.getElementById("toast");
+          if (toast) {
+            toast.textContent = DOMPurify.sanitize(message);
+            toast.style.display = "block";
+            setTimeout(() => {
+              toast.style.display = "none";
+            }, duration);
+          }
+        }
 
-  // Ably Channels
-  const userChannel = ably.channels.get(`users-${userId}`);
-  const messageChannel = ably.channels.get(`messages-${userId}`);
-  const callChannel = ably.channels.get(`calls-${userId}`);
+        function formatMessageTime(timestamp) {
+          try {
+            const now = new Date();
+            const messageDate = new Date(timestamp);
+            if (isNaN(messageDate.getTime())) return "Invalid Date";
+            const diffDays = Math.floor(
+              (now - messageDate) / (1000 * 60 * 60 * 24)
+            );
+            const isSameWeek =
+              Math.floor((now.getDay() + 6) / 7) ===
+              Math.floor((messageDate.getDay() + 6) / 7);
 
-  function showToast(message) {
-    const toast = document.getElementById("toast");
-    if (toast) {
-      toast.textContent = message;
-      toast.style.display = "block";
-      setTimeout(() => {
-        toast.style.display = "none";
-      }, 3000);
-    }
-  }
+            if (diffDays === 0) {
+              return messageDate.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+            } else if (diffDays === 1) {
+              return "Yesterday";
+            } else if (isSameWeek) {
+              return messageDate.toLocaleString("en-US", { weekday: "long" });
+            } else {
+              return messageDate.toLocaleDateString();
+            }
+          } catch (err) {
+            console.error("Error formatting time:", err);
+            return "Unknown Time";
+          }
+        }
 
-  function formatMessageTime(timestamp) {
-    const now = new Date();
-    const messageDate = new Date(timestamp);
-    const diffDays = Math.floor((now - messageDate) / (1000 * 60 * 60 * 24));
-    const isSameWeek =
-      Math.floor((now.getDay() + 6) / 7) ===
-      Math.floor((messageDate.getDay() + 6) / 7);
+        function debounce(func, wait) {
+          let timeout;
+          return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+          };
+        }
 
-    if (diffDays === 0) {
-      return messageDate.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (diffDays === 1) {
-      return "Yesterday";
-    } else if (isSameWeek) {
-      return messageDate.toLocaleString("en-US", { weekday: "long" });
-    } else {
-      return messageDate.toLocaleDateString();
-    }
-  }
+        function appendMessage(
+          isSent,
+          senderName,
+          content,
+          timestamp,
+          messageId,
+          messageType,
+          isRead,
+          fileMetadata,
+          status = "delivered"
+        ) {
+          if (document.getElementById(`message-${messageId}`)) return;
+          const messageDate = new Date(timestamp);
+          const lastDate = chatWindow.dataset.lastDate
+            ? new Date(chatWindow.dataset.lastDate)
+            : null;
+          const dateString = messageDate.toDateString();
+          if (!lastDate || lastDate.toDateString() !== dateString) {
+            const dateHeader = document.createElement("div");
+            dateHeader.className = "date-header";
+            dateHeader.textContent = formatMessageTime(timestamp);
+            chatWindow.appendChild(dateHeader);
+            chatWindow.dataset.lastDate = messageDate;
+          }
 
-  function formatCallTime(seconds) {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, "0")}:${mins
-      .toString()
-      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
-
-  function startCallTimer() {
-    callStartTime = Date.now();
-    callTimerInterval = setInterval(() => {
-      if (callTimer) {
-        const seconds = Math.floor((Date.now() - callStartTime) / 1000);
-        callTimer.textContent = formatCallTime(seconds);
-      }
-    }, 1000);
-  }
-
-  function stopCallTimer() {
-    if (callTimerInterval) {
-      clearInterval(callTimerInterval);
-      callTimerInterval = null;
-    }
-    if (callTimer) {
-      callTimer.textContent = "00:00:00";
-    }
-  }
-
-  function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-    };
-  }
-
-  function appendMessage(
-    isSent,
-    senderName,
-    content,
-    timestamp,
-    messageId,
-    messageType,
-    isRead,
-    fileMetadata,
-    status = "pending"
-  ) {
-    if (document.getElementById(`message-${messageId}`)) {
-      console.log("Message already exists, skipping:", messageId);
-      return;
-    }
-    const messageDate = new Date(timestamp);
-    const lastDate = chatWindow.dataset.lastDate
-      ? new Date(chatWindow.dataset.lastDate)
-      : null;
-    const dateString = messageDate.toDateString();
-    if (!lastDate || lastDate.toDateString() !== dateString) {
-      const dateHeader = document.createElement("div");
-      dateHeader.className = "date-header";
-      dateHeader.textContent = formatMessageTime(timestamp);
-      chatWindow.appendChild(dateHeader);
-      chatWindow.dataset.lastDate = messageDate;
-    }
-
-    const messageDiv = document.createElement("div");
-    messageDiv.className = `message ${isSent ? "sent" : "received"} ${
-      status === "pending" ? "pending" : ""
-    }`;
-    messageDiv.id = `message-${messageId}`;
-    let contentHtml;
-    if (
-      messageType === "image" ||
-      (content.startsWith("https://res.cloudinary.com/") &&
-        (content.endsWith(".jpg") ||
-          content.endsWith(".png") ||
-          content.endsWith(".jpeg")))
-    ) {
-      contentHtml = `<img src="${DOMPurify.sanitize(
-        content
-      )}" alt="Image message" />`;
-    } else if (
-      messageType === "audio" ||
-      (content.startsWith("https://res.cloudinary.com/") &&
-        (content.endsWith(".mp3") ||
-          content.endsWith(".wav") ||
-          content.endsWith(".webm")))
-    ) {
-      contentHtml = `
+          const messageDiv = document.createElement("div");
+          messageDiv.className = `message ${isSent ? "sent" : "received"} ${
+            status === "pending" ? "pending" : ""
+          }`;
+          messageDiv.id = `message-${messageId}`;
+          let contentHtml;
+          if (
+            messageType === "image" ||
+            (content.startsWith("https://res.cloudinary.com/") &&
+              (content.endsWith(".jpg") ||
+                content.endsWith(".png") ||
+                content.endsWith(".jpeg")))
+          ) {
+            contentHtml = `<img src="${DOMPurify.sanitize(
+              content
+            )}" alt="Image message" loading="lazy" />`;
+          } else if (
+            messageType === "audio" ||
+            (content.startsWith("https://res.cloudinary.com/") &&
+              (content.endsWith(".mp3") ||
+                content.endsWith(".wav") ||
+                content.endsWith(".webm")))
+          ) {
+            contentHtml = `
         <div class="audio-container" data-message-id="${messageId}">
           <button class="play-pause-btn" data-message-id="${messageId}">
             <i class="fas fa-play" aria-hidden="true"></i>
@@ -1424,26 +1438,26 @@ document.addEventListener("DOMContentLoaded", async () => {
           <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
         </div>
       `;
-    } else if (
-      messageType === "document" ||
-      (content.startsWith("https://res.cloudinary.com/") &&
-        (content.endsWith(".pdf") ||
-          content.endsWith(".doc") ||
-          content.endsWith(".docx")))
-    ) {
-      contentHtml = `
+          } else if (
+            messageType === "document" ||
+            (content.startsWith("https://res.cloudinary.com/") &&
+              (content.endsWith(".pdf") ||
+                content.endsWith(".doc") ||
+                content.endsWith(".docx")))
+          ) {
+            contentHtml = `
         <a href="${DOMPurify.sanitize(
           content
-        )}" target="_blank" class="document-link">
+        )}" target="_blank" rel="noopener noreferrer" class="document-link">
           <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
             fileMetadata?.fileName || "Document"
           )}
         </a>
       `;
-    } else {
-      contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
-    }
-    messageDiv.innerHTML = `
+          } else {
+            contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
+          }
+          messageDiv.innerHTML = `
       <div class="message-content">
         ${contentHtml}
         <span class="timestamp">${formatMessageTime(timestamp)}</span>
@@ -1454,1083 +1468,1245 @@ document.addEventListener("DOMContentLoaded", async () => {
               }"><span class="dot"></span><span class="dot"></span></div>`
             : ""
         }
+        ${
+          isSent && status === "failed"
+            ? `<button class="retry-btn" data-message-id="${messageId}">Retry</button>`
+            : ""
+        }
       </div>
     `;
-    chatWindow.appendChild(messageDiv);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+          chatWindow.appendChild(messageDiv);
+          chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    if (
-      messageType === "audio" ||
-      (content.startsWith("https://res.cloudinary.com/") &&
-        (content.endsWith(".mp3") ||
-          content.endsWith(".wav") ||
-          content.endsWith(".webm")))
-    ) {
-      const audio = new Audio(DOMPurify.sanitize(content));
-      audioElements.set(messageId, audio);
+          if (
+            messageType === "audio" ||
+            (content.startsWith("https://res.cloudinary.com/") &&
+              (content.endsWith(".mp3") ||
+                content.endsWith(".wav") ||
+                content.endsWith(".webm")))
+          ) {
+            const audio = new Audio(DOMPurify.sanitize(content));
+            audio.preload = "metadata";
+            audioElements.set(messageId, audio);
 
-      const playPauseBtn = messageDiv.querySelector(
-        `.play-pause-btn[data-message-id="${messageId}"]`
-      );
-      const progressBar = messageDiv.querySelector(`#progress-bar-${messageId}`);
-      const bars = progressBar.querySelectorAll(".bar");
-      playPauseBtn.addEventListener("click", () => {
-        if (audio.paused) {
-          audio.play();
-          messageDiv.querySelector(".audio-container").classList.add("playing");
-          playPauseBtn
-            .querySelector("i")
-            .classList.replace("fa-play", "fa-pause");
-          updateProgressBar(audio, bars, messageId);
-        } else {
-          audio.pause();
-          messageDiv
-            .querySelector(".audio-container")
-            .classList.remove("playing");
-          playPauseBtn
-            .querySelector("i")
-            .classList.replace("fa-pause", "fa-play");
-          bars.forEach((bar) => bar.classList.remove("active"));
+            const playPauseBtn = messageDiv.querySelector(
+              `.play-pause-btn[data-message-id="${messageId}"]`
+            );
+            const progressBar = messageDiv.querySelector(
+              `#progress-bar-${messageId}`
+            );
+            const bars = progressBar.querySelectorAll(".bar");
+            playPauseBtn.addEventListener("click", () => {
+              if (audio.paused) {
+                audio.play().catch((err) => {
+                  showToast("Failed to play audio: " + err.message);
+                  console.error("Audio play error:", err);
+                });
+                messageDiv
+                  .querySelector(".audio-container")
+                  .classList.add("playing");
+                playPauseBtn
+                  .querySelector("i")
+                  .classList.replace("fa-play", "fa-pause");
+                updateProgressBar(audio, bars, messageId);
+              } else {
+                audio.pause();
+                messageDiv
+                  .querySelector(".audio-container")
+                  .classList.remove("playing");
+                playPauseBtn
+                  .querySelector("i")
+                  .classList.replace("fa-pause", "fa-play");
+                bars.forEach((bar) => bar.classList.remove("active"));
+              }
+            });
+
+            audio.addEventListener("ended", () => {
+              messageDiv
+                .querySelector(".audio-container")
+                .classList.remove("playing");
+              playPauseBtn
+                .querySelector("i")
+                .classList.replace("fa-pause", "fa-play");
+              bars.forEach((bar) => bar.classList.remove("active"));
+            });
+
+            const speedBtn = messageDiv.querySelector(
+              `.speed-btn[data-message-id="${messageId}"]`
+            );
+            speedBtn.addEventListener("click", () => {
+              let currentIndex = parseInt(speedBtn.dataset.speedIndex);
+              currentIndex = (currentIndex + 1) % speedOptions.length;
+              const newSpeed = speedOptions[currentIndex];
+              audio.playbackRate = newSpeed;
+              speedBtn.dataset.speedIndex = currentIndex;
+              speedBtn.textContent = `${newSpeed}x`;
+            });
+          }
+
+          if (isSent && status === "failed") {
+            const retryBtn = messageDiv.querySelector(".retry-btn");
+            retryBtn.addEventListener("click", () => {
+              retryMessage(messageId, content, messageType, fileMetadata);
+            });
+          }
         }
-      });
 
-      audio.addEventListener("ended", () => {
-        messageDiv.querySelector(".audio-container").classList.remove("playing");
-        playPauseBtn
-          .querySelector("i")
-          .classList.replace("fa-pause", "fa-play");
-        bars.forEach((bar) => bar.classList.remove("active"));
-      });
-
-      const speedBtn = messageDiv.querySelector(
-        `.speed-btn[data-message-id="${messageId}"]`
-      );
-      speedBtn.addEventListener("click", () => {
-        let currentIndex = parseInt(speedBtn.dataset.speedIndex);
-        currentIndex = (currentIndex + 1) % speedOptions.length;
-        const newSpeed = speedOptions[currentIndex];
-        audio.playbackRate = newSpeed;
-        speedBtn.dataset.speedIndex = currentIndex;
-        speedBtn.textContent = `${newSpeed}x`;
-      });
-    }
-  }
-
-  function updateProgressBar(audio, bars, messageId) {
-    const update = () => {
-      if (!audio.paused && !audio.ended) {
-        const progress = audio.currentTime / audio.duration;
-        const activeBars = Math.floor(progress * bars.length);
-        bars.forEach((bar, index) => {
-          bar.classList.toggle("active", index < activeBars);
-        });
-        requestAnimationFrame(update);
-      }
-    };
-    update();
-  }
-
-  function updateMessageStatus(messageId, status, isRead = false) {
-    const messageElement = document.getElementById(`message-${messageId}`);
-    if (messageElement) {
-      const readReceipt = messageElement.querySelector(".read-receipt");
-      if (readReceipt) {
-        readReceipt.className = `read-receipt ${
-          status === "delivered" ? (isRead ? "read" : "") : status
-        }`;
-      }
-      if (status === "delivered") {
-        messageElement.classList.remove("pending");
-      }
-    }
-  }
-
-  function displayMessages(messages) {
-    chatWindow.innerHTML = "";
-    chatWindow.dataset.lastDate = null;
-    audioElements.forEach((audio) => audio.pause());
-    audioElements.clear();
-    messages.forEach((msg) => {
-      appendMessage(
-        msg.sender._id === userId,
-        msg.sender.name,
-        msg.content,
-        msg.createdAt,
-        msg._id,
-        msg.messageType || "text",
-        msg.isRead,
-        msg.fileMetadata,
-        "delivered"
-      );
-    });
-  }
-
-  function closeCallModal() {
-    if (callModal) {
-      callModal.style.display = "none";
-      callerName.textContent = "Incoming Call";
-      callModal.dataset.callerId = "";
-      callModal.dataset.offer = "";
-    }
-  }
-
-  function endCall() {
-    if (peerConnection) {
-      peerConnection.close();
-      peerConnection = null;
-    }
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      localStream = null;
-    }
-    if (remoteStream) {
-      remoteStream.getTracks().forEach((track) => track.stop());
-      remoteStream = null;
-    }
-    if (callInterface) {
-      callInterface.classList.remove("active");
-    }
-    if (muteButton) {
-      muteButton.textContent = "Mute";
-      muteButton.classList.remove("muted");
-    }
-    isMuted = false;
-    stopCallTimer();
-    if (selectedUserId) {
-      callChannel.publish("endCall", { to: selectedUserId }, (err) => {
-        if (err) {
-          showToast("Failed to end call: " + err.message);
+        function updateProgressBar(audio, bars, messageId) {
+          const update = () => {
+            if (!audio.paused && !audio.ended) {
+              const progress = audio.currentTime / audio.duration;
+              const activeBars = Math.floor(progress * bars.length);
+              bars.forEach((bar, index) => {
+                bar.classList.toggle("active", index < activeBars);
+              });
+              requestAnimationFrame(update);
+            }
+          };
+          update();
         }
-      });
-    }
-  }
 
-  async function sendMessage(content, messageType = "text", fileMetadata = {}, retryCount = 0) {
-    if (!selectedUserId || !content) {
-      showToast("Please select a user and enter a message or select a file.");
-      return;
-    }
-    if (isSending) {
-      return;
-    }
-    isSending = true;
+        function updateMessageStatus(messageId, status, isRead = false) {
+          const messageElement = document.getElementById(
+            `message-${messageId}`
+          );
+          if (messageElement) {
+            const readReceipt = messageElement.querySelector(".read-receipt");
+            if (readReceipt) {
+              readReceipt.className = `read-receipt ${
+                status === "delivered" ? (isRead ? "read" : "") : status
+              }`;
+            }
+            if (status === "delivered") {
+              messageElement.classList.remove("pending");
+            }
+            if (status !== "failed") {
+              const retryBtn = messageElement.querySelector(".retry-btn");
+              if (retryBtn) retryBtn.remove();
+            }
+          }
+        }
 
-    const tempMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    sentMessageIds.add(tempMessageId);
+        function displayMessages(messages) {
+          chatWindow.innerHTML = "";
+          chatWindow.dataset.lastDate = null;
+          audioElements.forEach((audio) => audio.pause());
+          audioElements.clear();
+          messages.forEach((msg) => {
+            appendMessage(
+              msg.sender._id === userId,
+              msg.sender.name,
+              msg.content,
+              msg.createdAt,
+              msg._id,
+              msg.messageType || "text",
+              msg.isRead,
+              msg.fileMetadata,
+              "delivered"
+            );
+          });
+        }
 
-    appendMessage(
-      true,
-      userName,
-      content,
-      new Date(),
-      tempMessageId,
-      messageType,
-      false,
-      fileMetadata,
-      "pending"
-    );
-
-    try {
-      const userResponse = await fetch("/api/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const userData = await userResponse.json();
-      if (userData.status === "success") {
-        const selectedUser = userData.users.find((u) => u._id === selectedUserId);
-        if (selectedUser) {
-          if (messageType === "image" || messageType === "audio" || messageType === "document") {
-            const base64Size = (content.length * 3) / 4 / 1024 / 1024;
-            if (base64Size > 5) {
-              showToast(`${messageType} size exceeds 5MB after encoding.`);
-              sentMessageIds.delete(tempMessageId);
-              isSending = false;
-              const tempMessage = document.getElementById(`message-${tempMessageId}`);
-              if (tempMessage) tempMessage.remove();
+        async function fetchUsers(query = "") {
+          try {
+            const response = await fetch(
+              `/api/messaging/users${
+                query ? `?query=${encodeURIComponent(query)}` : ""
+              }`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            console.log("Users fetch response:", response.status); // Debug
+            if (response.status === 401) {
+              showToast("Session expired. Please log in again.");
+              setTimeout(() => {
+                window.location.href = "/signup";
+              }, 1000);
               return;
             }
+            if (response.status === 404) {
+              showToast(
+                "Users endpoint not found. Check server configuration."
+              );
+              return;
+            }
+            const data = await response.json();
+            console.log("Users response:", data); // Debug
+            if (data.status === "success") {
+              const adminUsers = data.users.filter(
+                (user) => user.role.toLowerCase() === "admin"
+              ); // Case-insensitive
+              console.log("Filtered admin users:", adminUsers); // Debug
+              updateUserList({ users: adminUsers });
+              if (adminUsers.length === 0) {
+                userList.innerHTML = "<p>No admins found.</p>";
+              }
+            } else {
+              showToast("Failed to fetch users: " + data.message);
+            }
+          } catch (error) {
+            console.error("Fetch users error:", error);
+            showToast("Error fetching users: " + error.message);
+          }
+        }
+
+        async function retryMessage(
+          messageId,
+          content,
+          messageType,
+          fileMetadata
+        ) {
+          const messageElement = document.getElementById(
+            `message-${messageId}`
+          );
+          if (messageElement) {
+            messageElement.classList.add("pending");
+            const retryBtn = messageElement.querySelector(".retry-btn");
+            if (retryBtn) retryBtn.remove();
+          }
+          sendMessage(content, messageType, fileMetadata, 0, messageId);
+        }
+
+        async function sendMessage(
+          content,
+          messageType = "text",
+          fileMetadata = {},
+          retryCount = 0,
+          originalMessageId = null
+        ) {
+          if (!selectedUserId || !content) {
+            showToast(
+              "Please select an admin and enter a message or select a file."
+            );
+            return;
+          }
+          if (isSending) return;
+
+          isSending = true;
+          const tempMessageId =
+            originalMessageId ||
+            `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          sentMessageIds.add(tempMessageId);
+
+          if (!originalMessageId) {
+            appendMessage(
+              true,
+              userName,
+              content,
+              new Date(),
+              tempMessageId,
+              messageType,
+              false,
+              fileMetadata,
+              "pending"
+            );
           }
 
-          messageChannel.publish(
-            "sendMessage",
-            {
-              receiverId: selectedUserId,
-              content,
-              messageType,
-              fileName: fileMetadata.fileName || "file",
-              fileSize: fileMetadata.fileSize || 0,
-              fileType: fileMetadata.fileType || "",
-              tempMessageId,
-            },
-            async (err) => {
-              isSending = false;
-              if (!err) {
-                messageInput.value = "";
-                imageInput.value = "";
-                audioInput.value = "";
-                documentInput.value = "";
-                sentMessageIds.delete(tempMessageId);
-                const response = await fetch(`/api/messages?userId=${selectedUserId}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                const msgData = await response.json();
-                if (msgData.status === "success") {
-                  currentMessages = msgData.messages;
-                  displayMessages(currentMessages);
-                } else {
-                  showToast("Failed to refresh messages: " + msgData.message);
-                }
-              } else {
-                showToast(`Failed to send ${messageType}: ${err.message}`);
-                updateMessageStatus(tempMessageId, "failed");
-                if (retryCount < 2 && (messageType === "image" || messageType === "audio" || messageType === "document")) {
-                  setTimeout(() => sendMessage(content, messageType, fileMetadata, retryCount + 1), 2000);
-                } else {
-                  showToast(`Failed to send ${messageType} after ${retryCount + 1} attempts.`);
-                }
-              }
-            }
-          );
-        } else {
-          showToast("Selected user not found.");
-          sentMessageIds.delete(tempMessageId);
-          isSending = false;
-          updateMessageStatus(tempMessageId, "failed");
-        }
-      } else {
-        showToast("Failed to verify user: " + userData.message);
-        sentMessageIds.delete(tempMessageId);
-        isSending = false;
-        updateMessageStatus(tempMessageId, "failed");
-      }
-    } catch (err) {
-      showToast("Error sending message: " + err.message);
-      sentMessageIds.delete(tempMessageId);
-      isSending = false;
-      updateMessageStatus(tempMessageId, "failed");
-    }
-  }
-
-  async function updateUserList(users) {
-    if (!userList) return;
-    userList.innerHTML = "";
-    users.forEach((user) => {
-      if (user._id !== userId) {
-        const userItem = document.createElement("div");
-        userItem.className = `user-item ${selectedUserId === user._id ? "selected" : ""}`;
-        userItem.dataset.userId = user._id;
-        userItem.innerHTML = `
-          <img src="${DOMPurify.sanitize(user.profileImage)}" alt="${DOMPurify.sanitize(user.name)}'s avatar" />
-          <div class="user-info">
-            <h3>${DOMPurify.sanitize(user.name)}</h3>
-            <p>${DOMPurify.sanitize(user.lastMessage || "")}</p>
-          </div>
-          <span class="message-time">${user.lastMessageTime ? formatMessageTime(user.lastMessageTime) : ""}</span>
-          ${user.unreadCount > 0 ? `<span class="unread-count">${user.unreadCount}</span>` : ""}
-          <button class="favorite-btn ${user.isFavorite ? "favorite" : ""}">
-            <i class="fas fa-star"></i>
-          </button>
-          <button class="call-btn">Call</button>
-        `;
-        userList.appendChild(userItem);
-
-        userItem.addEventListener("click", async (e) => {
-          if (e.target.closest(".favorite-btn") || e.target.closest(".call-btn")) return;
-          document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
-          userItem.classList.add("selected");
-          selectedUserId = user._id;
-          localStorage.setItem("selectedUserId", selectedUserId);
-          chatHeaderName.textContent = DOMPurify.sanitize(user.name);
-          chatHeaderAvatar.src = DOMPurify.sanitize(user.profileImage);
-          chatWindowContainer.classList.add("active");
-          userListContainer.style.display = "none";
-          searchMessagesInput.value = "";
-          searchMessagesBar.classList.remove("active");
           try {
-            const response = await fetch(`/api/messages?userId=${selectedUserId}`, {
+            const response = await fetch(`/api/messaging/users`, {
               headers: { Authorization: `Bearer ${token}` },
             });
-            const data = await response.json();
-            if (data.status === "success") {
-              currentMessages = data.messages;
-              displayMessages(currentMessages);
-            } else {
-              showToast("Failed to fetch messages: " + data.message);
+            const userData = await response.json();
+            if (userData.status !== "success") {
+              throw new Error("Failed to verify user: " + userData.message);
             }
-          } catch (err) {
-            showToast("Error fetching messages: " + err.message);
-          }
-        });
+            const selectedUser = userData.users.find(
+              (u) => u._id === selectedUserId
+            );
+            if (!selectedUser || selectedUser.role !== "admin") {
+              throw new Error("Selected user is not an admin.");
+            }
 
-        const favoriteBtn = userItem.querySelector(".favorite-btn");
-        favoriteBtn.addEventListener("click", async () => {
-          favoriteBtn.classList.toggle("favorite");
-          const isFavorite = favoriteBtn.classList.contains("favorite");
-          try {
-            const response = await fetch(`/api/users/${user._id}/favorite`, {
+            if (
+              messageType === "image" ||
+              messageType === "audio" ||
+              messageType === "document"
+            ) {
+              const base64Size = (content.length * 3) / 4 / 1024 / 1024;
+              if (base64Size > 5) {
+                showToast(`${messageType} size exceeds 5MB.`);
+                sentMessageIds.delete(tempMessageId);
+                isSending = false;
+                document.getElementById(`message-${tempMessageId}`)?.remove();
+                return;
+              }
+            }
+
+            const sendResponse = await fetch("/api/messaging/send-message", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({ isFavorite }),
+              body: JSON.stringify({
+                receiverId: selectedUserId,
+                content,
+                messageType,
+                fileName: fileMetadata.fileName || "file",
+                fileSize: fileMetadata.fileSize || 0,
+                fileType: fileMetadata.fileType || "",
+              }),
             });
-            const data = await response.json();
-            if (data.status !== "success") {
-              showToast("Failed to update favorite status: " + data.message);
-              favoriteBtn.classList.toggle("favorite");
+            const sendData = await sendResponse.json();
+            isSending = false;
+            if (sendData.status === "success") {
+              messageInput.value = "";
+              imageInput.value = "";
+              audioInput.value = "";
+              documentInput.value = "";
+              sentMessageIds.delete(tempMessageId);
+              document.getElementById(`message-${tempMessageId}`)?.remove();
+              const messagesResponse = await fetch(
+                `/api/messaging/messages/${selectedUserId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              const messagesData = await messagesResponse.json();
+              if (messagesData.status === "success") {
+                currentMessages = messagesData.messages;
+                displayMessages(messagesData.messages);
+              } else {
+                showToast(
+                  "Failed to refresh messages: " + messagesData.message
+                );
+              }
+            } else {
+              throw new Error(
+                `Failed to send ${messageType}: ${sendData.message}`
+              );
             }
-          } catch (err) {
-            showToast("Failed to update favorite status: " + err.message);
-            favoriteBtn.classList.toggle("favorite");
+          } catch (error) {
+            isSending = false;
+            showToast(error.message);
+            updateMessageStatus(tempMessageId, "failed");
+            if (retryCount < MAX_RETRIES) {
+              setTimeout(
+                () =>
+                  sendMessage(
+                    content,
+                    messageType,
+                    fileMetadata,
+                    retryCount + 1,
+                    tempMessageId
+                  ),
+                RETRY_DELAY
+              );
+            } else {
+              showToast(
+                `Failed to send ${messageType} after ${MAX_RETRIES} attempts`
+              );
+            }
+          }
+        }
+
+        async function startCall(type) {
+          if (!selectedUserId) {
+            showToast("Please select an admin to call.");
+            return;
+          }
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Calling is not supported in this browser.");
+            return;
+          }
+
+          try {
+            callType = type;
+            const constraints = {
+              audio: true,
+              video: type === "video",
+            };
+            callStream = await navigator.mediaDevices.getUserMedia(constraints);
+            localVideo.srcObject = callStream;
+            localVideo.style.display = type === "video" ? "block" : "none";
+            remoteVideo.style.display = type === "video" ? "block" : "none";
+            callStatus.textContent = `Calling ${chatHeaderName.textContent}...`;
+            callModal.style.display = "flex";
+            acceptCall.style.display = "none";
+            rejectCall.style.display = "none";
+            endCall.style.display = "block";
+
+            peerConnection = new RTCPeerConnection({
+              iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+            });
+
+            callStream
+              .getTracks()
+              .forEach((track) => peerConnection.addTrack(track, callStream));
+
+            peerConnection.ontrack = (event) => {
+              remoteVideo.srcObject = event.streams[0];
+            };
+
+            peerConnection.onicecandidate = (event) => {
+              if (event.candidate) {
+                const channel = ably.channels.get(
+                  `call:${[userId, selectedUserId].sort().join(":")}`
+                );
+                channel.publish("ice-candidate", {
+                  candidate: event.candidate,
+                  senderId: userId,
+                });
+              }
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            const channel = ably.channels.get(
+              `call:${[userId, selectedUserId].sort().join(":")}`
+            );
+            await channel.publish("call-offer", {
+              offer,
+              senderId: userId,
+              callType: type,
+            });
+          } catch (error) {
+            showToast("Failed to start call: " + error.message);
+            endCallHandler();
+          }
+        }
+
+        async function handleIncomingCall(message) {
+          if (message.data.senderId === userId) return;
+          callType = message.data.callType;
+          callStatus.textContent = `Incoming ${message.data.callType} call from ${chatHeaderName.textContent}...`;
+          callModal.style.display = "flex";
+          acceptCall.style.display = "block";
+          rejectCall.style.display = "block";
+          endCall.style.display = "none";
+          localVideo.style.display =
+            message.data.callType === "video" ? "block" : "none";
+          remoteVideo.style.display =
+            message.data.callType === "video" ? "block" : "none";
+
+          peerConnection = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          });
+
+          peerConnection.ontrack = (event) => {
+            remoteVideo.srcObject = event.streams[0];
+          };
+
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              const channel = ably.channels.get(
+                `call:${[userId, selectedUserId].sort().join(":")}`
+              );
+              channel.publish("ice-candidate", {
+                candidate: event.candidate,
+                senderId: userId,
+              });
+            }
+          };
+
+          await peerConnection.setRemoteDescription(
+            new RTCSessionDescription(message.data.offer)
+          );
+        }
+
+        async function acceptCallHandler() {
+          try {
+            const constraints = {
+              audio: true,
+              video: callType === "video",
+            };
+            callStream = await navigator.mediaDevices.getUserMedia(constraints);
+            localVideo.srcObject = callStream;
+            callStream
+              .getTracks()
+              .forEach((track) => peerConnection.addTrack(track, callStream));
+
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            const channel = ably.channels.get(
+              `call:${[userId, selectedUserId].sort().join(":")}`
+            );
+            await channel.publish("call-answer", {
+              answer,
+              senderId: userId,
+            });
+            callStatus.textContent = `Connected to ${chatHeaderName.textContent}`;
+            acceptCall.style.display = "none";
+            rejectCall.style.display = "none";
+            endCall.style.display = "block";
+          } catch (error) {
+            showToast("Failed to accept call: " + error.message);
+            endCallHandler();
+          }
+        }
+
+        function endCallHandler() {
+          if (callStream) {
+            callStream.getTracks().forEach((track) => track.stop());
+            callStream = null;
+          }
+          if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+          }
+          localVideo.srcObject = null;
+          remoteVideo.srcObject = null;
+          localVideo.style.display = "none";
+          remoteVideo.style.display = "none";
+          callModal.style.display = "none";
+          const channel = ably.channels.get(
+            `call:${[userId, selectedUserId].sort().join(":")}`
+          );
+          channel.publish("call-ended", { senderId: userId });
+        }
+
+        // Event Listeners
+        sendButton.addEventListener(
+          "click",
+          debounce(() => sendMessage(messageInput.value.trim()), 300)
+        );
+
+        messageInput.addEventListener("input", () => {
+          if (selectedUserId) {
+            const channel = ably.channels.get(
+              `chat:${[userId, selectedUserId].sort().join(":")}`
+            );
+            channel.publish("typing", { senderId: userId, isTyping: true });
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+              channel.publish("typing", { senderId: userId, isTyping: false });
+            }, 2000);
           }
         });
 
-        const callBtn = userItem.querySelector(".call-btn");
-        callBtn.addEventListener("click", () => {
-          selectedUserId = user._id;
-          callButton.click();
-        });
-      }
-    });
-  }
-
-  // Event Listeners
-  if (sendButton) {
-    sendButton.addEventListener("click", debounce(() => sendMessage(messageInput.value.trim()), 300));
-  }
-
-  if (messageInput) {
-    messageInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage(messageInput.value.trim());
-      }
-    });
-  }
-
-  if (attachButton) {
-    attachButton.addEventListener("click", () => {
-      fileMenu.classList.toggle("active");
-    });
-  }
-
-  document.addEventListener("click", (e) => {
-    if (fileMenu && !fileMenu.contains(e.target) && !attachButton.contains(e.target)) {
-      fileMenu.classList.remove("active");
-    }
-    if (cameraModal && !cameraModal.contains(e.target) && !cameraOption.contains(e.target) && cameraModal.style.display === "flex") {
-      closeCameraModal();
-    }
-    if (dropdownMenu && !dropdownMenu.contains(e.target) && !moreOptions.contains(e.target)) {
-      dropdownMenu.classList.remove("active");
-    }
-  });
-
-  if (photoOption) {
-    photoOption.addEventListener("click", () => {
-      fileMenu.classList.remove("active");
-      imageInput.click();
-    });
-  }
-
-  if (documentOption) {
-    documentOption.addEventListener("click", () => {
-      fileMenu.classList.remove("active");
-      documentInput.click();
-    });
-  }
-
-  if (audioOption) {
-    audioOption.addEventListener("click", () => {
-      fileMenu.classList.remove("active");
-      audioInput.click();
-    });
-  }
-
-  let cameraStreamObj = null;
-  function closeCameraModal() {
-    if (cameraStreamObj) {
-      cameraStreamObj.getTracks().forEach((track) => track.stop());
-      cameraStreamObj = null;
-    }
-    if (cameraStream) cameraStream.style.display = "none";
-    if (cameraPreview) cameraPreview.style.display = "none";
-    if (cameraPreview) cameraPreview.src = "";
-    if (capturePhoto) capturePhoto.style.display = "block";
-    if (sendPhoto) sendPhoto.style.display = "none";
-    if (cancelCamera) cancelCamera.style.display = "block";
-    if (cameraModal) cameraModal.style.display = "none";
-  }
-
-  if (cameraOption) {
-    cameraOption.addEventListener("click", () => {
-      fileMenu.classList.remove("active");
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast("Camera is not supported in this browser.");
-        return;
-      }
-      navigator.mediaDevices
-        .getUserMedia({
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-        })
-        .then((stream) => {
-          cameraStreamObj = stream;
-          if (cameraStream) {
-            cameraStream.srcObject = stream;
-            cameraStream.style.display = "block";
+        messageInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            const content = messageInput.value.trim();
+            if (content) {
+              sendMessage(content);
+            }
           }
-          if (cameraPreview) cameraPreview.style.display = "none";
-          if (capturePhoto) capturePhoto.style.display = "block";
-          if (sendPhoto) sendPhoto.style.display = "none";
-          if (cancelCamera) cancelCamera.style.display = "block";
-          if (cameraModal) cameraModal.style.display = "flex";
-        })
-        .catch((err) => {
-          showToast("Failed to access camera: " + err.message);
         });
-    });
-  }
 
-  if (capturePhoto) {
-    capturePhoto.addEventListener("click", () => {
-      if (cameraCanvas && cameraStream) {
-        const context = cameraCanvas.getContext("2d");
-        cameraCanvas.width = cameraStream.videoWidth;
-        cameraCanvas.height = cameraStream.videoHeight;
-        context.drawImage(cameraStream, 0, 0, cameraCanvas.width, cameraCanvas.height);
-        if (cameraPreview) {
+        attachButton.addEventListener("click", () => {
+          fileMenu.classList.toggle("active");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (
+            fileMenu &&
+            !fileMenu.contains(e.target) &&
+            !attachButton.contains(e.target)
+          ) {
+            fileMenu.classList.remove("active");
+          }
+          if (
+            cameraModal &&
+            !cameraModal.contains(e.target) &&
+            !cameraButton.contains(e.target) &&
+            cameraModal.style.display === "flex"
+          ) {
+            closeCameraModal();
+          }
+          if (
+            dropdownMenu &&
+            !dropdownMenu.contains(e.target) &&
+            !moreOptions.contains(e.target)
+          ) {
+            dropdownMenu.classList.remove("active");
+          }
+          if (
+            callModal &&
+            !callModal.contains(e.target) &&
+            callModal.style.display === "flex"
+          ) {
+            endCallHandler();
+          }
+        });
+
+        photoOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          imageInput.click();
+        });
+
+        documentOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          documentInput.click();
+        });
+
+        audioOption.addEventListener("click", () => {
+          fileMenu.classList.remove("active");
+          audioInput.click();
+        });
+
+        let cameraStreamObj = null;
+        function closeCameraModal() {
+          if (cameraStreamObj) {
+            cameraStreamObj.getTracks().forEach((track) => track.stop());
+            cameraStreamObj = null;
+          }
+          cameraStream.style.display = "none";
+          cameraPreview.style.display = "none";
+          cameraPreview.src = "";
+          capturePhoto.style.display = "block";
+          sendPhoto.style.display = "none";
+          cancelCamera.style.display = "block";
+          cameraModal.style.display = "none";
+        }
+
+        cameraButton.addEventListener("click", () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Camera is not supported in this browser.");
+            return;
+          }
+          navigator.mediaDevices
+            .getUserMedia({
+              video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+            })
+            .then((stream) => {
+              cameraStreamObj = stream;
+              cameraStream.srcObject = stream;
+              cameraStream.style.display = "block";
+              cameraPreview.style.display = "none";
+              capturePhoto.style.display = "block";
+              sendPhoto.style.display = "none";
+              cancelCamera.style.display = "block";
+              cameraModal.style.display = "flex";
+            })
+            .catch((err) => {
+              showToast("Failed to access camera: " + err.message);
+            });
+        });
+
+        capturePhoto.addEventListener("click", () => {
+          const context = cameraCanvas.getContext("2d");
+          cameraCanvas.width = cameraStream.videoWidth;
+          cameraCanvas.height = cameraStream.videoHeight;
+          context.drawImage(
+            cameraStream,
+            0,
+            0,
+            cameraCanvas.width,
+            cameraCanvas.height
+          );
           cameraPreview.src = cameraCanvas.toDataURL("image/jpeg", 0.8);
           cameraStream.style.display = "none";
           cameraPreview.style.display = "block";
           capturePhoto.style.display = "none";
           sendPhoto.style.display = "block";
           cancelCamera.style.display = "block";
-        }
-      }
-    });
-  }
-
-  if (sendPhoto) {
-    sendPhoto.addEventListener("click", () => {
-      if (cameraPreview) {
-        const base64 = cameraPreview.src;
-        const fileSize = (base64.length * 3) / 4;
-        sendMessage(base64, "image", {
-          fileName: `photo_${Date.now()}.jpg`,
-          fileSize: fileSize,
-          fileType: "image/jpeg",
         });
-        closeCameraModal();
-      }
-    });
-  }
 
-  if (cancelCamera) {
-    cancelCamera.addEventListener("click", closeCameraModal);
-  }
-
-  if (imageInput) {
-    imageInput.addEventListener("change", () => {
-      const file = imageInput.files[0];
-      if (file) {
-        if (!["image/png", "image/jpeg"].includes(file.type)) {
-          showToast("Only PNG and JPEG images are allowed.");
-          return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          showToast("Image size must be less than 5MB.");
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result;
+        sendPhoto.addEventListener("click", () => {
+          const base64 = cameraPreview.src;
+          const fileSize = (base64.length * 3) / 4;
           sendMessage(base64, "image", {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
+            fileName: `photo_${Date.now()}.jpg`,
+            fileSize: fileSize,
+            fileType: "image/jpeg",
           });
-        };
-        reader.onerror = () => {
-          showToast("Failed to read image file.");
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
+          closeCameraModal();
+        });
 
-  if (audioInput) {
-    audioInput.addEventListener("change", () => {
-      const file = audioInput.files[0];
-      if (file) {
-        if (!["audio/mpeg", "audio/wav", "audio/webm"].includes(file.type)) {
-          showToast("Only MP3, WAV, and WebM audio files are allowed.");
-          return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          showToast("Audio size must be less than 5MB.");
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result;
-          sendMessage(base64, "audio", {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-          });
-        };
-        reader.onerror = () => {
-          showToast("Failed to read audio file.");
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
+        cancelCamera.addEventListener("click", closeCameraModal);
 
-  if (documentInput) {
-    documentInput.addEventListener("change", () => {
-      const file = documentInput.files[0];
-      if (file) {
-        if (
-          ![
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          ].includes(file.type)
-        ) {
-          showToast("Only PDF, DOC, and DOCX files are allowed.");
-          return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          showToast("Document size must be less than 5MB.");
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = reader.result;
-          sendMessage(base64, "document", {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-          });
-        };
-        reader.onerror = () => {
-          showToast("Failed to read document file.");
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-
-  if (voiceButton) {
-    voiceButton.addEventListener("mousedown", () => {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast("Voice recording is not supported in this browser.");
-        return;
-      }
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
-          audioChunks = [];
-          mediaRecorder.start();
-          voiceButton.classList.add("recording");
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-              audioChunks.push(e.data);
+        imageInput.addEventListener("change", () => {
+          const file = imageInput.files[0];
+          if (file) {
+            if (!["image/png", "image/jpeg"].includes(file.type)) {
+              showToast("Only PNG and JPEG images are allowed.");
+              return;
             }
-          };
-          mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-            if (audioBlob.size > 5 * 1024 * 1024) {
-              showToast("Voice message size must be less than 5MB.");
-              stream.getTracks().forEach((track) => track.stop());
-              voiceButton.classList.remove("recording");
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Image size must be less than 5MB.");
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "image", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+              });
+            };
+            reader.onerror = () => {
+              showToast("Failed to read image file.");
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        audioInput.addEventListener("change", () => {
+          const file = audioInput.files[0];
+          if (file) {
+            if (
+              !["audio/mpeg", "audio/wav", "audio/webm"].includes(file.type)
+            ) {
+              showToast("Only MP3, WAV, and WebM audio files are allowed.");
+              return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Audio size must be less than 5MB.");
               return;
             }
             const reader = new FileReader();
             reader.onload = () => {
               const base64 = reader.result;
               sendMessage(base64, "audio", {
-                fileName: `voice_${Date.now()}.webm`,
-                fileSize: audioBlob.size,
-                fileType: "audio/webm",
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
               });
             };
             reader.onerror = () => {
-              showToast("Failed to process voice message.");
+              showToast("Failed to read audio file.");
             };
-            reader.readAsDataURL(audioBlob);
-            stream.getTracks().forEach((track) => track.stop());
-            voiceButton.classList.remove("recording");
-          };
-          mediaRecorder.onerror = (e) => {
-            showToast("Error recording audio: " + e.error);
-            stream.getTracks().forEach((track) => track.stop());
-            voiceButton.classList.remove("recording");
-          };
-        })
-        .catch((err) => {
-          showToast("Failed to access microphone: " + err.message);
+            reader.readAsDataURL(file);
+          }
         });
-    });
 
-    voiceButton.addEventListener("mouseup", () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-      }
-    });
-
-    voiceButton.addEventListener("mouseleave", () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-      }
-    });
-  }
-
-  if (moreOptions) {
-    moreOptions.addEventListener("click", () => {
-      dropdownMenu.classList.toggle("active");
-    });
-  }
-
-  if (clearChatsBtn) {
-    clearChatsBtn.addEventListener("click", () => {
-      if (selectedUserId) {
-        if (confirm("Are you sure you want to clear chats with this user?")) {
-          messageChannel.publish("clearChats", { userId: selectedUserId }, async (err) => {
-            if (!err) {
-              showToast("Chats cleared successfully");
-              chatWindow.innerHTML = "";
-              chatWindow.dataset.lastDate = null;
-            } else {
-              showToast("Failed to clear chats: " + err.message);
+        documentInput.addEventListener("change", () => {
+          const file = documentInput.files[0];
+          if (file) {
+            if (
+              ![
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ].includes(file.type)
+            ) {
+              showToast("Only PDF, DOC, and DOCX files are allowed.");
+              return;
             }
-          });
-        }
-      } else {
-        showToast("Please select a user.");
-      }
-    });
-  }
-
-  if (viewProfileBtn) {
-    viewProfileBtn.addEventListener("click", async () => {
-      if (selectedUserId) {
-        try {
-          const response = await fetch(`/api/users/${selectedUserId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await response.json();
-          if (data.status === "success") {
-            modalAvatar.src = DOMPurify.sanitize(data.user.profileImage);
-            modalName.textContent = DOMPurify.sanitize(data.user.name);
-            modalEmail.textContent = DOMPurify.sanitize(data.user.email);
-            modalRole.textContent = DOMPurify.sanitize(
-              data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1)
-            );
-            profileModal.style.display = "flex";
-          } else {
-            showToast("Failed to fetch profile: " + data.message);
-          }
-        } catch (err) {
-          showToast("Failed to fetch profile: " + err.message);
-        }
-      } else {
-        showToast("Please select a user.");
-      }
-    });
-  }
-
-  if (closeModal) {
-    closeModal.addEventListener("click", () => {
-      profileModal.style.display = "none";
-    });
-  }
-
-  if (imageModal) {
-    imageModal.addEventListener("click", () => {
-      imageModal.style.display = "none";
-    });
-  }
-
-  if (chatWindow) {
-    chatWindow.addEventListener("click", (e) => {
-      if (e.target.tagName === "IMG" && !e.target.closest(".audio-container")) {
-        enlargedImage.src = DOMPurify.sanitize(e.target.src);
-        imageModal.style.display = "flex";
-      }
-    });
-  }
-
-  if (backButton) {
-    backButton.addEventListener("click", () => {
-      chatWindowContainer.classList.remove("active");
-      userListContainer.style.display = "block";
-      searchMessagesBar.classList.remove("active");
-    });
-  }
-
-  if (searchButton) {
-    searchButton.addEventListener("click", () => {
-      searchMessagesBar.classList.toggle("active");
-      if (searchMessagesBar.classList.contains("active")) {
-        searchMessagesInput.focus();
-      } else {
-        searchMessagesInput.value = "";
-        displayMessages(currentMessages);
-      }
-    });
-  }
-
-  if (searchMessagesInput) {
-    searchMessagesInput.addEventListener("input", debounce(() => {
-      const query = searchMessagesInput.value.trim().toLowerCase();
-      if (query) {
-        const filteredMessages = currentMessages.filter(
-          (msg) =>
-            msg.content.toLowerCase().includes(query) ||
-            msg.sender.name.toLowerCase().includes(query)
-        );
-        displayMessages(filteredMessages);
-      } else {
-        displayMessages(currentMessages);
-      }
-    }, 300));
-  }
-
-  if (searchUsersInput) {
-    searchUsersInput.addEventListener("input", debounce(async () => {
-      try {
-        const response = await fetch("/api/users", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (data.status === "success") {
-          const query = searchUsersInput.value.trim().toLowerCase();
-          let filteredUsers = data.users.filter((user) => user.role === "admin");
-          if (query) {
-            filteredUsers = filteredUsers.filter(
-              (user) =>
-                user.name.toLowerCase().includes(query) ||
-                user.email.toLowerCase().includes(query)
-            );
-          }
-          if (currentCategory === "unread") {
-            filteredUsers = filteredUsers.filter((u) => u.unreadCount > 0);
-          }
-          updateUserList(filteredUsers);
-        } else {
-          showToast("Failed to fetch users: " + data.message);
-        }
-      } catch (err) {
-        showToast("Error fetching users: " + err.message);
-      }
-    }, 300));
-  }
-
-  if (categoryTabs) {
-    categoryTabs.forEach((tab) => {
-      tab.addEventListener("click", async () => {
-        categoryTabs.forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        currentCategory = tab.dataset.category;
-        try {
-          const response = await fetch("/api/users", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await response.json();
-          if (data.status === "success") {
-            let filteredUsers = data.users.filter((user) => user.role === "admin");
-            if (currentCategory === "unread") {
-              filteredUsers = filteredUsers.filter((u) => u.unreadCount > 0);
+            if (file.size > 5 * 1024 * 1024) {
+              showToast("Document size must be less than 5MB.");
+              return;
             }
-            updateUserList(filteredUsers);
-          } else {
-            showToast("Failed to fetch users: " + data.message);
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result;
+              sendMessage(base64, "document", {
+                fileName: file.name,
+                fileSize: file.size,
+                fileType: file.type,
+              });
+            };
+            reader.onerror = () => {
+              showToast("Failed to read document file.");
+            };
+            reader.readAsDataURL(file);
           }
-        } catch (err) {
-          showToast("Error fetching users: " + err.message);
-        }
-      });
-    });
-  }
+        });
 
-  if (callButton) {
-    callButton.addEventListener("click", async () => {
-      if (!selectedUserId) {
-        showToast("Please select a user to call.");
-        return;
-      }
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        peerConnection = new RTCPeerConnection(webrtcConfig);
-        localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
-
-        peerConnection.ontrack = (event) => {
-          remoteStream = event.streams[0];
-          const audio = document.createElement("audio");
-          audio.srcObject = remoteStream;
-          audio.autoplay = true;
-          document.body.appendChild(audio);
-        };
-
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            callChannel.publish("iceCandidate", { to: selectedUserId, candidate: event.candidate }, (err) => {
-              if (err) {
-                showToast("Failed to send ICE candidate: " + err.message);
-              }
+        voiceButton.addEventListener("mousedown", () => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Voice recording is not supported in this browser.");
+            return;
+          }
+          navigator.mediaDevices
+            .getUserMedia({ audio: true })
+            .then((stream) => {
+              mediaRecorder = new MediaRecorder(stream, {
+                mimeType: "audio/webm;codecs=opus",
+              });
+              audioChunks = [];
+              mediaRecorder.start();
+              voiceButton.classList.add("recording");
+              mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                  audioChunks.push(e.data);
+                }
+              };
+              mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, {
+                  type: "audio/webm",
+                });
+                if (audioBlob.size > 5 * 1024 * 1024) {
+                  showToast("Voice message size must be less than 5MB.");
+                  stream.getTracks().forEach((track) => track.stop());
+                  voiceButton.classList.remove("recording");
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const base64 = reader.result;
+                  sendMessage(base64, "audio", {
+                    fileName: `voice_${Date.now()}.webm`,
+                    fileSize: audioBlob.size,
+                    fileType: "audio/webm",
+                  });
+                };
+                reader.onerror = () => {
+                  showToast("Failed to process voice message.");
+                };
+                reader.readAsDataURL(audioBlob);
+                stream.getTracks().forEach((track) => track.stop());
+                voiceButton.classList.remove("recording");
+              };
+              mediaRecorder.onerror = (e) => {
+                showToast("Error recording audio: " + e.error);
+                stream.getTracks().forEach((track) => track.stop());
+                voiceButton.classList.remove("recording");
+              };
+            })
+            .catch((err) => {
+              showToast("Failed to access microphone: " + err.message);
             });
-          }
-        };
+        });
 
-        peerConnection.onconnectionstatechange = () => {
-          if (peerConnection.connectionState === "connected" && callInterface && callStatus) {
-            callStatus.textContent = "Connected";
-            callStatus.classList.add("connected");
-            startCallTimer();
-          } else if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
-            showToast("Call disconnected.");
-            endCall();
-          }
-        };
-
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        callChannel.publish("callUser", { to: selectedUserId, offer, callerName: userName }, (err) => {
-          if (!err) {
-            callInterfaceName.textContent = `Call with ${chatHeaderName.textContent}`;
-            callInterface.classList.add("active");
-          } else {
-            showToast("Failed to initiate call: " + err.message);
-            endCall();
+        voiceButton.addEventListener("mouseup", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
           }
         });
-      } catch (err) {
-        showToast("Failed to start call: " + err.message);
-        endCall();
-      }
-    });
-  }
 
-  if (acceptCall) {
-    acceptCall.addEventListener("click", async () => {
-      if (!callModal.dataset.callerId || !callModal.dataset.offer) {
-        showToast("Invalid call data.");
-        closeCallModal();
-        return;
-      }
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        peerConnection = new RTCPeerConnection(webrtcConfig);
-        localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+        voiceButton.addEventListener("mouseleave", () => {
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+        });
 
-        peerConnection.ontrack = (event) => {
-          remoteStream = event.streams[0];
-          const audio = document.createElement("audio");
-          audio.srcObject = remoteStream;
-          audio.autoplay = true;
-          document.body.appendChild(audio);
-        };
+        moreOptions.addEventListener("click", () => {
+          dropdownMenu.classList.toggle("active");
+        });
 
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            callChannel.publish("iceCandidate", { to: callModal.dataset.callerId, candidate: event.candidate }, (err) => {
-              if (err) {
-                showToast("Failed to send ICE candidate: " + err.message);
+        searchMessagesBtn.addEventListener("click", () => {
+          dropdownMenu.classList.remove("active");
+          searchMessagesBar.classList.toggle("active");
+          if (searchMessagesBar.classList.contains("active")) {
+            searchMessagesInput.focus();
+          } else {
+            searchMessagesInput.value = "";
+            displayMessages(currentMessages);
+          }
+        });
+
+        audioCallBtn.addEventListener("click", () => {
+          dropdownMenu.classList.remove("active");
+          startCall("audio");
+        });
+
+        videoCallBtn.addEventListener("click", () => {
+          dropdownMenu.classList.remove("active");
+          startCall("video");
+        });
+
+        clearChatsBtn.addEventListener("click", async () => {
+          if (selectedUserId) {
+            if (
+              confirm("Are you sure you want to clear chats with this admin?")
+            ) {
+              try {
+                const response = await fetch("/api/messaging/clear-chats", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ userId: selectedUserId }),
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                  showToast("Chats cleared successfully");
+                  chatWindow.innerHTML = "";
+                  chatWindow.dataset.lastDate = null;
+                  fetchUsers();
+                } else {
+                  showToast("Failed to clear chats: " + data.message);
+                }
+              } catch (error) {
+                showToast("Error clearing chats: " + error.message);
               }
-            });
-          }
-        };
-
-        peerConnection.onconnectionstatechange = () => {
-          if (peerConnection.connectionState === "connected" && callInterface && callStatus) {
-            callStatus.textContent = "Connected";
-            callStatus.classList.add("connected");
-            startCallTimer();
-          } else if (peerConnection.connectionState === "disconnected" || peerConnection.connectionState === "failed") {
-            showToast("Call disconnected.");
-            endCall();
-          }
-        };
-
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(JSON.parse(callModal.dataset.offer)));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        callChannel.publish("answerCall", { to: callModal.dataset.callerId, answer }, (err) => {
-          if (err) {
-            showToast("Failed to send answer: " + err.message);
-            endCall();
+            }
           } else {
-            callInterfaceName.textContent = `Call with ${callerName.textContent}`;
-            callInterface.classList.add("active");
-            closeCallModal();
+            showToast("Please select an admin.");
           }
         });
-      } catch (err) {
-        showToast("Failed to accept call: " + err.message);
-        endCall();
-      }
-    });
-  }
 
-  if (rejectCall) {
-    rejectCall.addEventListener("click", () => {
-      callChannel.publish("rejectCall", { to: callModal.dataset.callerId }, (err) => {
-        if (err) {
-          showToast("Failed to reject call: " + err.message);
-        }
-        closeCallModal();
-      });
-    });
-  }
-
-  if (muteButton) {
-    muteButton.addEventListener("click", () => {
-      if (localStream) {
-        isMuted = !isMuted;
-        localStream.getAudioTracks().forEach((track) => (track.enabled = !isMuted));
-        muteButton.textContent = isMuted ? "Unmute" : "Mute";
-        muteButton.classList.toggle("muted", isMuted);
-      }
-    });
-  }
-
-  if (endCallButton) {
-    endCallButton.addEventListener("click", endCall);
-  }
-
-  // Ably Subscriptions
-  userChannel.subscribe("userStatus", (msg) => {
-    const { userId: senderId, status } = msg.data;
-    const userItem = document.querySelector(`.user-item[data-user-id="${senderId}"]`);
-    if (userItem) {
-      const onlineStatus = userItem.querySelector(".online-status");
-      if (onlineStatus) {
-        onlineStatus.textContent = status ? "Online" : "Offline";
-        onlineStatus.style.color = status ? "#22c55e" : "#6b7280";
-      }
-    }
-  });
-
-  messageChannel.subscribe("receiveMessage", async (msg) => {
-    const { senderId, content, messageType, fileMetadata, tempMessageId } = msg.data;
-    if (!sentMessageIds.has(tempMessageId) && selectedUserId === senderId) {
-      try {
-        const response = await fetch(`/api/messages?userId=${senderId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        viewProfileBtn.addEventListener("click", async () => {
+          if (selectedUserId) {
+            try {
+              const response = await fetch(
+                `/api/messaging/user/${selectedUserId}`,
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              const data = await response.json();
+              if (data.status === "success") {
+                modalAvatar.src = DOMPurify.sanitize(
+                  data.user.profileImage ||
+                    "https://www.gravatar.com/avatar/?d=retro"
+                );
+                modalName.textContent = DOMPurify.sanitize(
+                  data.user.name || "Unknown"
+                );
+                modalEmail.textContent = DOMPurify.sanitize(
+                  data.user.email || "No email"
+                );
+                modalRole.textContent = DOMPurify.sanitize(
+                  data.user.role
+                    ? data.user.role.charAt(0).toUpperCase() +
+                        data.user.role.slice(1)
+                    : "No role"
+                );
+                profileModal.style.display = "flex";
+              } else {
+                showToast("Failed to fetch admin profile: " + data.message);
+              }
+            } catch (error) {
+              showToast("Error fetching admin profile: " + error.message);
+            }
+          } else {
+            showToast("Please select an admin.");
+          }
         });
-        const msgData = await response.json();
-        if (msgData.status === "success") {
-          currentMessages = msgData.messages;
+
+        closeModal.addEventListener("click", () => {
+          profileModal.style.display = "none";
+        });
+
+        imageModal.addEventListener("click", () => {
+          imageModal.style.display = "none";
+        });
+
+        chatWindow.addEventListener("click", (e) => {
+          if (
+            e.target.tagName === "IMG" &&
+            e.target.closest(".message-content")
+          ) {
+            enlargedImage.src = DOMPurify.sanitize(e.target.src);
+            imageModal.style.display = "flex";
+          }
+        });
+
+        userList.addEventListener("click", async (e) => {
+          const userItem = e.target.closest(".user-item");
+          if (userItem) {
+            const newUserId = userItem.dataset.userId;
+            if (newUserId !== selectedUserId) {
+              selectedUserId = newUserId;
+              localStorage.setItem("selectedUserId", selectedUserId);
+              userList
+                .querySelectorAll(".user-item")
+                .forEach((item) => item.classList.remove("selected"));
+              userItem.classList.add("selected");
+              chatHeaderName.textContent = DOMPurify.sanitize(
+                userItem.dataset.name || "Unknown"
+              );
+              chatHeaderAvatar.src = DOMPurify.sanitize(
+                userItem.dataset.avatar ||
+                  "https://www.gravatar.com/avatar/?d=retro"
+              );
+              try {
+                const response = await fetch(
+                  `/api/messaging/messages/${selectedUserId}`,
+                  {
+                    headers: { Authorization: `Bearer ${token}` },
+                  }
+                );
+                const data = await response.json();
+                if (data.status === "success") {
+                  currentMessages = data.messages;
+                  displayMessages(data.messages);
+                  const statusIndicator =
+                    document.querySelector(".online-status");
+                  statusIndicator.textContent = onlineUsers.has(selectedUserId)
+                    ? "Online"
+                    : "Offline";
+                  statusIndicator.className = `online-status ${
+                    onlineUsers.has(selectedUserId) ? "online" : ""
+                  }`;
+                  if (window.innerWidth <= 768) {
+                    userListContainer.style.display = "none";
+                    chatWindowContainer.classList.add("active");
+                  }
+                } else {
+                  showToast("Failed to fetch messages: " + data.message);
+                }
+              } catch (error) {
+                showToast("Error fetching messages: " + error.message);
+              }
+            }
+          }
+        });
+
+        backButton.addEventListener("click", () => {
+          userListContainer.style.display = "flex";
+          chatWindowContainer.classList.remove("active");
+          searchMessagesBar.classList.remove("active");
+          searchMessagesInput.value = "";
           displayMessages(currentMessages);
-        }
-      } catch (err) {
-        showToast("Error fetching messages: " + err.message);
-      }
-    }
-  });
+        });
 
-  messageChannel.subscribe("messageStatus", (msg) => {
-    const { messageId, status, isRead } = msg.data;
-    updateMessageStatus(messageId, status, isRead);
-  });
+        searchUsersInput.addEventListener(
+          "input",
+          debounce(() => {
+            const query = searchUsersInput.value.trim();
+            fetchUsers(query);
+          }, 300)
+        );
 
-  callChannel.subscribe("callUser", (msg) => {
-    const { to, offer, callerName: caller } = msg.data;
-    if (to === userId && !peerConnection) {
-      callerName.textContent = caller;
-      callModal.dataset.callerId = msg.clientId;
-      callModal.dataset.offer = JSON.stringify(offer);
-      callModal.style.display = "flex";
-    }
-  });
+        searchMessagesInput.addEventListener(
+          "input",
+          debounce(() => {
+            const query = searchMessagesInput.value.trim().toLowerCase();
+            const filteredMessages = currentMessages.filter(
+              (msg) =>
+                msg.content.toLowerCase().includes(query) &&
+                msg.messageType === "text"
+            );
+            displayMessages(filteredMessages);
+          }, 300)
+        );
 
-  callChannel.subscribe("answerCall", async (msg) => {
-    const { to, answer } = msg.data;
-    if (to === userId && peerConnection) {
-      try {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-      } catch (err) {
-        showToast("Failed to set answer: " + err.message);
-        endCall();
-      }
-    }
-  });
+        searchButton.addEventListener("click", () => {
+          searchMessagesBar.classList.toggle("active");
+          if (searchMessagesBar.classList.contains("active")) {
+            searchMessagesInput.focus();
+          } else {
+            searchMessagesInput.value = "";
+            displayMessages(currentMessages);
+          }
+        });
 
-  callChannel.subscribe("iceCandidate", async (msg) => {
-    const { to, candidate } = msg.data;
-    if (to === userId && peerConnection) {
-      try {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (err) {
-        showToast("Failed to add ICE candidate: " + err.message);
-      }
-    }
-  });
+        acceptCall.addEventListener("click", acceptCallHandler);
 
-  callChannel.subscribe("rejectCall", (msg) => {
-    const { to } = msg.data;
-    if (to === userId) {
-      showToast("Call rejected by user.");
-      endCall();
-    }
-  });
+        rejectCall.addEventListener("click", endCallHandler);
 
-  callChannel.subscribe("endCall", (msg) => {
-    const { to } = msg.data;
-    if (to === userId) {
-      showToast("Call ended by user.");
-      endCall();
-    }
-  });
+        endCall.addEventListener("click", endCallHandler);
 
-  // Initial user list fetch
-  async function fetchUsers() {
-    try {
-      const response = await fetch("/api/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (data.status === "success") {
-        const adminUsers = data.users.filter((user) => user.role === "admin");
-        updateUserList(adminUsers);
-        if (selectedUserId) {
-          const selectedUser = adminUsers.find((u) => u._id === selectedUserId);
-          if (selectedUser) {
-            document.querySelector(`.user-item[data-user-id="${selectedUserId}"]`)?.classList.add("selected");
-            chatHeaderName.textContent = DOMPurify.sanitize(selectedUser.name);
-            chatHeaderAvatar.src = DOMPurify.sanitize(selectedUser.profileImage);
-            chatWindowContainer.classList.add("active");
-            userListContainer.style.display = "none";
-            const msgResponse = await fetch(`/api/messages?userId=${selectedUserId}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const msgData = await msgResponse.json();
-            if (msgData.status === "success") {
-              currentMessages = msgData.messages;
-              displayMessages(currentMessages);
-            } else {
-              showToast("Failed to fetch messages: " + msgData.message);
+        // Ably Subscriptions
+        const presenceChannel = ably.channels.get("presence");
+        await presenceChannel.subscribe("enter", (msg) => {
+          if (msg.clientId !== userId) {
+            onlineUsers.add(msg.clientId);
+            if (selectedUserId === msg.clientId) {
+              const statusIndicator = document.querySelector(".online-status");
+              statusIndicator.textContent = "Online";
+              statusIndicator.className = "online-status online";
             }
           }
+        });
+
+        await presenceChannel.subscribe("leave", (msg) => {
+          if (msg.clientId !== userId) {
+            onlineUsers.delete(msg.clientId);
+            if (selectedUserId === msg.clientId) {
+              const statusIndicator = document.querySelector(".online-status");
+              statusIndicator.textContent = "Offline";
+              statusIndicator.className = "online-status";
+            }
+          }
+        });
+
+        await presenceChannel.presence.enter();
+
+        const messageChannel = ably.channels.get(
+          `chat:${[userId, selectedUserId].sort().join(":")}`
+        );
+        await messageChannel.subscribe("message", (msg) => {
+          if (msg.data.senderId !== userId && msg.data.receiverId === userId) {
+            if (!sentMessageIds.has(msg.data.messageId)) {
+              appendMessage(
+                false,
+                msg.data.senderName,
+                msg.data.content,
+                msg.data.timestamp,
+                msg.data.messageId,
+                msg.data.messageType || "text",
+                false,
+                msg.data.fileMetadata || {}
+              );
+              currentMessages.push({
+                sender: { _id: msg.data.senderId, name: msg.data.senderName },
+                content: msg.data.content,
+                createdAt: msg.data.timestamp,
+                _id: msg.data.messageId,
+                messageType: msg.data.messageType || "text",
+                fileMetadata: msg.data.fileMetadata || {},
+                isRead: false,
+              });
+              fetchUsers();
+            }
+          }
+        });
+
+        await messageChannel.subscribe("typing", (msg) => {
+          if (
+            msg.data.senderId !== userId &&
+            msg.data.senderId === selectedUserId
+          ) {
+            typingIndicator.classList.toggle("active", msg.data.isTyping);
+          }
+        });
+
+        const callChannel = ably.channels.get(
+          `call:${[userId, selectedUserId].sort().join(":")}`
+        );
+        await callChannel.subscribe("call-offer", handleIncomingCall);
+
+        await callChannel.subscribe("call-answer", async (message) => {
+          if (message.data.senderId !== userId) {
+            try {
+              await peerConnection.setRemoteDescription(
+                new RTCSessionDescription(message.data.answer)
+              );
+              callStatus.textContent = `Connected to ${chatHeaderName.textContent}`;
+            } catch (error) {
+              showToast("Failed to process call answer: " + error.message);
+              endCallHandler();
+            }
+          }
+        });
+
+        await callChannel.subscribe("ice-candidate", async (message) => {
+          if (message.data.senderId !== userId && peerConnection) {
+            try {
+              await peerConnection.addIceCandidate(
+                new RTCIceCandidate(message.data.candidate)
+              );
+            } catch (error) {
+              showToast("Failed to add ICE candidate: " + error.message);
+            }
+          }
+        });
+
+        await callChannel.subscribe("call-ended", (message) => {
+          if (message.data.senderId !== userId) {
+            endCallHandler();
+          }
+        });
+
+        // Fetch Initial Users
+        fetchUsers();
+
+        // Update User List
+        function updateUserList({ users }) {
+          console.log("Updating user list with:", users); // Debug
+          userList.innerHTML = "";
+          if (users.length === 0) {
+            userList.innerHTML = "<p>No admins found.</p>";
+            return;
+          }
+          users.forEach((u) => {
+            if (u._id === userId) return;
+            const userItem = document.createElement("div");
+            userItem.className = `user-item ${
+              u._id === selectedUserId ? "selected" : ""
+            }`;
+            userItem.dataset.userId = u._id;
+            userItem.dataset.name = DOMPurify.sanitize(u.name);
+            userItem.dataset.avatar = DOMPurify.sanitize(
+              u.profileImage || "https://www.gravatar.com/avatar/?d=retro"
+            );
+            userItem.innerHTML = `
+        <img src="${userItem.dataset.avatar}" alt="${
+              userItem.dataset.name
+            }'s avatar" />
+        <div class="user-info">
+          <h3>${userItem.dataset.name}</h3>
+          <p>${DOMPurify.sanitize(u.lastMessage || "No messages yet")}</p>
+        </div>
+        <span class="message-time">${
+          u.lastMessageTime ? formatMessageTime(u.lastMessageTime) : ""
+        }</span>
+        ${
+          u.unreadCount > 0
+            ? `<span class="unread-count">${u.unreadCount}</span>`
+            : ""
         }
-      } else {
-        showToast("Failed to fetch users: " + data.message);
-      }
-    } catch (err) {
-      showToast("Error fetching users: " + err.message);
-    }
-  }
+        <button class="favorite-btn ${
+          u.isFavorite ? "favorite" : ""
+        }" data-user-id="${u._id}">
+          <span class="material-icons">${
+            u.isFavorite ? "star" : "star_border"
+          }</span>
+        </button>
+      `;
+            userList.appendChild(userItem);
+          });
 
-  fetchUsers();
-});
+          document.querySelectorAll(".favorite-btn").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              const targetUserId = btn.dataset.userId;
+              try {
+                const response = await fetch("/api/messaging/toggle-favorite", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ userId: targetUserId }),
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                  btn.classList.toggle("favorite");
+                  btn.querySelector("span").textContent =
+                    btn.classList.contains("favorite") ? "star" : "star_border";
+                  showToast(
+                    btn.classList.contains("favorite")
+                      ? "Added to favorites"
+                      : "Removed from favorites"
+                  );
+                } else {
+                  showToast("Failed to toggle favorite: " + data.message);
+                }
+              } catch (error) {
+                showToast("Error toggling favorite: " + error.message);
+              }
+            });
+          });
+        }
 
+        // Category Tabs
+        document.querySelectorAll(".category-tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            document
+              .querySelectorAll(".category-tab")
+              .forEach((t) => t.classList.remove("active"));
+            tab.classList.add("active");
+            currentCategory = tab.dataset.category;
+            fetchUsers();
+          });
+        });
+
+        // Check Static Files
+        function checkStaticFiles() {
+          const files = [
+            "/images/Logo_Black_Bg-2.png",
+            "/images/chat-background.png",
+            "/css/styles.css",
+            "/css/sidebar.css",
+            "/js/sidebar.js",
+          ];
+          files.forEach((file) => {
+            fetch(file)
+              .then((res) => {
+                if (!res.ok)
+                  console.error(`Failed to load ${file}: ${res.status}`);
+              })
+              .catch((err) => console.error(`Error loading ${file}:`, err));
+          });
+        }
+        checkStaticFiles();
+
+        // Cleanup on Page Unload
+        window.addEventListener("beforeunload", () => {
+          if (callStream) {
+            callStream.getTracks().forEach((track) => track.stop());
+          }
+          if (peerConnection) {
+            peerConnection.close();
+          }
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+          audioElements.forEach((audio) => audio.pause());
+          presenceChannel.presence.leave();
+        });
+      });
     </script>
   </body>
 </html>
