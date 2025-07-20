@@ -22,9 +22,7 @@ router.get("/ably-auth", async (req, res) => {
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
-    const user = await User.findById(decoded.id).select(
-      "name email role isVerified"
-    );
+    const user = await User.findById(decoded.id).select("name email role isVerified");
     if (!user || !user.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
@@ -32,7 +30,8 @@ router.get("/ably-auth", async (req, res) => {
       clientId: user._id.toString(),
       capability: {
         "chat:*": ["subscribe", "publish", "presence"],
-        "online-status": ["subscribe", "presence"],
+        "call:*": ["subscribe", "publish"], // Added for WebRTC call signaling
+        "presence": ["subscribe", "presence"], // Updated channel name
       },
     });
     res.status(200).json(tokenRequest);
@@ -42,75 +41,81 @@ router.get("/ably-auth", async (req, res) => {
   }
 });
 
-// Get Users Endpoint
+// Get Users Endpoint with Search and Category Filtering
 router.get("/users", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+    const { query = "", category = "all" } = req.query; // Added category filter
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
     const Message = mongoose.model("Message");
-    const currentUser = await User.findById(decoded.id).select(
-      "name email role favorites isVerified"
-    );
+    const currentUser = await User.findById(decoded.id).select("name email role favorites isVerified");
     if (!currentUser || !currentUser.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
-    let users;
+
+    let userQuery = { isVerified: true };
     if (currentUser.role === "admin") {
-      users = await User.find({ isVerified: true })
-        .select("name email role profileImage isOnline")
-        .lean();
+      userQuery = { isVerified: true, _id: { $ne: currentUser._id } }; // Exclude current user for admins
     } else {
-      users = await User.find({ role: "admin", isVerified: true })
-        .select("name email role profileImage isOnline")
-        .lean();
+      userQuery = { role: "admin", isVerified: true }; // Users only see admins
     }
+
+    // Search filtering
+    if (query) {
+      userQuery.$or = [
+        { name: { $regex: query, $options: "i" } },
+        { email: { $regex: query, $options: "i" } },
+      ];
+    }
+
+    let users = await User.find(userQuery).select("name email role profileImage isOnline").lean();
+
     const usersWithDetails = await Promise.all(
       users.map(async (user) => {
+        const messageQuery = {
+          $or: [
+            { sender: currentUser._id, receiver: user._id },
+            { sender: user._id, receiver: currentUser._id },
+          ],
+        };
         const unreadCount = await Message.countDocuments({
           sender: user._id,
           receiver: currentUser._id,
           isRead: false,
         });
-        const latestMessage = await Message.findOne({
-          $or: [
-            { sender: currentUser._id, receiver: user._id },
-            { sender: user._id, receiver: currentUser._id },
-          ],
-        })
+        const latestMessage = await Message.findOne(messageQuery)
           .sort({ createdAt: -1 })
           .lean();
         return {
-          ...user,
           _id: user._id.toString(),
-          unreadCount,
-          lastMessage: latestMessage
-            ? {
-                content: latestMessage.content,
-                createdAt: latestMessage.createdAt,
-              }
-            : null,
-          isFavorite:
-            currentUser.favorites
-              ?.map((id) => id.toString())
-              .includes(user._id.toString()) || false,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          profileImage: user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
           isOnline: user.isOnline || false,
+          unreadCount,
+          lastMessage: latestMessage ? latestMessage.content : "No messages yet",
+          lastMessageTime: latestMessage ? latestMessage.createdAt : null,
+          isFavorite: currentUser.favorites?.map((id) => id.toString()).includes(user._id.toString()) || false,
         };
       })
     );
-    usersWithDetails.sort((a, b) => {
-      const aTime = a.lastMessage
-        ? new Date(a.lastMessage.createdAt)
-        : new Date(0);
-      const bTime = b.lastMessage
-        ? new Date(b.lastMessage.createdAt)
-        : new Date(0);
+
+    // Filter by category (all or unread)
+    const filteredUsers = category === "unread" ? usersWithDetails.filter((user) => user.unreadCount > 0) : usersWithDetails;
+
+    // Sort by last message time
+    filteredUsers.sort((a, b) => {
+      const aTime = a.lastMessageTime ? new Date(a.lastMessageTime) : new Date(0);
+      const bTime = b.lastMessageTime ? new Date(b.lastMessageTime) : new Date(0);
       return bTime - aTime;
     });
-    res.status(200).json({ status: "success", users: usersWithDetails });
+
+    res.status(200).json({ status: "success", users: filteredUsers });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ status: "error", message: "Failed to fetch users" });
@@ -141,7 +146,7 @@ router.post("/toggle-favorite", async (req, res) => {
       currentUser.favorites.push(userId);
     }
     await currentUser.save();
-    const channel = ably.channels.get(`chat:${currentUser._id}:${userId}`);
+    const channel = ably.channels.get(`chat:${[currentUser._id, userId].sort().join(":")}`);
     await channel.publish("favoriteStatus", {
       userId,
       isFavorite: !isFavorite,
@@ -149,9 +154,7 @@ router.post("/toggle-favorite", async (req, res) => {
     res.status(200).json({ status: "success", isFavorite: !isFavorite });
   } catch (error) {
     console.error("Error toggling favorite:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to toggle favorite" });
+    res.status(500).json({ status: "error", message: "Failed to toggle favorite" });
   }
 });
 
@@ -169,17 +172,13 @@ router.get("/messages/:userId", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
     const Message = mongoose.model("Message");
-    const currentUser = await User.findById(decoded.id).select(
-      "name email role isVerified"
-    );
+    const currentUser = await User.findById(decoded.id).select("name email role isVerified");
     if (!currentUser || !currentUser.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
     const receiver = await User.findById(userId);
     if (!receiver || !receiver.isVerified) {
-      return res
-        .status(404)
-        .json({ message: "Receiver not found or not verified" });
+      return res.status(404).json({ message: "Receiver not found or not verified" });
     }
     if (currentUser.role === "user" && receiver.role !== "admin") {
       return res.status(403).json({ message: "Users can only message admins" });
@@ -192,18 +191,14 @@ router.get("/messages/:userId", async (req, res) => {
     })
       .populate("sender", "name email profileImage")
       .populate("receiver", "name email profileImage")
-      .select(
-        "sender receiver content messageType createdAt isRead fileMetadata"
-      )
+      .select("sender receiver content messageType createdAt isRead fileMetadata")
       .sort({ createdAt: 1 })
       .lean();
     await Message.updateMany(
       { receiver: currentUser._id, sender: userId, isRead: false },
       { isRead: true }
     );
-    const channel = ably.channels.get(
-      `chat:${[currentUser._id, userId].sort().join(":")}`
-    );
+    const channel = ably.channels.get(`chat:${[currentUser._id, userId].sort().join(":")}`);
     await channel.publish("messageStatusUpdate", {
       messageId: null,
       status: "delivered",
@@ -214,20 +209,17 @@ router.get("/messages/:userId", async (req, res) => {
         _id: msg.sender._id.toString(),
         name: msg.sender.name,
         email: msg.sender.email,
-        profileImage:
-          msg.sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: msg.sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       },
       receiver: {
         _id: msg.receiver._id.toString(),
         name: msg.receiver.name,
         email: msg.receiver.email,
-        profileImage:
-          msg.receiver.profileImage ||
-          "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: msg.receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       },
       content: msg.content,
       messageType: msg.messageType || "text",
-      fileMetadata: msg.fileMetadata,
+      fileMetadata: msg.fileMetadata || {},
       createdAt: msg.createdAt,
       _id: msg._id.toString(),
       isRead: msg.isRead,
@@ -235,9 +227,7 @@ router.get("/messages/:userId", async (req, res) => {
     res.status(200).json({ status: "success", messages: formattedMessages });
   } catch (error) {
     console.error("Error fetching messages:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to fetch messages" });
+    res.status(500).json({ status: "error", message: "Failed to fetch messages" });
   }
 });
 
@@ -245,15 +235,12 @@ router.get("/messages/:userId", async (req, res) => {
 router.post("/send-message", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const { receiverId, content, messageType, fileName, fileSize, fileType } =
-      req.body;
+    const { receiverId, content, messageType = "text", fileName, fileSize, fileType } = req.body;
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
     if (!receiverId || !content) {
-      return res
-        .status(400)
-        .json({ message: "Receiver ID and content are required" });
+      return res.status(400).json({ message: "Receiver ID and content are required" });
     }
     if (!mongoose.Types.ObjectId.isValid(receiverId)) {
       return res.status(400).json({ message: "Invalid receiver ID" });
@@ -261,31 +248,22 @@ router.post("/send-message", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
     const Message = mongoose.model("Message");
-    const sender = await User.findById(decoded.id).select(
-      "name email role profileImage isVerified"
-    );
+    const sender = await User.findById(decoded.id).select("name email role profileImage isVerified");
     if (!sender || !sender.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
-    const receiver = await User.findById(receiverId).select(
-      "name email role profileImage isVerified"
-    );
+    const receiver = await User.findById(receiverId).select("name email role profileImage isVerified");
     if (!receiver || !receiver.isVerified) {
-      return res
-        .status(404)
-        .json({ message: "Receiver not found or not verified" });
+      return res.status(404).json({ message: "Receiver not found or not verified" });
     }
     if (sender.role === "user" && receiver.role !== "admin") {
       return res.status(403).json({ message: "Users can only message admins" });
     }
-    let finalMessageType = messageType || "text";
-    let fileMetadata =
-      messageType !== "text" ? { fileName, fileSize, fileType } : undefined;
+    let finalMessageType = messageType;
+    let fileMetadata = messageType !== "text" ? { fileName, fileSize, fileType } : {};
     let secureUrl = content;
-    if (
-      content.startsWith("data:") ||
-      content.startsWith("https://res.cloudinary.com/")
-    ) {
+
+    if (content.startsWith("data:") || content.startsWith("https://res.cloudinary.com/")) {
       const allowedTypes = {
         image: ["image/png", "image/jpeg", "image/jpg"],
         audio: ["audio/mpeg", "audio/wav", "audio/webm"],
@@ -297,58 +275,30 @@ router.post("/send-message", async (req, res) => {
       };
       if (fileType && !Object.values(allowedTypes).flat().includes(fileType)) {
         return res.status(400).json({
-          message: `Invalid file type. Allowed: ${Object.values(allowedTypes)
-            .flat()
-            .join(", ")}`,
+          message: `Invalid file type. Allowed: ${Object.values(allowedTypes).flat().join(", ")}`,
         });
       }
       if (content.startsWith("https://res.cloudinary.com/")) {
-        if (
-          content.endsWith(".jpg") ||
-          content.endsWith(".png") ||
-          content.endsWith(".jpeg")
-        ) {
+        if (content.endsWith(".jpg") || content.endsWith(".png") || content.endsWith(".jpeg")) {
           finalMessageType = "image";
           fileMetadata = {
-            fileName: fileName || "image_file",
+            fileName: fileName || `image_${Date.now()}.jpg`,
             fileSize: fileSize || 0,
-            fileType:
-              fileType ||
-              (content.endsWith(".png") ? "image/png" : "image/jpeg"),
+            fileType: fileType || (content.endsWith(".png") ? "image/png" : "image/jpeg"),
           };
-        } else if (
-          content.endsWith(".mp3") ||
-          content.endsWith(".wav") ||
-          content.endsWith(".webm")
-        ) {
+        } else if (content.endsWith(".mp3") || content.endsWith(".wav") || content.endsWith(".webm")) {
           finalMessageType = "audio";
           fileMetadata = {
-            fileName: fileName || "audio_file",
+            fileName: fileName || `audio_${Date.now()}.webm`,
             fileSize: fileSize || 0,
-            fileType:
-              fileType ||
-              (content.endsWith(".mp3")
-                ? "audio/mpeg"
-                : content.endsWith(".wav")
-                ? "audio/wav"
-                : "audio/webm"),
+            fileType: fileType || (content.endsWith(".mp3") ? "audio/mpeg" : content.endsWith(".wav") ? "audio/wav" : "audio/webm"),
           };
-        } else if (
-          content.endsWith(".pdf") ||
-          content.endsWith(".doc") ||
-          content.endsWith(".docx")
-        ) {
+        } else if (content.endsWith(".pdf") || content.endsWith(".doc") || content.endsWith(".docx")) {
           finalMessageType = "document";
           fileMetadata = {
-            fileName: fileName || "document_file",
+            fileName: fileName || `document_${Date.now()}.pdf`,
             fileSize: fileSize || 0,
-            fileType:
-              fileType ||
-              (content.endsWith(".pdf")
-                ? "application/pdf"
-                : content.endsWith(".doc")
-                ? "application/msword"
-                : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            fileType: fileType || (content.endsWith(".pdf") ? "application/pdf" : content.endsWith(".doc") ? "application/msword" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
           };
         }
       } else if (content.startsWith("data:")) {
@@ -356,47 +306,28 @@ router.post("/send-message", async (req, res) => {
         const base64Size = (content.length * 3) / 4 / (1024 * 1024);
         if (base64Size > maxSizeMB) {
           return res.status(400).json({
-            message: `${
-              finalMessageType.charAt(0).toUpperCase() +
-              finalMessageType.slice(1)
-            } size must be less than ${maxSizeMB}MB`,
+            message: `${finalMessageType.charAt(0).toUpperCase() + finalMessageType.slice(1)} size must be less than ${maxSizeMB}MB`,
           });
         }
-        const base64Regex = new RegExp(
-          `^data:${fileType?.replace("/", "\\/") || "[^;]+"};base64,`
-        );
+        const base64Regex = new RegExp(`^data:${fileType?.replace("/", "\\/") || "[^;]+"};base64,`);
         if (!base64Regex.test(content)) {
-          return res
-            .status(400)
-            .json({ message: `Invalid ${finalMessageType} format` });
+          return res.status(400).json({ message: `Invalid ${finalMessageType} format` });
         }
-        const resourceType =
-          finalMessageType === "image"
-            ? "image"
-            : finalMessageType === "audio"
-            ? "video"
-            : "raw";
+        const resourceType = finalMessageType === "image" ? "image" : finalMessageType === "audio" ? "video" : "raw";
         const uploadResult = await cloudinary.uploader.upload(content, {
           resource_type: resourceType,
           folder: `skillshastra/${finalMessageType}s`,
-          public_id: `${sender._id}_${Date.now()}_${
-            fileName || finalMessageType
-          }`,
+          public_id: `${sender._id}_${Date.now()}_${fileName || finalMessageType}`,
         });
         secureUrl = uploadResult.secure_url;
         fileMetadata = {
-          fileName: fileName || finalMessageType + "_file",
-          fileSize: fileSize || uploadResult.bytes || 0,
-          fileType:
-            fileType ||
-            (finalMessageType === "image"
-              ? "image/jpeg"
-              : finalMessageType === "audio"
-              ? "audio/webm"
-              : "application/pdf"),
+          fileName: fileName || `${finalMessageType}_${Date.now()}`,
+          fileSize: uploadResult.bytes || fileSize || 0,
+          fileType: fileType || (finalMessageType === "image" ? "image/jpeg" : finalMessageType === "audio" ? "audio/webm" : "application/pdf"),
         };
       }
     }
+
     const message = new Message({
       sender: sender._id,
       receiver: receiverId,
@@ -407,31 +338,22 @@ router.post("/send-message", async (req, res) => {
       isRead: false,
     });
     await message.save();
+
     const messageData = {
-      sender: {
-        id: sender._id.toString(),
-        name: sender.name,
-        email: sender.email,
-        profileImage:
-          sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
-      },
-      receiver: {
-        id: receiver._id.toString(),
-        name: receiver.name,
-        email: receiver.email,
-        profileImage:
-          receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
-      },
+      senderId: sender._id.toString(),
+      senderName: sender.name,
+      receiverId: receiver._id.toString(),
       content: secureUrl,
       messageType: finalMessageType,
       fileMetadata,
-      createdAt: message.createdAt,
+      timestamp: message.createdAt,
       messageId: message._id.toString(),
       isRead: false,
     };
     const channelName = `chat:${[sender._id, receiverId].sort().join(":")}`;
     const ablyChannel = ably.channels.get(channelName);
     await ablyChannel.publish("message", messageData);
+
     res.status(200).json({
       status: "success",
       message: "Message sent",
@@ -439,9 +361,7 @@ router.post("/send-message", async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending message:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to send message" });
+    res.status(500).json({ status: "error", message: "Failed to send message" });
   }
 });
 
@@ -469,9 +389,7 @@ router.post("/clear-chats", async (req, res) => {
         { sender: userId, receiver: currentUser._id },
       ],
     });
-    const channel = ably.channels.get(
-      `chat:${[currentUser._id, userId].sort().join(":")}`
-    );
+    const channel = ably.channels.get(`chat:${[currentUser._id, userId].sort().join(":")}`);
     await channel.publish("chatsCleared", { status: "success" });
     res.status(200).json({ status: "success", message: "Chats cleared" });
   } catch (error) {
@@ -497,9 +415,7 @@ router.get("/user/:userId", async (req, res) => {
     if (!currentUser || !currentUser.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
-    const user = await User.findById(userId)
-      .select("name email role profileImage isOnline")
-      .lean();
+    const user = await User.findById(userId).select("name email role profileImage isOnline").lean();
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -510,16 +426,13 @@ router.get("/user/:userId", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        profileImage:
-          user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
         isOnline: user.isOnline || false,
       },
     });
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to fetch user profile" });
+    res.status(500).json({ status: "error", message: "Failed to fetch user profile" });
   }
 });
 
@@ -528,7 +441,7 @@ ably.connection.on("connected", () => {
   console.log("Connected to Ably");
 });
 
-const presenceChannel = ably.channels.get("online-status");
+const presenceChannel = ably.channels.get("presence"); // Updated channel name to match frontend
 const onlineUsers = new Map();
 
 presenceChannel.presence.subscribe("enter", async (member) => {
@@ -579,16 +492,12 @@ router.post("/typing", async (req, res) => {
     }
     const receiver = await User.findById(receiverId);
     if (!receiver || !receiver.isVerified) {
-      return res
-        .status(404)
-        .json({ message: "Receiver not found or not verified" });
+      return res.status(404).json({ message: "Receiver not found or not verified" });
     }
     if (sender.role === "user" && receiver.role !== "admin") {
       return res.status(403).json({ message: "Users can only message admins" });
     }
-    const channel = ably.channels.get(
-      `chat:${[sender._id, receiverId].sort().join(":")}`
-    );
+    const channel = ably.channels.get(`chat:${[sender._id, receiverId].sort().join(":")}`);
     await channel.publish("typing", {
       senderId: sender._id.toString(),
       isTyping,
@@ -596,9 +505,7 @@ router.post("/typing", async (req, res) => {
     res.status(200).json({ status: "success", message: "Typing status sent" });
   } catch (error) {
     console.error("Error sending typing status:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to send typing status" });
+    res.status(500).json({ status: "error", message: "Failed to send typing status" });
   }
 });
 

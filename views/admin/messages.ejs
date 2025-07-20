@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,13 +6,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Messages | Skill Shastra</title>
-  <meta name="description" content="Admin messaging interface for Skill Shastra." />
+  <meta name="description" content="Admin messaging and calling interface for Skill Shastra." />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon" />
   <script src="https://cdn.ably.io/lib/ably.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/sidebar.css" />
   <style>
@@ -26,25 +28,20 @@
       background: #f3f4f6;
       margin-left: 280px;
       transition: margin-left 0.3s ease;
-      max-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-x: hidden;
     }
 
     .main-content {
-      margin-left: 0;
-      width: 100%;
-      overflow-y: auto;
-      max-height: 100vh;
+      width: calc(100% - 280px);
+      padding: 1rem;
     }
 
     .chat-container {
       width: 100%;
-      height: 100vh;
+      max-width: 1200px;
+      height: calc(100vh - 2rem);
       background: #ffffff;
-      border-radius: 0px;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
       display: flex;
       flex-direction: row;
@@ -173,11 +170,6 @@
       font-size: 0.75rem;
       font-weight: 700;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .user-item .favorite-btn {
@@ -211,6 +203,7 @@
     .chat-header .user-info {
       display: flex;
       align-items: center;
+      gap: 1rem;
     }
 
     .chat-header img {
@@ -316,7 +309,9 @@
     }
 
     .dropdown-menu button {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       width: 100%;
       padding: 0.5rem 1rem;
       background: none;
@@ -329,6 +324,10 @@
 
     .dropdown-menu button:hover {
       background: #f3f4f6;
+    }
+
+    .dropdown-menu button i {
+      font-size: 1rem;
     }
 
     .chat-body {
@@ -726,7 +725,8 @@
       font-size: 1rem;
     }
 
-    .camera-modal {
+    .camera-modal,
+    .call-modal {
       display: none;
       position: fixed;
       top: 0;
@@ -739,7 +739,8 @@
       z-index: 1000;
     }
 
-    .camera-modal-content {
+    .camera-modal-content,
+    .call-modal-content {
       background: #ffffff;
       padding: 1rem;
       border-radius: 8px;
@@ -749,20 +750,23 @@
     }
 
     .camera-modal-content video,
-    .camera-modal-content img {
+    .camera-modal-content img,
+    .call-modal-content video {
       width: 100%;
       max-height: 300px;
       border-radius: 8px;
       margin-bottom: 1rem;
     }
 
-    .camera-modal-content .button-container {
+    .camera-modal-content .button-container,
+    .call-modal-content .button-container {
       display: flex;
       gap: 0.5rem;
       justify-content: center;
     }
 
-    .camera-modal-content button {
+    .camera-modal-content button,
+    .call-modal-content button {
       background: #4f46e5;
       color: #ffffff;
       padding: 0.5rem 1rem;
@@ -772,16 +776,25 @@
       font-size: 0.875rem;
     }
 
-    .camera-modal-content button:hover {
+    .camera-modal-content button:hover,
+    .call-modal-content button:hover {
       background: #4338ca;
     }
 
-    .camera-modal-content button.cancel {
+    .camera-modal-content button.cancel,
+    .call-modal-content button.cancel {
       background: #6b7280;
     }
 
-    .camera-modal-content button.cancel:hover {
+    .camera-modal-content button.cancel:hover,
+    .call-modal-content button.cancel:hover {
       background: #4b5563;
+    }
+
+    .call-modal-content h3 {
+      font-size: 1.25rem;
+      color: #1f2937;
+      margin-bottom: 1rem;
     }
 
     .toast {
@@ -912,15 +925,7 @@
         border-right: none;
         border-bottom: none;
         border-radius: 0;
-        display: flex;
-      }
-
-      .user-list-header h2 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #1f2937;
-        position: relative;
-        left: 2rem;
+        display: block;
       }
 
       .chat-window-container {
@@ -943,15 +948,22 @@
 
       .chat-header img {
         display: none;
-        /* Hide user avatar in mobile view */
       }
 
       .action-button.back-button {
         display: flex;
-        position: relative;
-        left: 13rem;
-        top: 20px;
+        position: absolute;
+        left: 1rem;
+        top: 50%;
         transform: translateY(-50%);
+      }
+
+      .action-button#searchButton {
+        display: none;
+      }
+
+      .dropdown-menu {
+        width: 180px;
       }
 
       .message-content .audio-container {
@@ -963,7 +975,8 @@
         bottom: 4rem;
       }
 
-      .camera-modal-content {
+      .camera-modal-content,
+      .call-modal-content {
         width: 95%;
         max-width: 350px;
       }
@@ -999,7 +1012,6 @@
 
       .action-button.back-button {
         display: none;
-        /* Ensure back button is hidden on desktop */
       }
     }
   </style>
@@ -1039,15 +1051,28 @@
               <button class="action-button" id="searchButton">
                 <span class="material-icons">search</span>
               </button>
-              <div class="search-bar" id="searchMessagesBar">
-                <input type="text" id="searchMessagesInput" placeholder="Search messages..." />
-              </div>
               <button class="action-button" id="moreOptions">
                 <span class="material-icons">more_vert</span>
               </button>
               <div class="dropdown-menu" id="dropdownMenu">
-                <button id="clearChatsBtn">Clear Chats</button>
-                <button id="viewProfileBtn">View Profile</button>
+                <button id="searchMessagesBtn">
+                  <i class="fas fa-search" aria-hidden="true"></i> Search Messages
+                </button>
+                <button id="audioCallBtn">
+                  <i class="fas fa-phone" aria-hidden="true"></i> Start Audio Call
+                </button>
+                <button id="videoCallBtn">
+                  <i class="fas fa-video" aria-hidden="true"></i> Start Video Call
+                </button>
+                <button id="clearChatsBtn">
+                  <i class="fas fa-trash" aria-hidden="true"></i> Clear Chats
+                </button>
+                <button id="viewProfileBtn">
+                  <i class="fas fa-user" aria-hidden="true"></i> View Profile
+                </button>
+              </div>
+              <div class="search-bar" id="searchMessagesBar">
+                <input type="text" id="searchMessagesInput" placeholder="Search messages..." />
               </div>
             </div>
           </div>
@@ -1107,6 +1132,18 @@
             <button id="capturePhoto">Capture</button>
             <button id="sendPhoto" style="display: none">Send</button>
             <button id="cancelCamera" class="cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div id="callModal" class="call-modal">
+        <div class="call-modal-content">
+          <h3 id="callStatus">Incoming Call...</h3>
+          <video id="localVideo" autoplay playsinline muted style="display: none"></video>
+          <video id="remoteVideo" autoplay playsinline style="display: none"></video>
+          <div class="button-container">
+            <button id="acceptCall" style="display: none">Accept</button>
+            <button id="rejectCall" style="display: none">Reject</button>
+            <button id="endCall" style="display: none">End Call</button>
           </div>
         </div>
       </div>
@@ -1187,6 +1224,9 @@
         const typingIndicator = document.getElementById("typingIndicator");
         const moreOptions = document.getElementById("moreOptions");
         const dropdownMenu = document.getElementById("dropdownMenu");
+        const searchMessagesBtn = document.getElementById("searchMessagesBtn");
+        const audioCallBtn = document.getElementById("audioCallBtn");
+        const videoCallBtn = document.getElementById("videoCallBtn");
         const clearChatsBtn = document.getElementById("clearChatsBtn");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
         const profileModal = document.getElementById("profileModal");
@@ -1207,6 +1247,13 @@
         const capturePhoto = document.getElementById("capturePhoto");
         const sendPhoto = document.getElementById("sendPhoto");
         const cancelCamera = document.getElementById("cancelCamera");
+        const callModal = document.getElementById("callModal");
+        const callStatus = document.getElementById("callStatus");
+        const localVideo = document.getElementById("localVideo");
+        const remoteVideo = document.getElementById("remoteVideo");
+        const acceptCall = document.getElementById("acceptCall");
+        const rejectCall = document.getElementById("rejectCall");
+        const endCall = document.getElementById("endCall");
 
         // State Variables
         let selectedUserId = localStorage.getItem("selectedUserId") || null;
@@ -1222,6 +1269,9 @@
         let onlineUsers = new Set();
         const MAX_RETRIES = 3;
         const RETRY_DELAY = 2000;
+        let peerConnection = null;
+        let callStream = null;
+        let callType = null;
 
         // Polling for users as a fallback
         setInterval(() => {
@@ -1324,19 +1374,19 @@
                 content.endsWith(".webm")))
           ) {
             contentHtml = `
-              <div class="audio-container" data-message-id="${messageId}">
-                <button class="play-pause-btn" data-message-id="${messageId}">
-                  <i class="fas fa-play" aria-hidden="true"></i>
-                </button>
-                <div class="progress-bar" id="progress-bar-${messageId}">
-                  ${Array(20)
+        <div class="audio-container" data-message-id="${messageId}">
+          <button class="play-pause-btn" data-message-id="${messageId}">
+            <i class="fas fa-play" aria-hidden="true"></i>
+          </button>
+          <div class="progress-bar" id="progress-bar-${messageId}">
+            ${Array(20)
                 .fill()
                 .map((_, i) => `<div class="bar" data-index="${i}"></div>`)
                 .join("")}
-                </div>
-                <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
-              </div>
-            `;
+          </div>
+          <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
+        </div>
+      `;
           } else if (
             messageType === "document" ||
             (content.startsWith("https://res.cloudinary.com/") &&
@@ -1345,32 +1395,32 @@
                 content.endsWith(".docx")))
           ) {
             contentHtml = `
-              <a href="${DOMPurify.sanitize(
+        <a href="${DOMPurify.sanitize(
               content
             )}" target="_blank" rel="noopener noreferrer" class="document-link">
-                <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
+          <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
               fileMetadata?.fileName || "Document"
             )}
-              </a>
-            `;
+        </a>
+      `;
           } else {
             contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
           }
           messageDiv.innerHTML = `
-            <div class="message-content">
-              ${contentHtml}
-              <span class="timestamp">${formatMessageTime(timestamp)}</span>
-              ${isSent
+      <div class="message-content">
+        ${contentHtml}
+        <span class="timestamp">${formatMessageTime(timestamp)}</span>
+        ${isSent
               ? `<div class="read-receipt ${status === "delivered" ? (isRead ? "read" : "") : status
               }"><span class="dot"></span><span class="dot"></span></div>`
               : ""
             }
-              ${isSent && status === "failed"
+        ${isSent && status === "failed"
               ? `<button class="retry-btn" data-message-id="${messageId}">Retry</button>`
               : ""
             }
-            </div>
-          `;
+      </div>
+    `;
           chatWindow.appendChild(messageDiv);
           chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -1635,6 +1685,144 @@
           }
         }
 
+        // WebRTC Call Handling
+        async function startCall(type) {
+          if (!selectedUserId) {
+            showToast("Please select a user to call.");
+            return;
+          }
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Calling is not supported in this browser.");
+            return;
+          }
+
+          try {
+            callType = type;
+            const constraints = {
+              audio: true,
+              video: type === "video",
+            };
+            callStream = await navigator.mediaDevices.getUserMedia(constraints);
+            localVideo.srcObject = callStream;
+            localVideo.style.display = type === "video" ? "block" : "none";
+            remoteVideo.style.display = type === "video" ? "block" : "none";
+            callStatus.textContent = `Calling ${chatHeaderName.textContent}...`;
+            callModal.style.display = "flex";
+            acceptCall.style.display = "none";
+            rejectCall.style.display = "none";
+            endCall.style.display = "block";
+
+            peerConnection = new RTCPeerConnection({
+              iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+            });
+
+            callStream.getTracks().forEach((track) => peerConnection.addTrack(track, callStream));
+
+            peerConnection.ontrack = (event) => {
+              remoteVideo.srcObject = event.streams[0];
+            };
+
+            peerConnection.onicecandidate = (event) => {
+              if (event.candidate) {
+                const channel = ably.channels.get(`call:${[userId, selectedUserId].sort().join(":")}`);
+                channel.publish("ice-candidate", {
+                  candidate: event.candidate,
+                  senderId: userId,
+                });
+              }
+            };
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            const channel = ably.channels.get(`call:${[userId, selectedUserId].sort().join(":")}`);
+            await channel.publish("call-offer", {
+              offer,
+              senderId: userId,
+              callType: type,
+            });
+          } catch (error) {
+            showToast("Failed to start call: " + error.message);
+            endCallHandler();
+          }
+        }
+
+        async function handleIncomingCall(message) {
+          if (message.data.senderId === userId) return;
+          callType = message.data.callType;
+          callStatus.textContent = `Incoming ${message.data.callType} call from ${chatHeaderName.textContent}...`;
+          callModal.style.display = "flex";
+          acceptCall.style.display = "block";
+          rejectCall.style.display = "block";
+          endCall.style.display = "none";
+          localVideo.style.display = message.data.callType === "video" ? "block" : "none";
+          remoteVideo.style.display = message.data.callType === "video" ? "block" : "none";
+
+          peerConnection = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          });
+
+          peerConnection.ontrack = (event) => {
+            remoteVideo.srcObject = event.streams[0];
+          };
+
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              const channel = ably.channels.get(`call:${[userId, selectedUserId].sort().join(":")}`);
+              channel.publish("ice-candidate", {
+                candidate: event.candidate,
+                senderId: userId,
+              });
+            }
+          };
+
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(message.data.offer));
+        }
+
+        async function acceptCallHandler() {
+          try {
+            const constraints = {
+              audio: true,
+              video: callType === "video",
+            };
+            callStream = await navigator.mediaDevices.getUserMedia(constraints);
+            localVideo.srcObject = callStream;
+            callStream.getTracks().forEach((track) => peerConnection.addTrack(track, callStream));
+
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            const channel = ably.channels.get(`call:${[userId, selectedUserId].sort().join(":")}`);
+            await channel.publish("call-answer", {
+              answer,
+              senderId: userId,
+            });
+            callStatus.textContent = `Connected to ${chatHeaderName.textContent}`;
+            acceptCall.style.display = "none";
+            rejectCall.style.display = "none";
+            endCall.style.display = "block";
+          } catch (error) {
+            showToast("Failed to accept call: " + error.message);
+            endCallHandler();
+          }
+        }
+
+        function endCallHandler() {
+          if (callStream) {
+            callStream.getTracks().forEach((track) => track.stop());
+            callStream = null;
+          }
+          if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+          }
+          localVideo.srcObject = null;
+          remoteVideo.srcObject = null;
+          localVideo.style.display = "none";
+          remoteVideo.style.display = "none";
+          callModal.style.display = "none";
+          const channel = ably.channels.get(`call:${[userId, selectedUserId].sort().join(":")}`);
+          channel.publish("call-ended", { senderId: userId });
+        }
+
         // Event Listeners
         sendButton.addEventListener("click", debounce(() => sendMessage(messageInput.value.trim()), 300));
 
@@ -1672,6 +1860,9 @@
           }
           if (dropdownMenu && !dropdownMenu.contains(e.target) && !moreOptions.contains(e.target)) {
             dropdownMenu.classList.remove("active");
+          }
+          if (callModal && !callModal.contains(e.target) && callModal.style.display === "flex") {
+            endCallHandler();
           }
         });
 
@@ -1918,6 +2109,27 @@
           dropdownMenu.classList.toggle("active");
         });
 
+        searchMessagesBtn.addEventListener("click", () => {
+          dropdownMenu.classList.remove("active");
+          searchMessagesBar.classList.toggle("active");
+          if (searchMessagesBar.classList.contains("active")) {
+            searchMessagesInput.focus();
+          } else {
+            searchMessagesInput.value = "";
+            displayMessages(currentMessages);
+          }
+        });
+
+        audioCallBtn.addEventListener("click", () => {
+          dropdownMenu.classList.remove("active");
+          startCall("audio");
+        });
+
+        videoCallBtn.addEventListener("click", () => {
+          dropdownMenu.classList.remove("active");
+          startCall("video");
+        });
+
         clearChatsBtn.addEventListener("click", async () => {
           if (selectedUserId) {
             if (confirm("Are you sure you want to clear chats with this user?")) {
@@ -1956,18 +2168,18 @@
               });
               const data = await response.json();
               if (data.status === "success") {
-                modalAvatar.src = DOMPurify.sanitize(data.user.profileImage);
-                modalName.textContent = DOMPurify.sanitize(data.user.name);
-                modalEmail.textContent = DOMPurify.sanitize(data.user.email);
+                modalAvatar.src = DOMPurify.sanitize(data.user.profileImage || "https://www.gravatar.com/avatar/?d=retro");
+                modalName.textContent = DOMPurify.sanitize(data.user.name || "Unknown");
+                modalEmail.textContent = DOMPurify.sanitize(data.user.email || "No email");
                 modalRole.textContent = DOMPurify.sanitize(
-                  data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1)
+                  data.user.role ? data.user.role.charAt(0).toUpperCase() + data.user.role.slice(1) : "No role"
                 );
                 profileModal.style.display = "flex";
               } else {
-                showToast("Failed to fetch profile: " + data.message);
+                showToast("Failed to fetch user profile: " + data.message);
               }
             } catch (error) {
-              showToast("Error fetching profile: " + error.message);
+              showToast("Error fetching user profile: " + error.message);
             }
           } else {
             showToast("Please select a user.");
@@ -1980,18 +2192,80 @@
 
         imageModal.addEventListener("click", () => {
           imageModal.style.display = "none";
-          enlargedImage.src = "";
         });
 
         chatWindow.addEventListener("click", (e) => {
-          if (
-            e.target.tagName === "IMG" &&
-            e.target.parentElement.classList.contains("message-content")
-          ) {
+          if (e.target.tagName === "IMG" && e.target.closest(".message-content")) {
             enlargedImage.src = DOMPurify.sanitize(e.target.src);
             imageModal.style.display = "flex";
           }
         });
+
+        userList.addEventListener("click", async (e) => {
+          const userItem = e.target.closest(".user-item");
+          if (userItem) {
+            const newUserId = userItem.dataset.userId;
+            if (newUserId !== selectedUserId) {
+              selectedUserId = newUserId;
+              localStorage.setItem("selectedUserId", selectedUserId);
+              userList.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
+              userItem.classList.add("selected");
+              chatHeaderName.textContent = DOMPurify.sanitize(userItem.dataset.name || "Unknown");
+              chatHeaderAvatar.src = DOMPurify.sanitize(
+                userItem.dataset.avatar || "https://www.gravatar.com/avatar/?d=retro"
+              );
+              try {
+                const response = await fetch(`/api/messaging/messages/${selectedUserId}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                  currentMessages = data.messages;
+                  displayMessages(data.messages);
+                  const statusIndicator = document.querySelector(".online-status");
+                  statusIndicator.textContent = onlineUsers.has(selectedUserId) ? "Online" : "Offline";
+                  statusIndicator.className = `online-status ${onlineUsers.has(selectedUserId) ? "online" : ""
+                    }`;
+                  if (window.innerWidth <= 768) {
+                    userListContainer.style.display = "none";
+                    chatWindowContainer.classList.add("active");
+                  }
+                } else {
+                  showToast("Failed to fetch messages: " + data.message);
+                }
+              } catch (error) {
+                showToast("Error fetching messages: " + error.message);
+              }
+            }
+          }
+        });
+
+        backButton.addEventListener("click", () => {
+          userListContainer.style.display = "flex";
+          chatWindowContainer.classList.remove("active");
+          searchMessagesBar.classList.remove("active");
+          searchMessagesInput.value = "";
+          displayMessages(currentMessages);
+        });
+
+        searchUsersInput.addEventListener(
+          "input",
+          debounce(() => {
+            const query = searchUsersInput.value.trim();
+            fetchUsers(query);
+          }, 300)
+        );
+
+        searchMessagesInput.addEventListener(
+          "input",
+          debounce(() => {
+            const query = searchMessagesInput.value.trim().toLowerCase();
+            const filteredMessages = currentMessages.filter(
+              (msg) => msg.content.toLowerCase().includes(query) && msg.messageType === "text"
+            );
+            displayMessages(filteredMessages);
+          }, 300)
+        );
 
         searchButton.addEventListener("click", () => {
           searchMessagesBar.classList.toggle("active");
@@ -2003,157 +2277,139 @@
           }
         });
 
-        searchMessagesInput.addEventListener(
-          "input",
-          debounce(() => {
-            const query = searchMessagesInput.value.trim().toLowerCase();
-            if (query) {
-              const filteredMessages = currentMessages.filter(
-                (msg) =>
-                  msg.content.toLowerCase().includes(query) ||
-                  msg.sender.name.toLowerCase().includes(query)
-              );
-              displayMessages(filteredMessages);
-            } else {
-              displayMessages(currentMessages);
+        acceptCall.addEventListener("click", acceptCallHandler);
+
+        rejectCall.addEventListener("click", endCallHandler);
+
+        endCall.addEventListener("click", endCallHandler);
+
+        // Ably Subscriptions
+        const presenceChannel = ably.channels.get("presence");
+        await presenceChannel.subscribe("enter", (msg) => {
+          if (msg.clientId !== userId) {
+            onlineUsers.add(msg.clientId);
+            if (selectedUserId === msg.clientId) {
+              const statusIndicator = document.querySelector(".online-status");
+              statusIndicator.textContent = "Online";
+              statusIndicator.className = "online-status online";
             }
-          }, 300)
-        );
-
-        searchUsersInput.addEventListener(
-          "input",
-          debounce(() => {
-            const query = searchUsersInput.value.trim().toLowerCase();
-            fetchUsers(query);
-          }, 300)
-        );
-
-        backButton.addEventListener("click", () => {
-          chatWindowContainer.classList.remove("active");
-          userListContainer.style.display = "flex";
-          selectedUserId = null;
-          localStorage.removeItem("selectedUserId");
-          chatHeaderName.textContent = "Select a user";
-          chatHeaderAvatar.src = "https://www.gravatar.com/avatar/?d=retro";
-          chatWindow.innerHTML = "";
-          chatWindow.dataset.lastDate = null;
-          audioElements.forEach((audio) => audio.pause());
-          audioElements.clear();
-          if (selectedUserId) {
-            const channel = ably.channels.get(`chat:${[userId, selectedUserId].sort().join(":")}`);
-            channel.detach();
           }
         });
 
+        await presenceChannel.subscribe("leave", (msg) => {
+          if (msg.clientId !== userId) {
+            onlineUsers.delete(msg.clientId);
+            if (selectedUserId === msg.clientId) {
+              const statusIndicator = document.querySelector(".online-status");
+              statusIndicator.textContent = "Offline";
+              statusIndicator.className = "online-status";
+            }
+          }
+        });
+
+        await presenceChannel.presence.enter();
+
+        const messageChannel = ably.channels.get(`chat:${[userId, selectedUserId].sort().join(":")}`);
+        await messageChannel.subscribe("message", (msg) => {
+          if (msg.data.senderId !== userId && msg.data.receiverId === userId) {
+            if (!sentMessageIds.has(msg.data.messageId)) {
+              appendMessage(
+                false,
+                msg.data.senderName,
+                msg.data.content,
+                msg.data.timestamp,
+                msg.data.messageId,
+                msg.data.messageType || "text",
+                false,
+                msg.data.fileMetadata || {}
+              );
+              currentMessages.push({
+                sender: { _id: msg.data.senderId, name: msg.data.senderName },
+                content: msg.data.content,
+                createdAt: msg.data.timestamp,
+                _id: msg.data.messageId,
+                messageType: msg.data.messageType || "text",
+                fileMetadata: msg.data.fileMetadata || {},
+                isRead: false,
+              });
+              fetchUsers();
+            }
+          }
+        });
+
+        await messageChannel.subscribe("typing", (msg) => {
+          if (msg.data.senderId !== userId && msg.data.senderId === selectedUserId) {
+            typingIndicator.classList.toggle("active", msg.data.isTyping);
+          }
+        });
+
+        const callChannel = ably.channels.get(`call:${[userId, selectedUserId].sort().join(":")}`);
+        await callChannel.subscribe("call-offer", handleIncomingCall);
+
+        await callChannel.subscribe("call-answer", async (message) => {
+          if (message.data.senderId !== userId) {
+            try {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(message.data.answer));
+              callStatus.textContent = `Connected to ${chatHeaderName.textContent}`;
+            } catch (error) {
+              showToast("Failed to process call answer: " + error.message);
+              endCallHandler();
+            }
+          }
+        });
+
+        await callChannel.subscribe("ice-candidate", async (message) => {
+          if (message.data.senderId !== userId && peerConnection) {
+            try {
+              await peerConnection.addIceCandidate(new RTCIceCandidate(message.data.candidate));
+            } catch (error) {
+              showToast("Failed to add ICE candidate: " + error.message);
+            }
+          }
+        });
+
+        await callChannel.subscribe("call-ended", (message) => {
+          if (message.data.senderId !== userId) {
+            endCallHandler();
+          }
+        });
+
+        // Fetch Initial Users
+        fetchUsers();
+
+        // Update User List
         function updateUserList({ users }) {
           userList.innerHTML = "";
-          users.forEach((user) => {
-            if (user._id === userId) return;
-            if (currentCategory === "unread" && !user.unreadCount) return;
+          users.forEach((u) => {
+            if (u._id === userId) return;
             const userItem = document.createElement("div");
-            userItem.className = `user-item${selectedUserId === user._id ? " selected" : ""}`;
-            userItem.dataset.userId = user._id;
+            userItem.className = `user-item ${u._id === selectedUserId ? "selected" : ""}`;
+            userItem.dataset.userId = u._id;
+            userItem.dataset.name = DOMPurify.sanitize(u.name);
+            userItem.dataset.avatar = DOMPurify.sanitize(u.profileImage || "https://www.gravatar.com/avatar/?d=retro");
             userItem.innerHTML = `
-              <img src="${DOMPurify.sanitize(
-              user.profileImage || "https://www.gravatar.com/avatar/?d=retro"
-            )}" alt="${DOMPurify.sanitize(user.name)} avatar" loading="lazy" />
-              <div class="user-info">
-                <h3>${DOMPurify.sanitize(user.name)}</h3>
-                <p>${DOMPurify.sanitize(user.lastMessage?.content || "No messages yet")}</p>
-              </div>
-              <span class="message-time">${user.lastMessage ? formatMessageTime(user.lastMessage.createdAt) : ""
-              }</span>
-              ${user.unreadCount > 0
-                ? `<span class="unread-count">${user.unreadCount}</span>`
+        <img src="${userItem.dataset.avatar}" alt="${userItem.dataset.name}'s avatar" />
+        <div class="user-info">
+          <h3>${userItem.dataset.name}</h3>
+          <p>${DOMPurify.sanitize(u.lastMessage || "No messages yet")}</p>
+        </div>
+        <span class="message-time">${u.lastMessageTime ? formatMessageTime(u.lastMessageTime) : ""}</span>
+        ${u.unreadCount > 0
+                ? `<span class="unread-count">${u.unreadCount}</span>`
                 : ""
               }
-              <button class="favorite-btn${user.isFavorite ? " favorite" : ""}" data-user-id="${user._id}">
-                <i class="fas fa-star"></i>
-              </button>
-              <span class="status-indicator${onlineUsers.has(user._id) ? " online" : ""}"></span>
-            `;
+        <button class="favorite-btn ${u.isFavorite ? "favorite" : ""
+              }" data-user-id="${u._id}">
+          <span class="material-icons">${u.isFavorite ? "star" : "star_border"}</span>
+        </button>
+      `;
             userList.appendChild(userItem);
+          });
 
-            userItem.addEventListener("click", async (e) => {
-              if (e.target.classList.contains("favorite-btn") || e.target.classList.contains("fa-star")) return;
-              selectedUserId = user._id;
-              localStorage.setItem("selectedUserId", selectedUserId);
-              chatHeaderName.textContent = DOMPurify.sanitize(user.name);
-              chatHeaderAvatar.src = DOMPurify.sanitize(
-                user.profileImage || "https://www.gravatar.com/avatar/?d=retro"
-              );
-              document.querySelector(".online-status").textContent = onlineUsers.has(user._id) ? "Online" : "Offline";
-              document.querySelectorAll(".user-item").forEach((item) => item.classList.remove("selected"));
-              userItem.classList.add("selected");
-              try {
-                const response = await fetch(`/api/messaging/messages/${selectedUserId}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = await response.json();
-                if (data.status === "success") {
-                  currentMessages = data.messages;
-                  displayMessages(data.messages);
-                } else {
-                  showToast("Failed to fetch messages: " + data.message);
-                }
-              } catch (error) {
-                showToast("Error fetching messages: " + error.message);
-              }
-              if (window.innerWidth <= 768) {
-                chatWindowContainer.classList.add("active");
-                userListContainer.style.display = "none";
-              }
-              const channel = ably.channels.get(`chat:${[userId, selectedUserId].sort().join(":")}`);
-              await channel.subscribe("message", (msg) => {
-                if (msg.data.sender.id === selectedUserId || msg.data.receiver.id === selectedUserId) {
-                  currentMessages.push(msg.data);
-                  appendMessage(
-                    msg.data.sender.id === userId,
-                    msg.data.sender.name,
-                    msg.data.content,
-                    msg.data.createdAt,
-                    msg.data.messageId,
-                    msg.data.messageType || "text",
-                    msg.data.isRead,
-                    msg.data.fileMetadata,
-                    "delivered"
-                  );
-                  if (msg.data.sender.id !== userId) {
-                    fetch(`/api/messaging/messages/${selectedUserId}`, {
-                      headers: { Authorization: `Bearer ${token}` },
-                    })
-                      .then((res) => res.json())
-                      .then((data) => {
-                        if (data.status === "success") {
-                          currentMessages = data.messages;
-                          displayMessages(data.messages);
-                        }
-                      })
-                      .catch((err) => showToast("Error updating messages: " + err.message));
-                  }
-                }
-                fetchUsers();
-              });
-              await channel.subscribe("typing", (msg) => {
-                if (msg.data.senderId === selectedUserId && typingIndicator) {
-                  typingIndicator.classList.toggle("active", msg.data.isTyping);
-                }
-              });
-              await channel.subscribe("messageStatusUpdate", (msg) => {
-                updateMessageStatus(msg.data.messageId, msg.data.status, msg.data.isRead);
-              });
-              await channel.subscribe("chatsCleared", (msg) => {
-                if (msg.data.status === "success") {
-                  chatWindow.innerHTML = "";
-                  chatWindow.dataset.lastDate = null;
-                  currentMessages = [];
-                  fetchUsers();
-                }
-              });
-            });
-
-            const favoriteBtn = userItem.querySelector(".favorite-btn");
-            favoriteBtn.addEventListener("click", async () => {
+          document.querySelectorAll(".favorite-btn").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              const targetUserId = btn.dataset.userId;
               try {
                 const response = await fetch("/api/messaging/toggle-favorite", {
                   method: "POST",
@@ -2161,14 +2417,21 @@
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                   },
-                  body: JSON.stringify({ userId: user._id }),
+                  body: JSON.stringify({ userId: targetUserId }),
                 });
                 const data = await response.json();
                 if (data.status === "success") {
-                  favoriteBtn.classList.toggle("favorite");
-                  showToast(data.isFavorite ? "Added to favorites" : "Removed from favorites");
+                  btn.classList.toggle("favorite");
+                  btn.querySelector("span").textContent = btn.classList.contains("favorite")
+                    ? "star"
+                    : "star_border";
+                  showToast(
+                    btn.classList.contains("favorite")
+                      ? "Added to favorites"
+                      : "Removed from favorites"
+                  );
                 } else {
-                  showToast("Failed to update favorite status: " + data.message);
+                  showToast("Failed to toggle favorite: " + data.message);
                 }
               } catch (error) {
                 showToast("Error toggling favorite: " + error.message);
@@ -2183,65 +2446,23 @@
             document.querySelectorAll(".category-tab").forEach((t) => t.classList.remove("active"));
             tab.classList.add("active");
             currentCategory = tab.dataset.category;
-            fetchUsers(searchUsersInput.value.trim());
+            fetchUsers();
           });
-        });
-
-        // Initialize User List
-        fetchUsers();
-
-        // Ably Presence
-        const presenceChannel = ably.channels.get("online-status");
-        await presenceChannel.subscribe("enter", (msg) => {
-          onlineUsers.add(msg.clientId);
-          const userItem = document.querySelector(`.user-item[data-user-id="${msg.clientId}"]`);
-          if (userItem) {
-            const statusIndicator = userItem.querySelector(".status-indicator");
-            if (statusIndicator) statusIndicator.classList.add("online");
-          }
-          if (msg.clientId === selectedUserId) {
-            document.querySelector(".online-status").textContent = "Online";
-          }
-        });
-
-        await presenceChannel.subscribe("leave", (msg) => {
-          onlineUsers.delete(msg.clientId);
-          const userItem = document.querySelector(`.user-item[data-user-id="${msg.clientId}"]`);
-          if (userItem) {
-            const statusIndicator = userItem.querySelector(".status-indicator");
-            if (statusIndicator) statusIndicator.classList.remove("online");
-          }
-          if (msg.clientId === selectedUserId) {
-            document.querySelector(".online-status").textContent = "Offline";
-          }
-        });
-
-        await presenceChannel.presence.enter();
-
-        // Handle Window Resize for Mobile View
-        window.addEventListener("resize", () => {
-          if (window.innerWidth > 768) {
-            userListContainer.style.display = "flex";
-            chatWindowContainer.style.display = "flex";
-          } else if (selectedUserId) {
-            userListContainer.style.display = "none";
-            chatWindowContainer.classList.add("active");
-          } else {
-            userListContainer.style.display = "flex";
-            chatWindowContainer.classList.remove("active");
-          }
         });
 
         // Cleanup on Page Unload
         window.addEventListener("beforeunload", () => {
-          audioElements.forEach((audio) => audio.pause());
-          audioElements.clear();
-          if (selectedUserId) {
-            const channel = ably.channels.get(`chat:${[userId, selectedUserId].sort().join(":")}`);
-            channel.detach();
+          if (callStream) {
+            callStream.getTracks().forEach((track) => track.stop());
           }
+          if (peerConnection) {
+            peerConnection.close();
+          }
+          if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+          }
+          audioElements.forEach((audio) => audio.pause());
           presenceChannel.presence.leave();
-          ably.close();
         });
       });
     </script>
