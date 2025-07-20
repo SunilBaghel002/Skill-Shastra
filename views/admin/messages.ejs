@@ -44,18 +44,10 @@
       width: 100%;
       height: 100vh;
       background: #ffffff;
-      border: 1px solid #e5e7eb;
-      /* Fixed border for messages section */
       border-radius: 0px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
       display: flex;
       flex-direction: row;
-      position: fixed;
-      /* Ensure container stays fixed */
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
     }
 
     .user-list-container {
@@ -219,8 +211,6 @@
     .chat-header .user-info {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      /* Adjusted for better spacing */
     }
 
     .chat-header img {
@@ -661,9 +651,8 @@
       color: #ffffff;
       border: none;
       border-radius: 50%;
-      width: 36px;
-      /* Reduced size for better mobile fit */
-      height: 36px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -895,25 +884,22 @@
     @media (max-width: 768px) {
       body {
         margin: 0;
-        /* Remove margin to fit screen */
         height: 100vh;
         overflow: hidden;
-        /* Prevent page scrolling */
       }
 
       .main-content {
+        width: 100%;
+        padding: 0;
         height: 100vh;
-        margin: 0;
       }
 
       .chat-container {
         flex-direction: column;
         height: 100vh;
-        margin: 0;
         border: 1px solid #e5e7eb;
-        /* Fixed border */
+        border-radius: 0;
         position: fixed;
-        /* Fix container to viewport */
         top: 0;
         left: 0;
         right: 0;
@@ -926,7 +912,15 @@
         border-right: none;
         border-bottom: none;
         border-radius: 0;
-        display: block;
+        display: flex;
+      }
+
+      .user-list-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        position: relative;
+        left: 2rem;
       }
 
       .chat-window-container {
@@ -944,16 +938,19 @@
       }
 
       .chat-header {
-        position: relative;
         padding: 0.75rem;
-        /* Reduced padding for mobile */
+      }
+
+      .chat-header img {
+        display: none;
+        /* Hide user avatar in mobile view */
       }
 
       .action-button.back-button {
         display: flex;
-        position: absolute;
-        right: 18rem;
-        top: 50%;
+        position: relative;
+        left: 13rem;
+        top: 20px;
         transform: translateY(-50%);
       }
 
@@ -973,9 +970,7 @@
 
       .message-input-container {
         padding: 0.75rem;
-        /* Reduced padding for mobile */
         gap: 0.3rem;
-        /* Tighter spacing for buttons */
       }
 
       .attach-button,
@@ -983,15 +978,12 @@
       .camera-button,
       .send-button {
         width: 32px;
-        /* Smaller buttons for mobile */
         height: 32px;
         font-size: 0.9rem;
-        /* Adjust icon size */
       }
 
       .message-input {
         padding: 0.5rem 1rem;
-        /* Adjusted for mobile */
         font-size: 0.9rem;
       }
     }
@@ -1003,6 +995,11 @@
 
       .user-list-container {
         display: flex;
+      }
+
+      .action-button.back-button {
+        display: none;
+        /* Ensure back button is hidden on desktop */
       }
     }
   </style>
@@ -1327,19 +1324,19 @@
                 content.endsWith(".webm")))
           ) {
             contentHtml = `
-          <div class="audio-container" data-message-id="${messageId}">
-            <button class="play-pause-btn" data-message-id="${messageId}">
-              <i class="fas fa-play" aria-hidden="true"></i>
-            </button>
-            <div class="progress-bar" id="progress-bar-${messageId}">
-              ${Array(20)
+              <div class="audio-container" data-message-id="${messageId}">
+                <button class="play-pause-btn" data-message-id="${messageId}">
+                  <i class="fas fa-play" aria-hidden="true"></i>
+                </button>
+                <div class="progress-bar" id="progress-bar-${messageId}">
+                  ${Array(20)
                 .fill()
                 .map((_, i) => `<div class="bar" data-index="${i}"></div>`)
                 .join("")}
-            </div>
-            <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
-          </div>
-        `;
+                </div>
+                <button class="speed-btn" data-message-id="${messageId}" data-speed-index="0">1x</button>
+              </div>
+            `;
           } else if (
             messageType === "document" ||
             (content.startsWith("https://res.cloudinary.com/") &&
@@ -1348,32 +1345,32 @@
                 content.endsWith(".docx")))
           ) {
             contentHtml = `
-          <a href="${DOMPurify.sanitize(
+              <a href="${DOMPurify.sanitize(
               content
             )}" target="_blank" rel="noopener noreferrer" class="document-link">
-            <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
+                <i class="fas fa-file" aria-hidden="true"></i> ${DOMPurify.sanitize(
               fileMetadata?.fileName || "Document"
             )}
-          </a>
-        `;
+              </a>
+            `;
           } else {
             contentHtml = `<p>${DOMPurify.sanitize(content)}</p>`;
           }
           messageDiv.innerHTML = `
-        <div class="message-content">
-          ${contentHtml}
-          <span class="timestamp">${formatMessageTime(timestamp)}</span>
-          ${isSent
+            <div class="message-content">
+              ${contentHtml}
+              <span class="timestamp">${formatMessageTime(timestamp)}</span>
+              ${isSent
               ? `<div class="read-receipt ${status === "delivered" ? (isRead ? "read" : "") : status
               }"><span class="dot"></span><span class="dot"></span></div>`
               : ""
             }
-          ${isSent && status === "failed"
+              ${isSent && status === "failed"
               ? `<button class="retry-btn" data-message-id="${messageId}">Retry</button>`
               : ""
             }
-        </div>
-      `;
+            </div>
+          `;
           chatWindow.appendChild(messageDiv);
           chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -2057,24 +2054,24 @@
             userItem.className = `user-item${selectedUserId === user._id ? " selected" : ""}`;
             userItem.dataset.userId = user._id;
             userItem.innerHTML = `
-          <img src="${DOMPurify.sanitize(
+              <img src="${DOMPurify.sanitize(
               user.profileImage || "https://www.gravatar.com/avatar/?d=retro"
             )}" alt="${DOMPurify.sanitize(user.name)} avatar" loading="lazy" />
-          <div class="user-info">
-            <h3>${DOMPurify.sanitize(user.name)}</h3>
-            <p>${DOMPurify.sanitize(user.lastMessage?.content || "No messages yet")}</p>
-          </div>
-          <span class="message-time">${user.lastMessage ? formatMessageTime(user.lastMessage.createdAt) : ""
+              <div class="user-info">
+                <h3>${DOMPurify.sanitize(user.name)}</h3>
+                <p>${DOMPurify.sanitize(user.lastMessage?.content || "No messages yet")}</p>
+              </div>
+              <span class="message-time">${user.lastMessage ? formatMessageTime(user.lastMessage.createdAt) : ""
               }</span>
-          ${user.unreadCount > 0
+              ${user.unreadCount > 0
                 ? `<span class="unread-count">${user.unreadCount}</span>`
                 : ""
               }
-          <button class="favorite-btn${user.isFavorite ? " favorite" : ""}" data-user-id="${user._id}">
-            <i class="fas fa-star"></i>
-          </button>
-          <span class="status-indicator${onlineUsers.has(user._id) ? " online" : ""}"></span>
-        `;
+              <button class="favorite-btn${user.isFavorite ? " favorite" : ""}" data-user-id="${user._id}">
+                <i class="fas fa-star"></i>
+              </button>
+              <span class="status-indicator${onlineUsers.has(user._id) ? " online" : ""}"></span>
+            `;
             userList.appendChild(userItem);
 
             userItem.addEventListener("click", async (e) => {
