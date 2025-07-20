@@ -1088,6 +1088,7 @@ const initializeMessaging = (httpServer) => {
         if (typeof callback === "function") {
           callback({ status: "error", message: "Failed to answer call" });
         }
+        
       }
     });
 
