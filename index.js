@@ -40,6 +40,9 @@ const limiter = rateLimit({
   message: "Too many announcement attempts, please try again after 15 minutes.",
 });
 
+const JUDGE0_API = "https://judge0-ce.p.rapidapi.com/submissions";
+const API_KEY = process.env.API_KEY;
+
 // MongoDB Connection
 const connectDB = async () => {
   try {
@@ -748,12 +751,10 @@ app.get("/api/admin/users", protect, restrictToAdmin, async (req, res) => {
         (e) => e.userId.toString() === user._id.toString()
       ),
     }));
-    res
-      .status(200)
-      .json({
-        message: "Users fetched successfully",
-        users: usersWithEnrollments,
-      });
+    res.status(200).json({
+      message: "Users fetched successfully",
+      users: usersWithEnrollments,
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Server error" });
@@ -1273,17 +1274,22 @@ const languageConfig = {
   java: { id: 62, extension: "java" },
 };
 
+// Execute code endpoint
 app.post("/api/execute", protect, async (req, res) => {
   const { language, code, input } = req.body;
+
+  // Validate request
   if (!languageConfig[language]) {
     return res.status(400).json({ error: "Unsupported language" });
   }
   if (!code) {
     return res.status(400).json({ error: "Code is required" });
   }
+
   try {
+    // Submit code to Judge0
     const submissionResponse = await axios.post(
-      `${process.env.JUDGE0_API}/submissions?base64_encoded=true`,
+      `${JUDGE0_API}?base64_encoded=true`,
       {
         source_code: Buffer.from(code).toString("base64"),
         language_id: languageConfig[language].id,
@@ -1292,23 +1298,26 @@ app.post("/api/execute", protect, async (req, res) => {
       {
         headers: {
           "Content-Type": "application/json",
-          "X-RapidAPI-Key": process.env.API_KEY,
+          "X-RapidAPI-Key": API_KEY,
           "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
         },
       }
     );
+
     const token = submissionResponse.data.token;
     if (!token) {
       throw new Error("No submission token received from Judge0");
     }
+
+    // Poll for execution result (max 20 seconds)
     let result;
     for (let i = 0; i < 20; i++) {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const statusResponse = await axios.get(
-        `${process.env.JUDGE0_API}/submissions/${token}?base64_encoded=true`,
+        `${JUDGE0_API}/${token}?base64_encoded=true`,
         {
           headers: {
-            "X-RapidAPI-Key": process.env.API_KEY,
+            "X-RapidAPI-Key": API_KEY,
             "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
           },
         }
@@ -1316,19 +1325,25 @@ app.post("/api/execute", protect, async (req, res) => {
       result = statusResponse.data;
       if (result.status && result.status.id > 2) break;
     }
+
+    // Handle execution result
     if (!result || !result.status) {
       throw new Error("No result received from Judge0");
     }
+
     let output = "";
     if (result.status.id === 3) {
+      // Success
       output = result.stdout
         ? Buffer.from(result.stdout, "base64").toString()
         : "No output";
     } else if (result.status.id === 6) {
+      // Compilation error
       output = result.compile_output
         ? Buffer.from(result.compile_output, "base64").toString()
         : "Compilation error occurred";
     } else {
+      // Other errors (e.g., runtime error like NoSuchElementException)
       output = result.stderr
         ? Buffer.from(result.stderr, "base64").toString()
         : `Error: ${result.status.description}`;
@@ -1337,6 +1352,7 @@ app.post("/api/execute", protect, async (req, res) => {
           "\nHint: Ensure input is provided in the input field for Scanner.";
       }
     }
+
     res.json({ output });
   } catch (error) {
     console.error(
