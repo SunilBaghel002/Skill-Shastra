@@ -3,15 +3,56 @@ const Ably = require("ably");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { v2: cloudinary } = require("cloudinary");
+const twilio = require("twilio");
 
 // Initialize Express Router
 const router = express.Router();
+
+// CallLog Schema
+const callLogSchema = new mongoose.Schema({
+  caller: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  receiver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  callType: {
+    type: String,
+    enum: ["audio", "video"],
+    default: "audio",
+  },
+  status: {
+    type: String,
+    enum: ["initiated", "connected", "ended", "missed", "rejected"],
+    required: true,
+  },
+  duration: {
+    type: Number, // Duration in seconds
+    default: 0,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  endedAt: {
+    type: Date,
+  },
+});
+callLogSchema.index({ caller: 1, receiver: 1, createdAt: -1 });
+const CallLog = mongoose.model("CallLog", callLogSchema);
 
 // Ably Client
 const ably = new Ably.Realtime({
   key: process.env.ABLY_API_KEY,
   echoMessages: false,
 });
+
+// Twilio Client
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Ably Token Request Endpoint
 router.get("/ably-auth", async (req, res) => {
@@ -22,9 +63,7 @@ router.get("/ably-auth", async (req, res) => {
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
-    const user = await User.findById(decoded.id).select(
-      "name email role isVerified"
-    );
+    const user = await User.findById(decoded.id).select("name email role isVerified");
     if (!user || !user.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
@@ -32,12 +71,36 @@ router.get("/ably-auth", async (req, res) => {
       clientId: user._id.toString(),
       capability: {
         "chat:*": ["subscribe", "publish", "presence"],
+        "call:*": ["subscribe", "publish", "presence"],
         "online-status": ["subscribe", "presence"],
       },
     });
     res.status(200).json(tokenRequest);
   } catch (error) {
     console.error("Ably Auth Error:", error.message);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Twilio Token Endpoint
+router.get("/twilio-token", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const User = mongoose.model("User");
+    const user = await User.findById(decoded.id).select("name email isVerified");
+    if (!user || !user.isVerified) {
+      return res.status(401).json({ message: "Invalid or unverified user" });
+    }
+    const accessToken = await twilioClient.tokens.create({
+      identity: user._id.toString(),
+    });
+    res.status(200).json({ token: accessToken.token });
+  } catch (error) {
+    console.error("Twilio Token Error:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -52,9 +115,7 @@ router.get("/users", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
     const Message = mongoose.model("Message");
-    const currentUser = await User.findById(decoded.id).select(
-      "name email role favorites isVerified"
-    );
+    const currentUser = await User.findById(decoded.id).select("name email role favorites isVerified");
     if (!currentUser || !currentUser.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
@@ -89,25 +150,18 @@ router.get("/users", async (req, res) => {
           unreadCount,
           lastMessage: latestMessage
             ? {
-                content: latestMessage.content,
-                createdAt: latestMessage.createdAt,
-              }
+              content: latestMessage.content,
+              createdAt: latestMessage.createdAt,
+            }
             : null,
-          isFavorite:
-            currentUser.favorites
-              ?.map((id) => id.toString())
-              .includes(user._id.toString()) || false,
+          isFavorite: currentUser.favorites?.map((id) => id.toString()).includes(user._id.toString()) || false,
           isOnline: user.isOnline || false,
         };
       })
     );
     usersWithDetails.sort((a, b) => {
-      const aTime = a.lastMessage
-        ? new Date(a.lastMessage.createdAt)
-        : new Date(0);
-      const bTime = b.lastMessage
-        ? new Date(b.lastMessage.createdAt)
-        : new Date(0);
+      const aTime = a.lastMessage ? new Date(a.lastMessage.createdAt) : new Date(0);
+      const bTime = b.lastMessage ? new Date(b.lastMessage.createdAt) : new Date(0);
       return bTime - aTime;
     });
     res.status(200).json({ status: "success", users: usersWithDetails });
@@ -149,9 +203,7 @@ router.post("/toggle-favorite", async (req, res) => {
     res.status(200).json({ status: "success", isFavorite: !isFavorite });
   } catch (error) {
     console.error("Error toggling favorite:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to toggle favorite" });
+    res.status(500).json({ status: "error", message: "Failed to toggle favorite" });
   }
 });
 
@@ -169,17 +221,13 @@ router.get("/messages/:userId", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
     const Message = mongoose.model("Message");
-    const currentUser = await User.findById(decoded.id).select(
-      "name email role isVerified"
-    );
+    const currentUser = await User.findById(decoded.id).select("name email role isVerified");
     if (!currentUser || !currentUser.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
     const receiver = await User.findById(userId);
     if (!receiver || !receiver.isVerified) {
-      return res
-        .status(404)
-        .json({ message: "Receiver not found or not verified" });
+      return res.status(404).json({ message: "Receiver not found or not verified" });
     }
     if (currentUser.role === "user" && receiver.role !== "admin") {
       return res.status(403).json({ message: "Users can only message admins" });
@@ -192,18 +240,14 @@ router.get("/messages/:userId", async (req, res) => {
     })
       .populate("sender", "name email profileImage")
       .populate("receiver", "name email profileImage")
-      .select(
-        "sender receiver content messageType createdAt isRead fileMetadata"
-      )
+      .select("sender receiver content messageType createdAt isRead fileMetadata")
       .sort({ createdAt: 1 })
       .lean();
     await Message.updateMany(
       { receiver: currentUser._id, sender: userId, isRead: false },
       { isRead: true }
     );
-    const channel = ably.channels.get(
-      `chat:${[currentUser._id, userId].sort().join(":")}`
-    );
+    const channel = ably.channels.get(`chat:${[currentUser._id, userId].sort().join(":")}`);
     await channel.publish("messageStatusUpdate", {
       messageId: null,
       status: "delivered",
@@ -214,16 +258,13 @@ router.get("/messages/:userId", async (req, res) => {
         _id: msg.sender._id.toString(),
         name: msg.sender.name,
         email: msg.sender.email,
-        profileImage:
-          msg.sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: msg.sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       },
       receiver: {
         _id: msg.receiver._id.toString(),
         name: msg.receiver.name,
         email: msg.receiver.email,
-        profileImage:
-          msg.receiver.profileImage ||
-          "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: msg.receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       },
       content: msg.content,
       messageType: msg.messageType || "text",
@@ -235,9 +276,7 @@ router.get("/messages/:userId", async (req, res) => {
     res.status(200).json({ status: "success", messages: formattedMessages });
   } catch (error) {
     console.error("Error fetching messages:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to fetch messages" });
+    res.status(500).json({ status: "error", message: "Failed to fetch messages" });
   }
 });
 
@@ -245,15 +284,12 @@ router.get("/messages/:userId", async (req, res) => {
 router.post("/send-message", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const { receiverId, content, messageType, fileName, fileSize, fileType } =
-      req.body;
+    const { receiverId, content, messageType, fileName, fileSize, fileType } = req.body;
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
     if (!receiverId || !content) {
-      return res
-        .status(400)
-        .json({ message: "Receiver ID and content are required" });
+      return res.status(400).json({ message: "Receiver ID and content are required" });
     }
     if (!mongoose.Types.ObjectId.isValid(receiverId)) {
       return res.status(400).json({ message: "Invalid receiver ID" });
@@ -261,31 +297,21 @@ router.post("/send-message", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const User = mongoose.model("User");
     const Message = mongoose.model("Message");
-    const sender = await User.findById(decoded.id).select(
-      "name email role profileImage isVerified"
-    );
+    const sender = await User.findById(decoded.id).select("name email role profileImage isVerified");
     if (!sender || !sender.isVerified) {
       return res.status(401).json({ message: "Invalid or unverified user" });
     }
-    const receiver = await User.findById(receiverId).select(
-      "name email role profileImage isVerified"
-    );
+    const receiver = await User.findById(receiverId).select("name email role profileImage isVerified");
     if (!receiver || !receiver.isVerified) {
-      return res
-        .status(404)
-        .json({ message: "Receiver not found or not verified" });
+      return res.status(404).json({ message: "Receiver not found or not verified" });
     }
     if (sender.role === "user" && receiver.role !== "admin") {
       return res.status(403).json({ message: "Users can only message admins" });
     }
     let finalMessageType = messageType || "text";
-    let fileMetadata =
-      messageType !== "text" ? { fileName, fileSize, fileType } : undefined;
+    let fileMetadata = messageType !== "text" ? { fileName, fileSize, fileType } : undefined;
     let secureUrl = content;
-    if (
-      content.startsWith("data:") ||
-      content.startsWith("https://res.cloudinary.com/")
-    ) {
+    if (content.startsWith("data:") || content.startsWith("https://res.cloudinary.com/")) {
       const allowedTypes = {
         image: ["image/png", "image/jpeg", "image/jpg"],
         audio: ["audio/mpeg", "audio/wav", "audio/webm"],
@@ -297,58 +323,30 @@ router.post("/send-message", async (req, res) => {
       };
       if (fileType && !Object.values(allowedTypes).flat().includes(fileType)) {
         return res.status(400).json({
-          message: `Invalid file type. Allowed: ${Object.values(allowedTypes)
-            .flat()
-            .join(", ")}`,
+          message: `Invalid file type. Allowed: ${Object.values(allowedTypes).flat().join(", ")}`,
         });
       }
       if (content.startsWith("https://res.cloudinary.com/")) {
-        if (
-          content.endsWith(".jpg") ||
-          content.endsWith(".png") ||
-          content.endsWith(".jpeg")
-        ) {
+        if (content.endsWith(".jpg") || content.endsWith(".png") || content.endsWith(".jpeg")) {
           finalMessageType = "image";
           fileMetadata = {
             fileName: fileName || "image_file",
             fileSize: fileSize || 0,
-            fileType:
-              fileType ||
-              (content.endsWith(".png") ? "image/png" : "image/jpeg"),
+            fileType: fileType || (content.endsWith(".png") ? "image/png" : "image/jpeg"),
           };
-        } else if (
-          content.endsWith(".mp3") ||
-          content.endsWith(".wav") ||
-          content.endsWith(".webm")
-        ) {
+        } else if (content.endsWith(".mp3") || content.endsWith(".wav") || content.endsWith(".webm")) {
           finalMessageType = "audio";
           fileMetadata = {
             fileName: fileName || "audio_file",
             fileSize: fileSize || 0,
-            fileType:
-              fileType ||
-              (content.endsWith(".mp3")
-                ? "audio/mpeg"
-                : content.endsWith(".wav")
-                ? "audio/wav"
-                : "audio/webm"),
+            fileType: fileType || (content.endsWith(".mp3") ? "audio/mpeg" : content.endsWith(".wav") ? "audio/wav" : "audio/webm"),
           };
-        } else if (
-          content.endsWith(".pdf") ||
-          content.endsWith(".doc") ||
-          content.endsWith(".docx")
-        ) {
+        } else if (content.endsWith(".pdf") || content.endsWith(".doc") || content.endsWith(".docx")) {
           finalMessageType = "document";
           fileMetadata = {
             fileName: fileName || "document_file",
             fileSize: fileSize || 0,
-            fileType:
-              fileType ||
-              (content.endsWith(".pdf")
-                ? "application/pdf"
-                : content.endsWith(".doc")
-                ? "application/msword"
-                : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            fileType: fileType || (content.endsWith(".pdf") ? "application/pdf" : content.endsWith(".doc") ? "application/msword" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
           };
         }
       } else if (content.startsWith("data:")) {
@@ -356,44 +354,24 @@ router.post("/send-message", async (req, res) => {
         const base64Size = (content.length * 3) / 4 / (1024 * 1024);
         if (base64Size > maxSizeMB) {
           return res.status(400).json({
-            message: `${
-              finalMessageType.charAt(0).toUpperCase() +
-              finalMessageType.slice(1)
-            } size must be less than ${maxSizeMB}MB`,
+            message: `${finalMessageType.charAt(0).toUpperCase() + finalMessageType.slice(1)} size must be less than ${maxSizeMB}MB`,
           });
         }
-        const base64Regex = new RegExp(
-          `^data:${fileType?.replace("/", "\\/") || "[^;]+"};base64,`
-        );
+        const base64Regex = new RegExp(`^data:${fileType?.replace("/", "\\/") || "[^;]+"};base64,`);
         if (!base64Regex.test(content)) {
-          return res
-            .status(400)
-            .json({ message: `Invalid ${finalMessageType} format` });
+          return res.status(400).json({ message: `Invalid ${finalMessageType} format` });
         }
-        const resourceType =
-          finalMessageType === "image"
-            ? "image"
-            : finalMessageType === "audio"
-            ? "video"
-            : "raw";
+        const resourceType = finalMessageType === "image" ? "image" : finalMessageType === "audio" ? "video" : "raw";
         const uploadResult = await cloudinary.uploader.upload(content, {
           resource_type: resourceType,
           folder: `skillshastra/${finalMessageType}s`,
-          public_id: `${sender._id}_${Date.now()}_${
-            fileName || finalMessageType
-          }`,
+          public_id: `${sender._id}_${Date.now()}_${fileName || finalMessageType}`,
         });
         secureUrl = uploadResult.secure_url;
         fileMetadata = {
           fileName: fileName || finalMessageType + "_file",
           fileSize: fileSize || uploadResult.bytes || 0,
-          fileType:
-            fileType ||
-            (finalMessageType === "image"
-              ? "image/jpeg"
-              : finalMessageType === "audio"
-              ? "audio/webm"
-              : "application/pdf"),
+          fileType: fileType || (finalMessageType === "image" ? "image/jpeg" : finalMessageType === "audio" ? "audio/webm" : "application/pdf"),
         };
       }
     }
@@ -412,15 +390,13 @@ router.post("/send-message", async (req, res) => {
         id: sender._id.toString(),
         name: sender.name,
         email: sender.email,
-        profileImage:
-          sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: sender.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       },
       receiver: {
         id: receiver._id.toString(),
         name: receiver.name,
         email: receiver.email,
-        profileImage:
-          receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
       },
       content: secureUrl,
       messageType: finalMessageType,
@@ -439,9 +415,7 @@ router.post("/send-message", async (req, res) => {
     });
   } catch (error) {
     console.error("Error sending message:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to send message" });
+    res.status(500).json({ status: "error", message: "Failed to send message" });
   }
 });
 
@@ -469,9 +443,7 @@ router.post("/clear-chats", async (req, res) => {
         { sender: userId, receiver: currentUser._id },
       ],
     });
-    const channel = ably.channels.get(
-      `chat:${[currentUser._id, userId].sort().join(":")}`
-    );
+    const channel = ably.channels.get(`chat:${[currentUser._id, userId].sort().join(":")}`);
     await channel.publish("chatsCleared", { status: "success" });
     res.status(200).json({ status: "success", message: "Chats cleared" });
   } catch (error) {
@@ -510,16 +482,198 @@ router.get("/user/:userId", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        profileImage:
-          user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+        profileImage: user.profileImage || "https://www.gravatar.com/avatar/?d=retro",
         isOnline: user.isOnline || false,
       },
     });
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to fetch user profile" });
+    res.status(500).json({ status: "error", message: "Failed to fetch user profile" });
+  }
+});
+
+// Initiate Call Endpoint
+router.post("/initiate-call", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const { receiverId } = req.body;
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver ID" });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const User = mongoose.model("User");
+    const caller = await User.findById(decoded.id).select("name email isVerified");
+    const receiver = await User.findById(receiverId).select("name email isVerified");
+    if (!caller || !caller.isVerified) {
+      return res.status(401).json({ message: "Invalid or unverified caller" });
+    }
+    if (!receiver || !receiver.isVerified) {
+      return res.status(404).json({ message: "Receiver not found or not verified" });
+    }
+    if (caller.role === "user" && receiver.role !== "admin") {
+      return res.status(403).json({ message: "Users can only call admins" });
+    }
+    const callLog = new CallLog({
+      caller: caller._id,
+      receiver: receiverId,
+      status: "initiated",
+      callType: "audio",
+    });
+    await callLog.save();
+    const channel = ably.channels.get(`call:${[caller._id, receiverId].sort().join(":")}`);
+    await channel.publish("callInitiated", {
+      callId: callLog._id.toString(),
+      caller: {
+        id: caller._id.toString(),
+        name: caller.name,
+        email: caller.email,
+      },
+      receiver: {
+        id: receiver._id.toString(),
+        name: receiver.name,
+        email: receiver.email,
+      },
+      status: "initiated",
+      createdAt: callLog.createdAt,
+    });
+    res.status(200).json({ status: "success", callId: callLog._id.toString() });
+  } catch (error) {
+    console.error("Error initiating call:", error);
+    res.status(500).json({ status: "error", message: "Failed to initiate call" });
+  }
+});
+
+// End Call Endpoint
+router.post("/end-call", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const { callId } = req.body;
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(callId)) {
+      return res.status(400).json({ message: "Invalid call ID" });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const User = mongoose.model("User");
+    const callLog = await CallLog.findById(callId);
+    if (!callLog) {
+      return res.status(404).json({ message: "Call not found" });
+    }
+    callLog.status = callLog.status === "initiated" ? "missed" : "ended";
+    callLog.endedAt = new Date();
+    callLog.duration = Math.round((callLog.endedAt - callLog.createdAt) / 1000);
+    await callLog.save();
+    const channel = ably.channels.get(`call:${[callLog.caller, callLog.receiver].sort().join(":")}`);
+    await channel.publish("callEnded", {
+      callId: callLog._id.toString(),
+      status: callLog.status,
+      duration: callLog.duration,
+    });
+    res.status(200).json({ status: "success", message: "Call ended" });
+  } catch (error) {
+    console.error("Error ending call:", error);
+    res.status(500).json({ status: "error", message: "Failed to end call" });
+  }
+});
+
+// Get Call Logs Endpoint
+router.get("/call-logs/:userId", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const { userId } = req.params;
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const User = mongoose.model("User");
+    const currentUser = await User.findById(decoded.id).select("name email isVerified");
+    if (!currentUser || !currentUser.isVerified) {
+      return res.status(401).json({ message: "Invalid or unverified user" });
+    }
+    const receiver = await User.findById(userId);
+    if (!receiver || !receiver.isVerified) {
+      return res.status(404).json({ message: "Receiver not found or not verified" });
+    }
+    if (currentUser.role === "user" && receiver.role !== "admin") {
+      return res.status(403).json({ message: "Users can only view admin call logs" });
+    }
+    const callLogs = await CallLog.find({
+      $or: [
+        { caller: currentUser._id, receiver: userId },
+        { caller: userId, receiver: currentUser._id },
+      ],
+    })
+      .populate("caller", "name email profileImage")
+      .populate("receiver", "name email profileImage")
+      .sort({ createdAt: -1 })
+      .lean();
+    const formattedCallLogs = callLogs.map((log) => ({
+      callId: log._id.toString(),
+      caller: {
+        id: log.caller._id.toString(),
+        name: log.caller.name,
+        email: log.caller.email,
+        profileImage: log.caller.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+      },
+      receiver: {
+        id: log.receiver._id.toString(),
+        name: log.receiver.name,
+        email: log.receiver.email,
+        profileImage: log.receiver.profileImage || "https://www.gravatar.com/avatar/?d=retro",
+      },
+      callType: log.callType,
+      status: log.status,
+      duration: log.duration,
+      createdAt: log.createdAt,
+      endedAt: log.endedAt,
+    }));
+    res.status(200).json({ status: "success", callLogs: formattedCallLogs });
+  } catch (error) {
+    console.error("Error fetching call logs:", error);
+    res.status(500).json({ status: "error", message: "Failed to fetch call logs" });
+  }
+});
+
+// Typing Indicator Endpoint
+router.post("/typing", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    const { receiverId, isTyping } = req.body;
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver ID" });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const User = mongoose.model("User");
+    const sender = await User.findById(decoded.id);
+    if (!sender || !sender.isVerified) {
+      return res.status(401).json({ message: "Invalid or unverified user" });
+    }
+    const receiver = await User.findById(receiverId);
+    if (!receiver || !receiver.isVerified) {
+      return res.status(404).json({ message: "Receiver not found or not verified" });
+    }
+    if (sender.role === "user" && receiver.role !== "admin") {
+      return res.status(403).json({ message: "Users can only message admins" });
+    }
+    const channel = ably.channels.get(`chat:${[sender._id, receiverId].sort().join(":")}`);
+    await channel.publish("typing", {
+      senderId: sender._id.toString(),
+      isTyping,
+    });
+    res.status(200).json({ status: "success", message: "Typing status sent" });
+  } catch (error) {
+    console.error("Error sending typing status:", error);
+    res.status(500).json({ status: "error", message: "Failed to send typing status" });
   }
 });
 
@@ -557,48 +711,6 @@ presenceChannel.presence.subscribe("leave", async (member) => {
     ]);
   } catch (error) {
     console.error("Presence leave error:", error);
-  }
-});
-
-// Typing Indicator Endpoint
-router.post("/typing", async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    const { receiverId, isTyping } = req.body;
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
-      return res.status(400).json({ message: "Invalid receiver ID" });
-    }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const User = mongoose.model("User");
-    const sender = await User.findById(decoded.id);
-    if (!sender || !sender.isVerified) {
-      return res.status(401).json({ message: "Invalid or unverified user" });
-    }
-    const receiver = await User.findById(receiverId);
-    if (!receiver || !receiver.isVerified) {
-      return res
-        .status(404)
-        .json({ message: "Receiver not found or not verified" });
-    }
-    if (sender.role === "user" && receiver.role !== "admin") {
-      return res.status(403).json({ message: "Users can only message admins" });
-    }
-    const channel = ably.channels.get(
-      `chat:${[sender._id, receiverId].sort().join(":")}`
-    );
-    await channel.publish("typing", {
-      senderId: sender._id.toString(),
-      isTyping,
-    });
-    res.status(200).json({ status: "success", message: "Typing status sent" });
-  } catch (error) {
-    console.error("Error sending typing status:", error);
-    res
-      .status(500)
-      .json({ status: "error", message: "Failed to send typing status" });
   }
 });
 
