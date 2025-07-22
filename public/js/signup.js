@@ -11,7 +11,8 @@ window.redirectUrl = redirectUrl;
 document.addEventListener("DOMContentLoaded", async () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   if (user && user.expiresAt && user.expiresAt < Date.now()) {
-    localStorage.removeItem("user"); // Clear expired user data
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
     showError("Session expired. Please log in again.");
     showLogin();
     return;
@@ -22,25 +23,35 @@ document.addEventListener("DOMContentLoaded", async () => {
       const response = await fetch(`${API_URL}/validate-session`, {
         method: "GET",
         credentials: "include",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
 
       if (response.ok) {
         showSuccess("You are already logged in. Redirecting to dashboard.");
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = user.role === "admin" ? "/admin" : "/dashboard";
         }, 1000);
       } else {
         localStorage.removeItem("user");
+        localStorage.removeItem("token");
         showError("Session expired. Please log in again.");
         showLogin();
       }
     } catch (error) {
       console.error("Session Validation Error:", error);
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       showError("Network error. Please log in again.");
       showLogin();
     }
   } else {
+    // Check for Google OAuth callback error
+    const error = urlParams.get("error");
+    if (error) {
+      showError(decodeURIComponent(error));
+    }
     showLogin();
   }
 });
@@ -191,7 +202,13 @@ function closePage() {
 }
 
 function socialLogin(provider) {
-  showError(`${provider} login is not implemented yet.`);
+  if (provider === "Google") {
+    // Redirect to Google OAuth endpoint with state parameter
+    const redirectParam = encodeURIComponent(window.redirectUrl);
+    window.location.href = `${API_URL}/google?state=${redirectParam}`;
+  } else {
+    showError(`${provider} login is not implemented yet.`);
+  }
 }
 
 // Signup Form Submission
@@ -230,7 +247,7 @@ document.getElementById("signupForm").addEventListener("submit", async (e) => {
     const response = await fetch(`${API_URL}/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Include cookies
+      credentials: "include",
       body: JSON.stringify({
         name,
         email,
@@ -283,7 +300,7 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
     const response = await fetch(`${API_URL}/verify-otp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Include cookies
+      credentials: "include",
       body: JSON.stringify({
         email: currentEmail,
         otp,
@@ -293,14 +310,13 @@ document.getElementById("otpForm").addEventListener("submit", async (e) => {
 
     const data = await response.json();
 
-    // In the OTP verification handler
     if (response.ok) {
       const userData = {
         ...data.user,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Set expiration to 1 day
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
-      localStorage.setItem('token', data.token);
-      localStorage.setItem("user", JSON.stringify(userData)); // Store user data with expiration
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(userData));
       showSuccess("OTP verified successfully!");
       setTimeout(() => {
         const url =
@@ -330,7 +346,7 @@ async function resendOTP() {
     const response = await fetch(`${API_URL}/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Include cookies
+      credentials: "include",
       body: JSON.stringify({
         email: currentEmail,
         redirect: window.redirectUrl,
@@ -374,7 +390,7 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const response = await fetch(`${API_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Include cookies
+      credentials: "include",
       body: JSON.stringify({ email, password, redirect: window.redirectUrl }),
     });
 
@@ -383,10 +399,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     if (response.ok) {
       const userData = {
         ...data.user,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // Set expiration to 1 day
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
       localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(userData)); // Store user data with expiration
+      localStorage.setItem("user", JSON.stringify(userData));
       showSuccess("Login successful!");
       setTimeout(() => {
         const url =
@@ -396,11 +412,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       }, 1000);
     } else if (data.message === "User already logged in") {
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
       showSuccess("You are already logged in. Redirecting...");
       setTimeout(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirect = urlParams.get("redirect") || "/dashboard";
-        window.location.href = redirect;
+        const url =
+          data.redirect ||
+          (data.user.role === "admin" ? "/admin" : "/dashboard");
+        window.location.href = url;
       }, 1000);
     } else {
       showError(data.message || "Login failed. Please try again.");
@@ -450,7 +468,7 @@ document
         const response = await fetch(`${API_URL}/forgot-password`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // Include cookies
+          credentials: "include",
           body: JSON.stringify({ email, redirect: window.redirectUrl }),
         });
 
@@ -512,7 +530,7 @@ document
         const response = await fetch(`${API_URL}/reset-password`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // Include cookies
+          credentials: "include",
           body: JSON.stringify({
             email: currentEmail,
             otp,
@@ -554,10 +572,14 @@ async function logout() {
     const response = await fetch(`${API_URL}/logout`, {
       method: "POST",
       credentials: "include",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
     });
 
     if (response.ok) {
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
       showSuccess("Logged out successfully.");
       setTimeout(() => {
         window.location.href = "/signup";

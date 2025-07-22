@@ -132,14 +132,20 @@
             <div class="social-login">
                 <p>Or continue with</p>
                 <div class="social-icons">
-                    <a href="#" title="Google" aria-label="Login with Google" onclick="typeof socialLogin === 'function' ? socialLogin('Google') : console.error('socialLogin not defined')">
+                    <a href="#" title="Google" aria-label="Login with Google" id="googleSignInBtn" onclick="typeof socialLogin === 'function' ? socialLogin('Google') : console.error('socialLogin not defined')">
                         <i class="fab fa-google"></i>
+                        <span class="social-text">Google</span>
+                        <span class="social-loading" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i> Signing in...
+                        </span>
                     </a>
                     <a href="#" title="GitHub" aria-label="Login with GitHub" onclick="typeof socialLogin === 'function' ? socialLogin('GitHub') : console.error('socialLogin not defined')">
                         <i class="fab fa-github"></i>
+                        <span class="social-text">GitHub</span>
                     </a>
                     <a href="#" title="LinkedIn" aria-label="Login with LinkedIn" onclick="typeof socialLogin === 'function' ? socialLogin('LinkedIn') : console.error('socialLogin not defined')">
                         <i class="fab fa-linkedin"></i>
+                        <span class="social-text">LinkedIn</span>
                     </a>
                 </div>
             </div>
@@ -174,6 +180,36 @@
     <script>
         // Set redirect URL globally
         window.redirectUrl = new URLSearchParams(window.location.search).get('redirect') || document.referrer || '/dashboard';
+
+        // Handle Google OAuth callback
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.location.pathname === '/auth/google/callback') {
+                const googleSignInBtn = document.getElementById('googleSignInBtn');
+                if (googleSignInBtn) {
+                    googleSignInBtn.querySelector('.social-text').style.display = 'none';
+                    googleSignInBtn.querySelector('.social-loading').style.display = 'inline-flex';
+                }
+                try {
+                    const response = await fetch('https://skill-shastra.vercel.app/api/auth/google/callback', {
+                        method: 'GET',
+                        credentials: 'include',
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify({
+                            ...data.user,
+                            expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+                        }));
+                        window.location.href = data.redirect || (data.user.role === 'admin' ? '/admin' : '/dashboard');
+                    } else {
+                        window.location.href = `/signup?error=${encodeURIComponent(data.message || 'Google authentication failed')}`;
+                    }
+                } catch (error) {
+                    window.location.href = `/signup?error=${encodeURIComponent('Network error during Google authentication')}`;
+                }
+            }
+        });
     </script>
     <script src="/js/signup.js"></script>
 </body>

@@ -13,6 +13,9 @@ const { v2: cloudinary } = require("cloudinary");
 const rateLimit = require("express-rate-limit");
 const axios = require("axios");
 const http = require("http");
+const passport = require("passport");
+const session = require("express-session");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 dotenv.config();
 const app = express();
@@ -31,6 +34,21 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Rate Limiting Middleware
@@ -67,9 +85,9 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
       minlength: 6,
     },
+    googleId: { type: String, unique: true, sparse: true }, // Added for Google OAuth
     role: { type: String, enum: ["user", "admin"], default: "user" },
     otp: { type: String },
     otpExpires: { type: Date },
@@ -84,14 +102,14 @@ const userSchema = new mongoose.Schema(
         return `https://www.gravatar.com/avatar/${emailHash}?s=50&d=retro`;
       },
     },
-    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Added for messaging
-    isOnline: { type: Boolean, default: false }, // Added for presence
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    isOnline: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -103,7 +121,65 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 const User = mongoose.model("User", userSchema);
 
-// Message Schema (moved from messaging/server.js to avoid duplication)
+// Passport Google Strategy
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/api/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
+        if (!user) {
+          user = await User.findOne({ email: profile.emails[0].value });
+          if (user) {
+            // Link Google ID to existing user
+            user.googleId = profile.id;
+            await user.save();
+          } else {
+            // Create new user
+            user = await User.create({
+              googleId: profile.id,
+              name: profile.displayName,
+              email: profile.emails[0].value,
+              isVerified: true, // Google users are verified by default
+              role: process.env.ADMIN_EMAILS.split(",").includes(
+                profile.emails[0].value
+              )
+                ? "admin"
+                : "user",
+            });
+            await sendEmail(
+              user.email,
+              "Welcome to Skill Shastra!",
+              getWelcomeEmailTemplate(user.name)
+            );
+          }
+        }
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+});
+
+// Message Schema
 const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   receiver: {
@@ -123,7 +199,7 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model("Message", messageSchema);
 
-// Call Schema (for future WebRTC support)
+// Call Schema
 const callSchema = new mongoose.Schema({
   caller: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   receiver: {
@@ -218,6 +294,15 @@ const announcementSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 const Announcement = mongoose.model("Announcement", announcementSchema);
+
+// Course Schema
+const courseSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  duration: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+});
+const Course = mongoose.model("Course", courseSchema);
 
 // Multer Setup
 const storage = multer.memoryStorage();
@@ -357,9 +442,9 @@ const getAnnouncementEmailTemplate = (title, content, announcementType) =>
     <h1>New Announcement: ${title}</h1>
     <p>Dear Skill Shastra User,</p>
     <p>We have a new ${announcementType.replace(
-      "_",
-      " "
-    )} announcement for you:</p>
+    "_",
+    " "
+  )} announcement for you:</p>
     <p><strong>${title}</strong></p>
     <p>${content}</p>
     <a href="https://skill-shastra.vercel.app/dashboard/announcements" class="cta-button">View Announcements</a>
@@ -428,10 +513,9 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
     <h1>Enrollment Status Update</h1>
     <p>Dear ${fullName},</p>
     <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-    ${
-      status === "approved"
-        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+    ${status === "approved"
+      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
     }
     <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
     <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
@@ -460,7 +544,7 @@ const protect = async (req, res, next) => {
     const user = await User.findById(decoded.id).select(
       "-password -otp -otpExpires"
     );
-    if (!user || !user.isVerified) {
+    if (!user || (!user.isVerified && !user.googleId)) {
       res.clearCookie("token");
       if (isApiRoute) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -601,7 +685,7 @@ app.post("/api/auth/login", async (req, res) => {
         const user = await User.findById(decoded.id).select(
           "-password -otp -otpExpires"
         );
-        if (user && user.isVerified) {
+        if (user && (user.isVerified || user.googleId)) {
           return res.status(400).json({
             message: "User already logged in",
             user: {
@@ -619,10 +703,10 @@ app.post("/api/auth/login", async (req, res) => {
       }
     }
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user || !user.password || !(await user.comparePassword(password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    if (!user.isVerified) {
+    if (!user.isVerified && !user.googleId) {
       return res
         .status(400)
         .json({ message: "Please verify your email first" });
@@ -657,6 +741,11 @@ app.post("/api/auth/logout", (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
+  });
+  res.clearCookie("connect.sid", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
   });
   res.status(200).json({ message: "Logged out successfully" });
 });
@@ -730,6 +819,44 @@ app.get("/api/auth/validate-session", protect, async (req, res) => {
   }
 });
 
+// Google OAuth Routes
+app.get(
+  "/api/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+app.get(
+  "/api/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/signup" }),
+  async (req, res) => {
+    try {
+      const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
+        expiresIn: "1d",
+      });
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: "strict",
+      });
+      const redirect = req.query.state || "/dashboard";
+      res.status(200).json({
+        user: {
+          name: req.user.name,
+          email: req.user.email,
+          role: req.user.role,
+          profileImage: req.user.profileImage,
+        },
+        token,
+        redirect,
+      });
+    } catch (error) {
+      console.error("Google Callback Error:", error);
+      res.redirect(`/signup?error=${encodeURIComponent("Google authentication failed")}`);
+    }
+  }
+);
+
 // Admin Routes
 app.get("/api/auth/admin-panel", protect, restrictToAdmin, async (req, res) => {
   try {
@@ -782,8 +909,7 @@ app.patch(
       const user = await User.findById(enrollment.userId);
       await sendEmail(
         enrollment.email,
-        `Skill Shastra Enrollment ${
-          status.charAt(0).toUpperCase() + status.slice(1)
+        `Skill Shastra Enrollment ${status.charAt(0).toUpperCase() + status.slice(1)
         }`,
         getEnrollmentStatusEmailTemplate(
           enrollment.fullName,
@@ -910,15 +1036,6 @@ app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-// Course Schema
-const courseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-});
-const Course = mongoose.model("Course", courseSchema);
 
 // Recommended Courses Route
 app.get("/api/courses/recommended", protect, async (req, res) => {
@@ -1392,7 +1509,7 @@ app.get(
   renderPage("admin/analytics")
 );
 app.get(
-  "/admin/messages",
+  "/api/admin/messages",
   protect,
   restrictToAdmin,
   renderPage("admin/messages")

@@ -34,12 +34,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
-
-
-
-
-
 const initializeMessaging = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
