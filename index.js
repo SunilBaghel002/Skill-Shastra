@@ -1504,7 +1504,7 @@ app.get(
   renderPage("admin/analytics")
 );
 app.get(
-  "/api/admin/messages",
+  "/admin/messages",
   protect,
   restrictToAdmin,
   renderPage("admin/messages")
