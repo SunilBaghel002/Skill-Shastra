@@ -27,6 +27,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Force HTTPS in production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
 // Middleware
 app.use(
   cors({ origin: "https://skill-shastra.vercel.app", credentials: true })
@@ -87,7 +95,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       minlength: 6,
     },
-    googleId: { type: String, unique: true, sparse: true }, // Added for Google OAuth
+    googleId: { type: String, unique: true, sparse: true },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     otp: { type: String },
     otpExpires: { type: Date },
@@ -125,7 +133,7 @@ const User = mongoose.model("User", userSchema);
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/api/auth/google/callback",
+  callbackURL: "https://skill-shastra.vercel.app/api/auth/google/callback",
   scope: ["profile", "email"],
 }, async (accessToken, refreshToken, profile, done) => {
   try {
@@ -823,7 +831,7 @@ app.get(
 
 app.get(
   "/api/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/signup" }),
+  passport.authenticate("google", { failureRedirect: `/signup?error=${encodeURIComponent("Google authentication failed")}` }),
   async (req, res) => {
     try {
       const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
@@ -836,16 +844,7 @@ app.get(
         sameSite: "strict",
       });
       const redirect = req.query.state || "/dashboard";
-      res.status(200).json({
-        user: {
-          name: req.user.name,
-          email: req.user.email,
-          role: req.user.role,
-          profileImage: req.user.profileImage,
-        },
-        token,
-        redirect,
-      });
+      res.redirect(`/signup?token=${token}&redirect=${encodeURIComponent(redirect)}`);
     } catch (error) {
       console.error("Google Callback Error:", error);
       res.redirect(`/signup?error=${encodeURIComponent("Google authentication failed")}`);
