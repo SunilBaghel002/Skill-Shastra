@@ -13,6 +13,7 @@ const { v2: cloudinary } = require("cloudinary");
 const rateLimit = require("express-rate-limit");
 const axios = require("axios");
 const http = require("http");
+const studyMaterialRouter = require("./routes/studyMaterials");
 
 dotenv.config();
 const app = express();
@@ -912,13 +913,7 @@ app.get("/api/admin/messages", protect, restrictToAdmin, async (req, res) => {
 });
 
 // Course Schema
-const courseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-});
-const Course = mongoose.model("Course", courseSchema);
+
 
 // Recommended Courses Route
 app.get("/api/courses/recommended", protect, async (req, res) => {
@@ -1368,6 +1363,11 @@ app.post("/api/execute", protect, async (req, res) => {
   }
 });
 
+
+
+app.use("/api/study-materials",protect,
+  restrictToAdmin, studyMaterialRouter);
+
 // EJS Setup
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -1402,6 +1402,12 @@ app.get(
   protect,
   restrictToAdmin,
   renderPage("admin/announcements")
+);
+app.get(
+  "/admin/studyMaterial",
+  protect,
+  restrictToAdmin,
+  renderPage("admin/study-materials")
 );
 app.get("/dashboard", protect, renderPage("dashboard"));
 app.get("/dashboard/courses", protect, renderPage("dashboard/courses"));
