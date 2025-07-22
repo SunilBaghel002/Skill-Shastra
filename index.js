@@ -29,7 +29,10 @@ cloudinary.config({
 
 // Force HTTPS in production
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+  if (
+    process.env.NODE_ENV === "production" &&
+    req.headers["x-forwarded-proto"] !== "https"
+  ) {
     return res.redirect(301, `https://${req.headers.host}${req.url}`);
   }
   next();
@@ -130,45 +133,50 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 const User = mongoose.model("User", userSchema);
 
 // Passport Google Strategy
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "https://skill-shastra.vercel.app/api/auth/google/callback",
-  scope: ["profile", "email"],
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    let user = await User.findOne({ googleId: profile.id });
-    if (!user) {
-      user = await User.findOne({ email: profile.emails[0].value });
-      if (user) {
-        // Link Google ID to existing user
-        user.googleId = profile.id;
-        await user.save();
-      } else {
-        // Create new user
-        user = await User.create({
-          googleId: profile.id,
-          name: profile.displayName,
-          email: profile.emails[0].value,
-          isVerified: true, // Google users are verified by default
-          role: process.env.ADMIN_EMAILS.split(",").includes(
-            profile.emails[0].value
-          )
-            ? "admin"
-            : "user",
-        });
-        await sendEmail(
-          user.email,
-          "Welcome to Skill Shastra!",
-          getWelcomeEmailTemplate(user.name)
-        );
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "https://skill-shastra.vercel.app/api/auth/google/callback",
+      scope: ["profile", "email"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
+        if (!user) {
+          user = await User.findOne({ email: profile.emails[0].value });
+          if (user) {
+            // Link Google ID to existing user
+            user.googleId = profile.id;
+            await user.save();
+          } else {
+            // Create new user
+            user = await User.create({
+              googleId: profile.id,
+              name: profile.displayName,
+              email: profile.emails[0].value,
+              isVerified: true, // Google users are verified by default
+              role: process.env.ADMIN_EMAILS.split(",").includes(
+                profile.emails[0].value
+              )
+                ? "admin"
+                : "user",
+            });
+            await sendEmail(
+              user.email,
+              "Welcome to Skill Shastra!",
+              getWelcomeEmailTemplate(user.name)
+            );
+          }
+        }
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
       }
     }
-    return done(null, user);
-  } catch (err) {
-    return done(err, null);
-  }
-}));
+  )
+);
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -446,9 +454,9 @@ const getAnnouncementEmailTemplate = (title, content, announcementType) =>
     <h1>New Announcement: ${title}</h1>
     <p>Dear Skill Shastra User,</p>
     <p>We have a new ${announcementType.replace(
-    "_",
-    " "
-  )} announcement for you:</p>
+      "_",
+      " "
+    )} announcement for you:</p>
     <p><strong>${title}</strong></p>
     <p>${content}</p>
     <a href="https://skill-shastra.vercel.app/dashboard/announcements" class="cta-button">View Announcements</a>
@@ -517,9 +525,10 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
     <h1>Enrollment Status Update</h1>
     <p>Dear ${fullName},</p>
     <p>Your enrollment for <strong>${course}</strong> has been <span class="status-${status.toLowerCase()}">${status}</span>.</p>
-    ${status === "approved"
-      ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
-      : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
+    ${
+      status === "approved"
+        ? "<p>Congratulations! You can now access your course materials on the dashboard.</p>"
+        : "<p>We’re sorry, but your enrollment could not be approved. Please contact us for more details.</p>"
     }
     <a href="https://skill-shastra.vercel.app/dashboard" class="cta-button">View Dashboard</a>
     <p>Thank you for choosing Skill Shastra! If you have any questions, reach out to <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
@@ -831,7 +840,11 @@ app.get(
 
 app.get(
   "/api/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: `/signup?error=${encodeURIComponent("Google authentication failed")}` }),
+  passport.authenticate("google", {
+    failureRedirect: `/signup?error=${encodeURIComponent(
+      "Google authentication failed"
+    )}`,
+  }),
   async (req, res) => {
     try {
       const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
@@ -844,10 +857,14 @@ app.get(
         sameSite: "strict",
       });
       const redirect = req.query.state || "/dashboard";
-      res.redirect(`/signup?token=${token}&redirect=${encodeURIComponent(redirect)}`);
+      res.redirect(
+        `/signup?token=${token}&redirect=${encodeURIComponent(redirect)}`
+      );
     } catch (error) {
       console.error("Google Callback Error:", error);
-      res.redirect(`/signup?error=${encodeURIComponent("Google authentication failed")}`);
+      res.redirect(
+        `/signup?error=${encodeURIComponent("Google authentication failed")}`
+      );
     }
   }
 );
@@ -904,7 +921,8 @@ app.patch(
       const user = await User.findById(enrollment.userId);
       await sendEmail(
         enrollment.email,
-        `Skill Shastra Enrollment ${status.charAt(0).toUpperCase() + status.slice(1)
+        `Skill Shastra Enrollment ${
+          status.charAt(0).toUpperCase() + status.slice(1)
         }`,
         getEnrollmentStatusEmailTemplate(
           enrollment.fullName,
@@ -1504,7 +1522,7 @@ app.get(
   renderPage("admin/analytics")
 );
 app.get(
-  "/api/admin/messages",
+  "/admin/messages",
   protect,
   restrictToAdmin,
   renderPage("admin/messages")
