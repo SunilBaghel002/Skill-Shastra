@@ -1,302 +1,464 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Skill Shastra - Study Materials</title>
-  <meta name="description" content="Access study materials for your enrolled courses at Skill Shastra.">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="shortcut icon" href="/images/Logo_Black_Bg-2.png" type="image/x-icon">
-  <link rel="stylesheet" href="/css/styles.css">
-  <link rel="stylesheet" href="/css/sidebar.css">
-  <link rel="stylesheet" href="/css/footer.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
-      color: #1f2937;
-      margin-left: 280px;
-      transition: margin-left 0.3s ease;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    .main-content.full {
-      margin-left: 0;
-    }
-
-    /* Hero Section */
-    .hero-section {
-      min-height: 60vh;
-      display: flex;
-      align-items: center;
-      position: relative;
-      padding: 8rem 2rem 4rem;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d1b69 100%);
-      overflow: hidden;
-    }
-
-    .hero-section::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(circle at 30% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 70% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
-      pointer-events: none;
-    }
-
-    .hero-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      text-align: center;
-      z-index: 2;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .hero-container h1 {
-      font-size: 3rem;
-      font-weight: 700;
-      color: white;
-      line-height: 1.2;
-      margin-bottom: 1.5rem;
-    }
-
-    .hero-container .gradient-text {
-      background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradient-shift 3s ease-in-out infinite;
-    }
-
-    @keyframes gradient-shift {
-
-      0%,
-      100% {
-        background-position: 0% 50%;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Shastra - Study Materials</title>
+    <meta
+      name="description"
+      content="Access study materials for your enrolled courses at Skill Shastra."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="shortcut icon"
+      href="/images/Logo_Black_Bg-2.png"
+      type="image/x-icon"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/sidebar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
-      50% {
-        background-position: 100% 50%;
-      }
-    }
-
-    .hero-container p {
-      font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.7);
-      line-height: 1.6;
-      max-width: 600px;
-      margin: 0 auto 2rem;
-    }
-
-    .btm-primary {
-      background: linear-gradient(135deg, #7c3aed, #a855f7);
-      color: white;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s ease;
-      cursor: pointer;
-    }
-
-    .btm-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
-    }
-
-    /* Courses Section */
-    .courses-section {
-      padding: 4rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .section-tag {
-      display: inline-block;
-      padding: 0.5rem 1.5rem;
-      background: rgba(124, 58, 237, 0.2);
-      color: #a855f7;
-      border-radius: 50px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(124, 58, 237, 0.3);
-      animation: pulse-glow 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse-glow {
-
-      0%,
-      100% {
-        box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+      html {
+        scroll-behavior: smooth;
       }
 
-      50% {
-        box-shadow: 0 0 30px rgba(124, 58, 237, 0.6), 0 0 50px rgba(124, 58, 237, 0.3);
-      }
-    }
-
-    .section-title {
-      font-size: 2.8rem;
-      font-weight: 700;
-      color: #1f2937;
-      margin-bottom: 1rem;
-    }
-
-    .section-description {
-      font-size: 1.1rem;
-      color: #6b7280;
-      max-width: 600px;
-      margin: 0 auto 2rem;
-    }
-
-    .course-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .course-card {
-      background: white;
-      border-radius: 8px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-
-    .course-card:hover {
-      transform: translateY(-5px);
-    }
-
-    .course-card h3 {
-      font-size: 1.5rem;
-      color: #1f2937;
-      margin-bottom: 0.5rem;
-    }
-
-    .course-card p {
-      color: #6b7280;
-      margin: 0.5rem 0;
-    }
-
-    /* Materials Section */
-    .materials-section {
-      padding: 2rem;
-      background: white;
-      border-radius: 8px;
-      margin-top: 2rem;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      display: none;
-    }
-
-    .materials-section.active {
-      display: block;
-    }
-
-    .material-card {
-      background: #f8f9ff;
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .material-card h4 {
-      font-size: 1.2rem;
-      color: #1f2937;
-    }
-
-    .material-card p {
-      color: #6b7280;
-      margin: 0.5rem 0;
-    }
-
-    .material-card a {
-      background: linear-gradient(135deg, #7c3aed, #a855f7);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .material-card a:hover {
-      box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
-    }
-
-    @media (max-width: 768px) {
       body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+        color: #1f2937;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      .main-content.full {
         margin-left: 0;
       }
 
+      /* Hero Section */
       .hero-section {
-        padding: 6rem 1rem 3rem;
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        padding: 8rem 2rem 4rem;
+        background: linear-gradient(
+          135deg,
+          #0f0f23 0%,
+          #1a1a3a 50%,
+          #2d1b69 100%
+        );
+        overflow: hidden;
+      }
+
+      .hero-section::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 30% 20%,
+            rgba(124, 58, 237, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 70% 80%,
+            rgba(168, 85, 247, 0.1) 0%,
+            transparent 50%
+          );
+        pointer-events: none;
+      }
+
+      .hero-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        text-align: center;
+        z-index: 2;
+        position: relative;
+        display: flex;
+        flex-direction: column;
       }
 
       .hero-container h1 {
-        font-size: 2.5rem;
+        font-size: 3rem;
+        font-weight: 700;
+        color: white;
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+      }
+
+      .hero-container .gradient-text {
+        background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: gradient-shift 3s ease-in-out infinite;
+      }
+
+      @keyframes gradient-shift {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      .hero-container p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.6;
+        max-width: 600px;
+        margin: 0 auto 2rem;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
+      }
+
+      /* Courses Section */
+      .courses-section {
+        padding: 4rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+
+      .section-tag {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        background: rgba(124, 58, 237, 0.2);
+        color: #a855f7;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(124, 58, 237, 0.3);
+        animation: pulse-glow 3s ease-in-out infinite;
+      }
+
+      @keyframes pulse-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(124, 58, 237, 0.6),
+            0 0 50px rgba(124, 58, 237, 0.3);
+        }
+      }
+
+      .section-title {
+        font-size: 2.8rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1rem;
+      }
+
+      .section-description {
+        font-size: 1.1rem;
+        color: #6b7280;
+        max-width: 600px;
+        margin: 0 auto 2rem;
       }
 
       .course-grid {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
       }
 
-      .material-card {
-        flex-direction: column;
+      .course-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        z-index: 1;
+      }
+
+      .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .course-card h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+      }
+
+      .course-card p {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0.5rem 0;
+      }
+
+      .course-card .course-info {
+        display: flex;
         align-items: flex-start;
         gap: 1rem;
       }
-    }
-  </style>
-</head>
 
-<body>
-  <%- include('../partials/sidebar') %>
+      .course-card .material-icon {
+        font-size: 1.5rem;
+        color: #7c3aed;
+      }
+
+      /* Materials Section */
+      .materials-section {
+        padding: 2rem;
+        background: white;
+        border-radius: 12px;
+        margin-top: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        display: none;
+        position: relative;
+        z-index: 2;
+      }
+
+      .materials-section.active {
+        display: block;
+      }
+
+      .material-card {
+        background: #f8f9ff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .material-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .material-card .material-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .material-card .material-icon {
+        font-size: 1.5rem;
+        color: #7c3aed;
+      }
+
+      .material-card h4 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .material-card p {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0.3rem 0;
+      }
+
+      .material-card .file-type {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 12px;
+        margin-top: 0.5rem;
+      }
+
+      .material-card .file-type.pdf {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .material-card .file-type.video {
+        background: #d1fae5;
+        color: #047857;
+      }
+
+      .material-card .file-type.image {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+
+      .material-card a {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .material-card a:hover {
+        background: linear-gradient(135deg, #6d28d9, #9333ea);
+        box-shadow: 0 5px 15px rgba(124, 58, 237, 0.4);
+        transform: translateY(-2px);
+      }
+
+      .loader-container {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        position: relative;
+        z-index: 2;
+      }
+
+      .loader-container.active {
+        display: block;
+      }
+
+      .loader {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        border: 4px solid #7c3aed;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .no-items {
+        text-align: center;
+        color: #6b7280;
+        font-size: 1rem;
+        padding: 2rem;
+        position: relative;
+        z-index: 2;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          margin-left: 0;
+        }
+
+        .hero-section {
+          padding: 6rem 1rem 3rem;
+        }
+
+        .hero-container h1 {
+          font-size: 2.5rem;
+        }
+
+        .courses-section {
+          padding: 2rem 1rem;
+        }
+
+        .course-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .material-card {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .hero-container h1 {
+          font-size: 2rem;
+        }
+
+        .section-title {
+          font-size: 2.2rem;
+        }
+
+        .course-card,
+        .materials-section {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <%- include('../partials/sidebar') %>
     <main class="main-content" id="main-content">
       <!-- Hero Section -->
-      <section class="hero-section">
+      <!-- <section class="hero-section">
         <div class="hero-container">
           <h1><span class="gradient-text">Study Materials</span></h1>
-          <p>Access study materials for your enrolled courses, shared by your faculty.</p>
-          <a href="/dashboard" class="btm-primary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+          <p>
+            Access study materials for your enrolled courses, shared by your
+            faculty.
+          </p>
+          <a href="/dashboard" class="btn-primary"
+            ><i class="fas fa-arrow-left"></i> Back to Dashboard</a
+          >
         </div>
-      </section>
+      </section> -->
       <!-- Courses Section -->
-      <section class="courses-section">
+      <section class="courses-section" id="courses-section">
         <div class="message-container">
           <span class="section-tag">Your Courses</span>
           <h2 class="section-title">Enrolled Courses</h2>
           <p class="section-description">
             Click on a course to view study materials shared by your faculty.
           </p>
+          <div class="loader-container" id="courses-loader">
+            <span class="loader"></span>
+          </div>
           <div class="course-grid" id="courses-list">
             <!-- Courses will be populated here via JavaScript -->
           </div>
           <div class="materials-section" id="materials-section">
             <h2 class="section-title">Course Materials</h2>
+            <div class="loader-container" id="materials-loader">
+              <span class="loader"></span>
+            </div>
             <div id="materials-list">
               <!-- Materials will be populated here via JavaScript -->
             </div>
@@ -307,90 +469,147 @@
       <%- include('../partials/footer') %>
     </main>
     <script>
-      document.addEventListener('DOMContentLoaded', async () => {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+      document.addEventListener("DOMContentLoaded", async () => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
         if (!user.name || !user.email) {
-          alert('Please log in to access this page.');
-          window.location.href = '/signup?redirect=' + encodeURIComponent(window.location.pathname);
+          alert("Please log in to access this page.");
+          window.location.href =
+            "/signup?redirect=" + encodeURIComponent(window.location.pathname);
           return;
         }
 
         // Update main content margin
-        const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
         if (sidebar && mainContent) {
-          if (sidebar.classList.contains('hidden')) {
-            mainContent.classList.add('full');
+          if (sidebar.classList.contains("hidden")) {
+            mainContent.classList.add("full");
           }
-          sidebar.addEventListener('transitionend', () => {
-            mainContent.classList.toggle('full', sidebar.classList.contains('hidden'));
+          sidebar.addEventListener("transitionend", () => {
+            mainContent.classList.toggle(
+              "full",
+              sidebar.classList.contains("hidden")
+            );
           });
         }
 
+        const token = localStorage.getItem("token") || "";
+        const coursesList = document.getElementById("courses-list");
+        const materialsSection = document.getElementById("materials-section");
+        const materialsList = document.getElementById("materials-list");
+        const coursesLoader = document.getElementById("courses-loader");
+        const materialsLoader = document.getElementById("materials-loader");
+
         // Fetch enrolled courses and materials
         try {
-          const token = localStorage.getItem('token') || '';
-          const response = await fetch('/api/study-materials', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
+          coursesLoader.classList.add("active");
+          coursesList.style.display = "none";
+          const response = await fetch("/api/study-materials", {
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
           });
-          const data = await response.json();
-          if (response.ok && data.courses) {
-            const coursesList = document.getElementById('courses-list');
-            const materialsSection = document.getElementById('materials-section');
-            const materialsList = document.getElementById('materials-list');
-
-            if (data.courses.length === 0) {
-              coursesList.innerHTML = '<p>No enrolled courses found.</p>';
-              return;
-            }
-
-            data.courses.forEach(course => {
-              const card = document.createElement('div');
-              card.className = 'course-card';
-              card.innerHTML = `
-              <h3>${course.title}</h3>
-              <p><strong>Faculty:</strong> ${course.facultyName}</p>
-              <p><strong>Duration:</strong> ${course.duration}</p>
-              <p>${course.description}</p>
-            `;
-              card.addEventListener('click', () => {
-                // Hide materials section for other courses
-                materialsSection.classList.add('active');
-                materialsList.innerHTML = '';
-                if (course.materials.length === 0) {
-                  materialsList.innerHTML = '<p>No materials available for this course.</p>';
-                } else {
-                  course.materials.forEach(material => {
-                    const materialCard = document.createElement('div');
-                    materialCard.className = 'material-card';
-                    materialCard.innerHTML = `
-                    <div>
-                      <h4>${material.title}</h4>
-                      <p>${material.description}</p>
-                      <p><strong>Course:</strong> ${material.course.title}</p>
-                      <p><strong>Type:</strong> ${material.fileType.toUpperCase()}</p>
-                      <p><strong>Shared by:</strong> ${material.createdBy.name}</p>
-                    </div>
-                    <a href="${material.fileUrl}" target="_blank">View/Download</a>
-                  `;
-                    materialsList.appendChild(materialCard);
-                  });
-                }
-              });
-              coursesList.appendChild(card);
-            });
-          } else {
-            alert('Failed to load courses and materials.');
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || "Failed to fetch courses and materials"
+            );
           }
+          const data = await response.json();
+          // console.log("API Response:", data);
+          coursesLoader.classList.remove("active");
+          coursesList.style.display = "grid";
+
+          if (!data.courses || data.courses.length === 0) {
+            coursesList.innerHTML =
+              '<p class="no-items">No enrolled courses found. Please enroll in a course.</p>';
+            return;
+          }
+
+          coursesList.innerHTML = "";
+          data.courses.forEach((course) => {
+            // console.log("Course:", course);
+            const card = document.createElement("div");
+            card.className = "course-card";
+            card.innerHTML = `
+            <div class="course-info">
+              <i class="fas fa-book-open material-icon"></i>
+              <div>
+                <h3>${course.title || "Untitled Course"}</h3>
+                <p><strong>Faculty:</strong> ${
+                  course.facultyName || "Unknown"
+                }</p>
+                <p><strong>Duration:</strong> ${course.duration || "N/A"}</p>
+                <p>${course.description || "No description available"}</p>
+              </div>
+            </div>
+          `;
+            card.addEventListener("click", () => {
+              console.log("Clicked Course ID:", course._id);
+              console.log("Course Materials:", course.materials);
+              materialsSection.classList.add("active");
+              materialsList.innerHTML = "";
+              materialsLoader.classList.add("active");
+
+              // Simulate loading (remove in production if not needed)
+              setTimeout(() => {
+                if (!course.materials || course.materials.length === 0) {
+                  materialsList.innerHTML =
+                    '<p class="no-items">No materials available for this course.</p>';
+                  materialsLoader.classList.remove("active");
+                  materialsSection.scrollIntoView({ behavior: "smooth" });
+                  return;
+                }
+
+                course.materials.forEach((material) => {
+                  // console.log("Rendering Material:", material);
+                  const materialCard = document.createElement("div");
+                  materialCard.className = "material-card";
+                  materialCard.innerHTML = `
+                  <div class="material-info">
+                    <i class="fas fa-${
+                      material.fileType === "pdf"
+                        ? "file-pdf"
+                        : material.fileType === "video"
+                        ? "video"
+                        : "image"
+                    } material-icon"></i>
+                    <div>
+                      <h4>${material.title || "Untitled Material"}</h4>
+                      <p>${material.description || "No description"}</p>
+                      <p><strong>Course:</strong> ${
+                        material.course?.title || "Unknown"
+                      }</p>
+                      <p><strong>Shared by:</strong> ${
+                        material.createdBy?.name || "Unknown"
+                      }</p>
+                      <span class="file-type ${
+                        material.fileType
+                      }">${material.fileType.toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <a href="${material.fileUrl}" target="_blank" download>
+                    <i class="fas fa-download"></i> View/Download
+                  </a>
+                `;
+                  materialsList.appendChild(materialCard);
+                });
+                materialsLoader.classList.remove("active");
+                materialsSection.scrollIntoView({ behavior: "smooth" });
+              }, 500);
+            });
+            coursesList.appendChild(card);
+          });
         } catch (error) {
-          console.error('Error fetching courses and materials:', error);
-          alert('An error occurred while fetching courses and materials.');
+          console.error("Error fetching courses and materials:", {
+            message: error.message,
+            stack: error.stack,
+          });
+          coursesLoader.classList.remove("active");
+          coursesList.style.display = "grid";
+          alert("Failed to load courses and materials: " + error.message);
         }
       });
     </script>
     <script src="/js/sidebar.js"></script>
-</body>
-
+  </body>
 </html>

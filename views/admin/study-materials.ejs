@@ -1,294 +1,746 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Skill Shastra - Admin Study Materials</title>
-    <meta name="description" content="Manage study materials for courses at Skill Shastra.">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="/css/sidebar.css">
-    <link rel="stylesheet" href="/css/footer.css">
+    <meta
+      name="description"
+      content="Manage study materials for courses at Skill Shastra."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/sidebar.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
     <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #e0e7ff, #f3f4f6);
+        color: #1f2937;
+        margin-left: 280px;
+        transition: margin-left 0.3s ease;
+      }
+
+      .main-content.full {
+        margin-left: 0;
+      }
+
+      .admin-section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 4rem 1rem;
+      }
+
+      .section-tag {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        background: rgba(124, 58, 237, 0.2);
+        color: #7c3aed;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+      }
+
+      .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1rem;
+      }
+
+      .form-container {
+        background: #ffffff;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .form-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+
+      .form-container label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+      }
+
+      .form-container input,
+      .form-container select,
+      .form-container textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .form-container input:hover,
+      .form-container select:hover,
+      .form-container textarea:hover {
+        border-color: #7c3aed;
+      }
+
+      .form-container input:focus,
+      .form-container select:focus,
+      .form-container textarea:focus {
+        outline: none;
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+      }
+
+      .form-container textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      .form-container button {
+        position: relative;
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: #ffffff;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s ease, transform 0.2s ease;
+      }
+
+      .form-container button:hover {
+        background: linear-gradient(135deg, #6d28d9, #9333ea);
+        transform: translateY(-2px);
+      }
+
+      .form-container button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .loader {
+        display: inline-block;
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 3px solid #ffffff;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 0.5rem;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden{
+        display: none;
+      }
+
+      .materials-list .material-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .materials-list .material-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      }
+      .delete{
+        border: none;
+      }
+
+      .material-card .file-type {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 12px;
+        margin-top: 0.5rem;
+      }
+
+      .material-card .file-type.pdf {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .material-card .file-type.video {
+        background: #d1fae5;
+        color: #047857;
+      }
+
+      .material-card .file-type.image {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+
+      .material-card a,
+      .material-card button {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 0.3s ease, transform 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .material-card a {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: #ffffff;
+        margin-bottom: 10px;
+      }
+
+      .material-card a:hover {
+        background: linear-gradient(135deg, #6d28d9, #9333ea);
+        transform: translateY(-2px);
+      }
+
+      .material-card button.delete {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        color: #ffffff;
+      }
+
+      .material-card button.delete:hover {
+        background: linear-gradient(135deg, #dc2626, #f87171);
+        transform: translateY(-2px);
+      }
+
+      .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+      }
+
+      .popup.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .popup-content {
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        width: 90%;
+        transform: scale(0.8);
+        transition: transform 0.3s ease;
+      }
+
+      .popup.show .popup-content {
+        transform: scale(1);
+      }
+
+      .popup-content.success {
+        border-left: 4px solid #10b981;
+      }
+
+      .popup-content.error {
+        border-left: 4px solid #ef4444;
+      }
+
+      .popup-content.confirm {
+        border-left: 4px solid #f59e0b;
+      }
+
+      .popup-content h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .popup-content p {
+        font-size: 0.9rem;
+        color: #4b5563;
+        margin-bottom: 1.5rem;
+      }
+
+      .popup-content button {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s ease;
+        border: none;
+      }
+
+      .popup-content button.confirm-yes {
+        background: linear-gradient(135deg, #7c3aed, #a855f7);
+        color: #ffffff;
+      }
+
+      .popup-content button.confirm-yes:hover {
+        background: linear-gradient(135deg, #6d28d9, #9333ea);
+      }
+
+      .popup-content button.confirm-no {
+        background: #e5e7eb;
+        color: #1f2937;
+      }
+
+      .popup-content button.confirm-no:hover {
+        background: #d1d5db;
+      }
+
+      .no-materials {
+        text-align: center;
+        color: #6b7280;
+        font-size: 1rem;
+        padding: 2rem;
+      }
+
+      @media (max-width: 768px) {
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
-            color: #1f2937;
-            margin-left: 280px;
-            transition: margin-left 0.3s ease;
+          margin-left: 0;
         }
 
-        .main-content.full {
-            margin-left: 0;
-        }
-
-        .admin-section {
-            padding: 4rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-tag {
-            display: inline-block;
-            padding: 0.5rem 1.5rem;
-            background: rgba(124, 58, 237, 0.2);
-            color: #a855f7;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-        }
-
-        .section-title {
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 1rem;
-        }
-
-        .form-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .form-container input,
-        .form-container select,
-        .form-container textarea {
-            width: 100%;
-            padding: 0.75rem;
-            margin: 0.5rem 0;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-        }
-
-        .form-container button {
-            background: linear-gradient(135deg, #7c3aed, #a855f7);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+        .form-grid {
+          grid-template-columns: 1fr;
         }
 
         .materials-list .material-card {
-            background: #f8f9ff;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .section-title {
+          font-size: 2rem;
         }
 
-        .materials-list .material-card a,
-        .materials-list .material-card button {
-            background: linear-gradient(135deg, #7c3aed, #a855f7);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            margin-left: 1rem;
+        .form-container {
+          padding: 1.5rem;
         }
-
-        .materials-list .material-card button.delete {
-            background: linear-gradient(135deg, #ef4444, #f87171);
-        }
-
-        @media (max-width: 768px) {
-            body {
-                margin-left: 0;
-            }
-
-            .material-card {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-        }
+      }
     </style>
-</head>
-
-<body>
+  </head>
+  <body>
     <%- include('../partials/sidebar') %>
-        <main class="main-content" id="main-content">
-            <section class="admin-section">
-                <div class="message-container">
-                    <span class="section-tag">Admin Panel</span>
-                    <h2 class="section-title">Manage Study Materials</h2>
-                    <div class="form-container">
-                        <h3>Add New Study Material</h3>
-                        <form id="material-form">
-                            <input type="text" id="title" placeholder="Material Title" required>
-                            <textarea id="description" placeholder="Material Description" required></textarea>
-                            <select id="courseId" required>
-                                <option value="">Select Course</option>
-                                <!-- Courses will be populated here -->
-                            </select>
-                            <select id="fileType" required>
-                                <option value="">Select File Type</option>
-                                <option value="pdf">PDF</option>
-                                <option value="video">Video</option>
-                                <option value="image">Image</option>
-                            </select>
-                            <input type="file" id="file" accept=".pdf,.mp4,.png,.jpg" required>
-                            <button type="submit">Upload Material</button>
-                        </form>
-                    </div>
-                    <div class="materials-list" id="materials-list">
-                        <!-- Materials will be populated here -->
-                    </div>
-                </div>
-            </section>
-            <%- include('../partials/footer') %>
-        </main>
-        <script>
-            document.addEventListener('DOMContentLoaded', async () => {
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
-                if (!user.name || !user.email) {
-                    alert('Please log in to access this page.');
-                    window.location.href = '/signup?redirect=' + encodeURIComponent(window.location.pathname);
-                    return;
-                }
+    <main class="main-content" id="main-content">
+      <section class="admin-section">
+        <div class="message-container">
+          <span class="section-tag">Admin Panel</span>
+          <h2 class="section-title">Manage Study Materials</h2>
+          <div class="form-container">
+            <h3 class="form-title">Add New Study Material</h3>
+            <form id="material-form" class="form-grid">
+              <div>
+                <label for="title">Title</label>
+                <input
+                  type="text"
+                  id="title"
+                  placeholder="Enter material title"
+                  required
+                />
+              </div>
+              <div>
+                <label for="courseId">Course</label>
+                <select id="courseId" required>
+                  <option value="">Select Course</option>
+                  <!-- Courses will be populated here -->
+                </select>
+              </div>
+              <div>
+                <label for="fileType">File Type</label>
+                <select id="fileType" required>
+                  <option value="">Select File Type</option>
+                  <option value="pdf">PDF</option>
+                  <option value="video">Video</option>
+                  <option value="image">Image</option>
+                </select>
+              </div>
+              <div>
+                <label for="file">File</label>
+                <input
+                  type="file"
+                  id="file"
+                  accept=".pdf,.mp4,.png,.jpg"
+                  required
+                />
+              </div>
+              <div class="full-width">
+                <label for="description">Description</label>
+                <textarea
+                  id="description"
+                  placeholder="Enter material description"
+                  rows="4"
+                  required
+                ></textarea>
+              </div>
+              <div class="full-width">
+                <button type="submit" id="upload-btn">
+                  <span class="btn-text">Upload Material</span>
+                  <span class="loader hidden"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="materials-list" id="materials-list">
+            <!-- Materials will be populated here -->
+          </div>
+        </div>
+      </section>
+      <%- include('../partials/footer') %>
+    </main>
 
-                // Update main content margin
-                const sidebar = document.querySelector('.sidebar');
-                const mainContent = document.querySelector('.main-content');
-                if (sidebar && mainContent) {
-                    if (sidebar.classList.contains('hidden')) {
-                        mainContent.classList.add('full');
-                    }
-                    sidebar.addEventListener('transitionend', () => {
-                        mainContent.classList.toggle('full', sidebar.classList.contains('hidden'));
-                    });
-                }
+    <!-- Popup Container -->
+    <div id="popup" class="popup">
+      <div class="popup-content">
+        <h3 id="popup-title"></h3>
+        <p id="popup-message"></p>
+        <div id="popup-buttons" class="popup-buttons"></div>
+      </div>
+    </div>
 
-                const token = localStorage.getItem('token') || '';
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.name || !user.email) {
+          showPopup(
+            "Error",
+            "Please log in to access this page.",
+            "error",
+            () => {
+              window.location.href =
+                "/signup?redirect=" +
+                encodeURIComponent(window.location.pathname);
+            }
+          );
+          return;
+        }
 
-                // Fetch courses for dropdown
-                try {
-                    const courseResponse = await fetch('/api/study-materials/courses', {
-                        headers: { 'Authorization': `Bearer ${token}` },
-                    });
-                    const courseData = await courseResponse.json();
-                    if (courseResponse.ok && courseData.courses) {
-                        const courseSelect = document.getElementById('courseId');
-                        courseData.courses.forEach(course => {
-                            const option = document.createElement('option');
-                            option.value = course._id;
-                            option.textContent = course.title;
-                            courseSelect.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error fetching courses:', error);
-                }
+        // Update main content margin
+        const sidebar = document.querySelector(".sidebar");
+        const mainContent = document.querySelector(".main-content");
+        if (sidebar && mainContent) {
+          if (sidebar.classList.contains("hidden")) {
+            mainContent.classList.add("full");
+          }
+          sidebar.addEventListener("transitionend", () => {
+            mainContent.classList.toggle(
+              "full",
+              sidebar.classList.contains("hidden")
+            );
+          });
+        }
 
-                // Fetch study materials
-                const fetchMaterials = async () => {
-                    try {
-                        const response = await fetch('/api/study-materials/admin', {
-                            headers: { 'Authorization': `Bearer ${token}` },
-                        });
-                        const data = await response.json();
-                        if (response.ok && data.studyMaterials) {
-                            const materialsList = document.getElementById('materials-list');
-                            materialsList.innerHTML = '';
-                            if (data.studyMaterials.length === 0) {
-                                materialsList.innerHTML = '<p>No study materials available.</p>';
-                                return;
-                            }
-                            data.studyMaterials.forEach(material => {
-                                const card = document.createElement('div');
-                                card.className = 'material-card';
-                                card.innerHTML = `
-                <div>
-                  <h4>${material.title}</h4>
-                  <p>${material.description}</p>
-                  <p><strong>Course:</strong> ${material.course.title}</p>
-                  <p><strong>Type:</strong> ${material.fileType.toUpperCase()}</p>
-                  <p><strong>Created by:</strong> ${material.createdBy.name}</p>
-                </div>
-                <div>
-                  <a href="${material.fileUrl}" target="_blank">View</a>
-                  <button class="delete" data-id="${material._id}">Delete</button>
-                </div>
-              `;
-                                materialsList.appendChild(card);
-                            });
+        const token = localStorage.getItem("token") || "";
 
-                            // Add delete event listeners
-                            document.querySelectorAll('.delete').forEach(button => {
-                                button.addEventListener('click', async () => {
-                                    if (confirm('Are you sure you want to delete this material?')) {
-                                        try {
-                                            const response = await fetch(`/api/study-materials/${button.dataset.id}`, {
-                                                method: 'DELETE',
-                                                headers: { 'Authorization': `Bearer ${token}` },
-                                            });
-                                            if (response.ok) {
-                                                alert('Material deleted successfully.');
-                                                fetchMaterials();
-                                            } else {
-                                                alert('Failed to delete material.');
-                                            }
-                                        } catch (error) {
-                                            console.error('Error deleting material:', error);
-                                            alert('An error occurred while deleting the material.');
-                                        }
-                                    }
-                                });
-                            });
-                        } else {
-                            alert('Failed to load study materials.');
-                        }
-                    } catch (error) {
-                        console.error('Error fetching study materials:', error);
-                        alert('An error occurred while fetching study materials.');
-                    }
-                };
+        // Popup utility function
+        const showPopup = (title, message, type, callback = null) => {
+          const popup = document.getElementById("popup");
+          const popupTitle = document.getElementById("popup-title");
+          const popupMessage = document.getElementById("popup-message");
+          const popupButtons = document.getElementById("popup-buttons");
 
-                // Initial fetch
-                fetchMaterials();
+          popupTitle.textContent = title;
+          popupMessage.textContent = message;
+          popup.classList.remove("success", "error", "confirm");
+          popup.classList.add(type, "show");
+          popupButtons.innerHTML = "";
 
-                // Handle form submission
-                document.getElementById('material-form').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const formData = new FormData();
-                    formData.append('title', document.getElementById('title').value);
-                    formData.append('description', document.getElementById('description').value);
-                    formData.append('courseId', document.getElementById('courseId').value);
-                    formData.append('fileType', document.getElementById('fileType').value);
-                    formData.append('file', document.getElementById('file').files[0]);
-
-                    try {
-                        const response = await fetch('/api/study-materials', {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            body: formData,
-                        });
-                        if (response.ok) {
-                            alert('Material uploaded successfully.');
-                            document.getElementById('material-form').reset();
-                            fetchMaterials();
-                        } else {
-                            alert('Failed to upload material.');
-                        }
-                    } catch (error) {
-                        console.error('Error uploading material:', error);
-                        alert('An error occurred while uploading the material.');
-                    }
-                });
+          if (type === "confirm") {
+            popupButtons.innerHTML = `
+                        <button class="confirm-no">Cancel</button>
+                        <button class="confirm-yes">Delete</button>
+                    `;
+            const confirmYes = popupButtons.querySelector(".confirm-yes");
+            const confirmNo = popupButtons.querySelector(".confirm-no");
+            confirmYes.addEventListener("click", () => {
+              callback();
+              popup.classList.remove("show");
             });
-        </script>
-        <script src="/js/sidebar.js"></script>
-</body>
+            confirmNo.addEventListener("click", () =>
+              popup.classList.remove("show")
+            );
+          } else {
+            popupButtons.innerHTML = `<button class="confirm-yes">OK</button>`;
+            const okButton = popupButtons.querySelector(".confirm-yes");
+            okButton.addEventListener("click", () => {
+              popup.classList.remove("show");
+              if (callback) callback();
+            });
+            if (type === "success") {
+              setTimeout(() => {
+                popup.classList.remove("show");
+                if (callback) callback();
+              }, 3000);
+            }
+          }
+        };
 
+        // Fetch courses for dropdown
+        try {
+          const courseResponse = await fetch("/api/study-materials/courses", {
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
+          });
+          if (!courseResponse.ok) {
+            const errorData = await courseResponse.json();
+            throw new Error(errorData.message || "Failed to fetch courses");
+          }
+          const courseData = await courseResponse.json();
+          const courseSelect = document.getElementById("courseId");
+          if (courseData.courses && courseData.courses.length > 0) {
+            courseData.courses.forEach((course) => {
+              const option = document.createElement("option");
+              option.value = course._id;
+              option.textContent = course.title;
+              courseSelect.appendChild(option);
+            });
+          } else {
+            courseSelect.innerHTML =
+              '<option value="">No courses available</option>';
+            showPopup(
+              "Info",
+              "No courses available. Please add courses first.",
+              "error"
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching courses:", error);
+          showPopup(
+            "Error",
+            "Failed to load courses: " + error.message,
+            "error"
+          );
+        }
+
+        // Fetch study materials
+        const fetchMaterials = async () => {
+          try {
+            const response = await fetch("/api/study-materials/admin", {
+              headers: { Authorization: `Bearer ${token}` },
+              credentials: "include",
+            });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(
+                errorData.message || "Failed to fetch study materials"
+              );
+            }
+            const data = await response.json();
+            const materialsList = document.getElementById("materials-list");
+            materialsList.innerHTML = "";
+            if (data.studyMaterials.length === 0) {
+              materialsList.innerHTML =
+                '<p class="no-materials">No study materials available.</p>';
+              return;
+            }
+            data.studyMaterials.forEach((material) => {
+              const card = document.createElement("div");
+              card.className = "material-card";
+              card.innerHTML = `
+                            <div class="material-info">
+                                <i class="fas fa-${
+                                  material.fileType === "pdf"
+                                    ? "file-pdf"
+                                    : material.fileType === "video"
+                                    ? "video"
+                                    : "image"
+                                } material-icon"></i>
+                                <div>
+                                    <h4 class="material-title">${
+                                      material.title
+                                    }</h4>
+                                    <p class="material-description">${
+                                      material.description
+                                    }</p>
+                                    <p class="material-meta"><strong>Course:</strong> ${
+                                      material.course.title
+                                    }</p>
+                                    <p class="material-meta"><strong>Created by:</strong> ${
+                                      material.createdBy.name
+                                    }</p>
+                                    <span class="file-type ${
+                                      material.fileType
+                                    }">${material.fileType.toUpperCase()}</span>
+                                </div>
+                            </div>
+                            <div class="material-actions">
+                                <a href="${
+                                  material.fileUrl
+                                }" target="_blank"><i class="fas fa-eye"></i> View</a>
+                                <button class="delete" data-id="${
+                                  material._id
+                                }"><i class="fas fa-trash"></i> Delete</button>
+                            </div>
+                        `;
+              materialsList.appendChild(card);
+            });
+
+            // Add delete event listeners
+            document.querySelectorAll(".delete").forEach((button) => {
+              button.addEventListener("click", () => {
+                showPopup(
+                  "Confirm Delete",
+                  "Are you sure you want to delete this material?",
+                  "confirm",
+                  async () => {
+                    try {
+                      const response = await fetch(
+                        `/api/study-materials/${button.dataset.id}`,
+                        {
+                          method: "DELETE",
+                          headers: { Authorization: `Bearer ${token}` },
+                          credentials: "include",
+                        }
+                      );
+                      if (response.ok) {
+                        showPopup(
+                          "Success",
+                          "Material deleted successfully.",
+                          "success",
+                          fetchMaterials
+                        );
+                      } else {
+                        const errorData = await response.json();
+                        showPopup(
+                          "Error",
+                          errorData.message || "Failed to delete material.",
+                          "error"
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Error deleting material:", error);
+                      showPopup(
+                        "Error",
+                        "An error occurred while deleting the material.",
+                        "error"
+                      );
+                    }
+                  }
+                );
+              });
+            });
+          } catch (error) {
+            console.error("Error fetching study materials:", error);
+            showPopup(
+              "Error",
+              "Failed to load study materials: " + error.message,
+              "error"
+            );
+          }
+        };
+
+        // Initial fetch
+        fetchMaterials();
+
+        // Handle form submission
+        document
+          .getElementById("material-form")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const uploadBtn = document.getElementById("upload-btn");
+            const btnText = uploadBtn.querySelector(".btn-text");
+            const loader = uploadBtn.querySelector(".loader");
+            uploadBtn.disabled = true;
+            btnText.classList.add("hidden");
+            loader.classList.remove("hidden");
+
+            const formData = new FormData();
+            formData.append("title", document.getElementById("title").value);
+            formData.append(
+              "description",
+              document.getElementById("description").value
+            );
+            formData.append(
+              "courseId",
+              document.getElementById("courseId").value
+            );
+            formData.append(
+              "fileType",
+              document.getElementById("fileType").value
+            );
+            formData.append("file", document.getElementById("file").files[0]);
+
+            try {
+              const response = await fetch("/api/study-materials", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                credentials: "include",
+                body: formData,
+              });
+              uploadBtn.disabled = false;
+              btnText.classList.remove("hidden");
+              loader.classList.add("hidden");
+              if (response.ok) {
+                showPopup(
+                  "Success",
+                  "Material uploaded successfully.",
+                  "success",
+                  () => {
+                    document.getElementById("material-form").reset();
+                    fetchMaterials();
+                  }
+                );
+              } else {
+                const errorData = await response.json();
+                showPopup(
+                  "Error",
+                  errorData.message || "Failed to upload material.",
+                  "error"
+                );
+              }
+            } catch (error) {
+              console.error("Error uploading material:", error);
+              uploadBtn.disabled = false;
+              btnText.classList.remove("hidden");
+              loader.classList.add("hidden");
+              showPopup(
+                "Error",
+                "An error occurred while uploading the material.",
+                "error"
+              );
+            }
+          });
+      });
+    </script>
+    <script src="/js/sidebar.js"></script>
+  </body>
 </html>

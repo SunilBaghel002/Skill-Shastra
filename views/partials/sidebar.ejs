@@ -26,6 +26,7 @@
             <li><a href="/admin" <%= request.path === '/admin' ? 'class="active"' : '' %>><i class="fas fa-user-shield"></i> Manage Users</a></li>
             <li><a href="/admin/feedback" <%= request.path.includes('/admin/feedback') ? 'class="active"' : '' %>><i class="fas fa-comment-dots"></i> View Feedback</a></li>
             <li><a href="/admin/analytics" <%= request.path.includes('/admin/analytics') ? 'class="active"' : '' %>><i class="fas fa-chart-bar"></i> Analytics</a></li>
+            <li><a href="/admin/studyMaterial" <%= request.path.includes('/admin/studyMaterial') ? 'class="active"' : '' %>><i class="fas fa-folder-open"></i> Study Material</a></li>
             <li><a href="/admin/messages" <%= request.path.includes('/admin/messages') ? 'class="active"' : '' %>><i class="fas fa-envelope"></i> Messages</a></li>
             <li><a href="/admin/announcements" <%= request.path.includes('/admin/announcements') ? 'class="active"' : '' %>><i class="fas fa-bullhorn"></i> Announcements</a></li>
           <% } %>
