@@ -122,49 +122,45 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 const User = mongoose.model("User", userSchema);
 
 // Passport Google Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback",
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        let user = await User.findOne({ googleId: profile.id });
-        if (!user) {
-          user = await User.findOne({ email: profile.emails[0].value });
-          if (user) {
-            // Link Google ID to existing user
-            user.googleId = profile.id;
-            await user.save();
-          } else {
-            // Create new user
-            user = await User.create({
-              googleId: profile.id,
-              name: profile.displayName,
-              email: profile.emails[0].value,
-              isVerified: true, // Google users are verified by default
-              role: process.env.ADMIN_EMAILS.split(",").includes(
-                profile.emails[0].value
-              )
-                ? "admin"
-                : "user",
-            });
-            await sendEmail(
-              user.email,
-              "Welcome to Skill Shastra!",
-              getWelcomeEmailTemplate(user.name)
-            );
-          }
-        }
-        return done(null, user);
-      } catch (err) {
-        return done(err, null);
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/api/auth/google/callback",
+  scope: ["profile", "email"],
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ googleId: profile.id });
+    if (!user) {
+      user = await User.findOne({ email: profile.emails[0].value });
+      if (user) {
+        // Link Google ID to existing user
+        user.googleId = profile.id;
+        await user.save();
+      } else {
+        // Create new user
+        user = await User.create({
+          googleId: profile.id,
+          name: profile.displayName,
+          email: profile.emails[0].value,
+          isVerified: true, // Google users are verified by default
+          role: process.env.ADMIN_EMAILS.split(",").includes(
+            profile.emails[0].value
+          )
+            ? "admin"
+            : "user",
+        });
+        await sendEmail(
+          user.email,
+          "Welcome to Skill Shastra!",
+          getWelcomeEmailTemplate(user.name)
+        );
       }
     }
-  )
-);
+    return done(null, user);
+  } catch (err) {
+    return done(err, null);
+  }
+}));
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
