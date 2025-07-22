@@ -2,13 +2,13 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+// const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const multer = require("multer");
 const cookieParser = require("cookie-parser");
-const crypto = require("crypto");
+// const crypto = require("crypto");
 const { v2: cloudinary } = require("cloudinary");
 const rateLimit = require("express-rate-limit");
 const axios = require("axios");
@@ -16,6 +16,10 @@ const http = require("http");
 const passport = require("passport");
 const session = require("express-session");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const { protect, restrictToAdmin } = require("./middleware/auth"); 
+const User = require("./models/User");
+const studyMaterialRouter = require("./routes/studyMaterials");
+const Course = require("./models/Course");
 
 dotenv.config();
 const app = express();
@@ -84,53 +88,53 @@ const connectDB = async () => {
 };
 
 // User Schema
-const userSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: [true, "Name is required"] },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      unique: true,
-      lowercase: true,
-      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
-    },
-    password: {
-      type: String,
-      minlength: 6,
-    },
-    googleId: { type: String, unique: true, sparse: true },
-    role: { type: String, enum: ["user", "admin"], default: "user" },
-    otp: { type: String },
-    otpExpires: { type: Date },
-    isVerified: { type: Boolean, default: false },
-    profileImage: {
-      type: String,
-      default: function () {
-        const emailHash = crypto
-          .createHash("md5")
-          .update(this.email.trim().toLowerCase())
-          .digest("hex");
-        return `https://www.gravatar.com/avatar/${emailHash}?s=50&d=retro`;
-      },
-    },
-    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    isOnline: { type: Boolean, default: false },
-  },
-  { timestamps: true }
-);
+// const userSchema = new mongoose.Schema(
+//   {
+//     name: { type: String, required: [true, "Name is required"] },
+//     email: {
+//       type: String,
+//       required: [true, "Email is required"],
+//       unique: true,
+//       lowercase: true,
+//       match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"],
+//     },
+//     password: {
+//       type: String,
+//       minlength: 6,
+//     },
+//     googleId: { type: String, unique: true, sparse: true },
+//     role: { type: String, enum: ["user", "admin"], default: "user" },
+//     otp: { type: String },
+//     otpExpires: { type: Date },
+//     isVerified: { type: Boolean, default: false },
+//     profileImage: {
+//       type: String,
+//       default: function () {
+//         const emailHash = crypto
+//           .createHash("md5")
+//           .update(this.email.trim().toLowerCase())
+//           .digest("hex");
+//         return `https://www.gravatar.com/avatar/${emailHash}?s=50&d=retro`;
+//       },
+//     },
+//     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+//     isOnline: { type: Boolean, default: false },
+//   },
+//   { timestamps: true }
+// );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password") || !this.password) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
+// userSchema.pre("save", async function (next) {
+//   if (!this.isModified("password") || !this.password) return next();
+//   const salt = await bcrypt.genSalt(10);
+//   this.password = await bcrypt.hash(this.password, salt);
+//   next();
+// });
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
+// userSchema.methods.comparePassword = async function (candidatePassword) {
+//   return await bcrypt.compare(candidatePassword, this.password);
+// };
 
-const User = mongoose.model("User", userSchema);
+// const User = mongoose.model("User", userSchema);
 
 // Passport Google Strategy
 passport.use(
@@ -308,13 +312,13 @@ const announcementSchema = new mongoose.Schema({
 const Announcement = mongoose.model("Announcement", announcementSchema);
 
 // Course Schema
-const courseSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-});
-const Course = mongoose.model("Course", courseSchema);
+// const courseSchema = new mongoose.Schema({
+//   title: { type: String, required: true },
+//   description: { type: String, required: true },
+//   duration: { type: String, required: true },
+//   slug: { type: String, required: true, unique: true },
+// });
+// const Course = mongoose.model("Course", courseSchema);
 
 // Multer Setup
 const storage = multer.memoryStorage();
@@ -535,65 +539,65 @@ const getEnrollmentStatusEmailTemplate = (fullName, course, status) =>
   `);
 
 // Authentication Middleware
-const protect = async (req, res, next) => {
-  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-  const isApiRoute = req.originalUrl.startsWith("/api/");
-  const isSignupRoute = req.originalUrl.startsWith("/signup");
+// const protect = async (req, res, next) => {
+//   const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+//   const isApiRoute = req.originalUrl.startsWith("/api/");
+//   const isSignupRoute = req.originalUrl.startsWith("/signup");
 
-  if (!token) {
-    if (isApiRoute) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-    if (isSignupRoute) {
-      return next();
-    }
-    return res.redirect(
-      `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
-    );
-  }
+//   if (!token) {
+//     if (isApiRoute) {
+//       return res.status(401).json({ message: "No token provided" });
+//     }
+//     if (isSignupRoute) {
+//       return next();
+//     }
+//     return res.redirect(
+//       `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
+//     );
+//   }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select(
-      "-password -otp -otpExpires"
-    );
-    if (!user || (!user.isVerified && !user.googleId)) {
-      res.clearCookie("token");
-      if (isApiRoute) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      if (isSignupRoute) {
-        return next();
-      }
-      return res.redirect(
-        `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
-      );
-    }
-    req.user = user;
-    next();
-  } catch (error) {
-    res.clearCookie("token");
-    if (isApiRoute) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-    if (isSignupRoute) {
-      return next();
-    }
-    return res.redirect(
-      `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
-    );
-  }
-};
+//   try {
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const user = await User.findById(decoded.id).select(
+//       "-password -otp -otpExpires"
+//     );
+//     if (!user || (!user.isVerified && !user.googleId)) {
+//       res.clearCookie("token");
+//       if (isApiRoute) {
+//         return res.status(401).json({ message: "Unauthorized" });
+//       }
+//       if (isSignupRoute) {
+//         return next();
+//       }
+//       return res.redirect(
+//         `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
+//       );
+//     }
+//     req.user = user;
+//     next();
+//   } catch (error) {
+//     res.clearCookie("token");
+//     if (isApiRoute) {
+//       return res.status(401).json({ message: "Invalid token" });
+//     }
+//     if (isSignupRoute) {
+//       return next();
+//     }
+//     return res.redirect(
+//       `/signup?redirect=${encodeURIComponent(req.originalUrl)}`
+//     );
+//   }
+// };
 
-// Admin Middleware
-const restrictToAdmin = async (req, res, next) => {
-  const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
-  if (!req.user || !adminEmails.includes(req.user.email)) {
-    return res.status(403).json({ message: "Access denied. Admin only." });
-  }
-  req.user.role = "admin";
-  next();
-};
+// // Admin Middleware
+// const restrictToAdmin = async (req, res, next) => {
+//   const adminEmails = process.env.ADMIN_EMAILS?.split(",") || [];
+//   if (!req.user || !adminEmails.includes(req.user.email)) {
+//     return res.status(403).json({ message: "Access denied. Admin only." });
+//   }
+//   req.user.role = "admin";
+//   next();
+// };
 
 // Generate OTP
 const generateOTP = () =>
@@ -1498,6 +1502,8 @@ app.post("/api/execute", protect, async (req, res) => {
   }
 });
 
+app.use("/api/study-materials", studyMaterialRouter);
+
 // EJS Setup
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -1532,6 +1538,12 @@ app.get(
   protect,
   restrictToAdmin,
   renderPage("admin/announcements")
+);
+app.get(
+  "/admin/studyMaterial",
+  protect,
+  restrictToAdmin,
+  renderPage("admin/study-materials")
 );
 app.get("/dashboard", protect, renderPage("dashboard"));
 app.get("/dashboard/courses", protect, renderPage("dashboard/courses"));

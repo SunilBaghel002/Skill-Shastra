@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-// const User = require("../models/User"); // Adjust path if needed
+const User = require("../models/User"); // Adjust path if needed
 
 const protect = async (req, res, next) => {
   const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
