@@ -294,6 +294,7 @@ const announcementSchema = new mongoose.Schema({
       "C++ Programming",
       "Programming Fundamentals",
       "Gen AI",
+      "DSA",
     ],
   },
   announcementType: {
@@ -1260,6 +1261,7 @@ app.post(
         "C++ Programming",
         "Programming Fundamentals",
         "Gen AI",
+        "DSA",
       ];
       if (!validAudiences.includes(targetAudience)) {
         return res.status(400).json({ message: "Invalid target audience" });
