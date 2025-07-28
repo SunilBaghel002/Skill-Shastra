@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "C++ Programming": "C++ Programming",
     "Programming Fundamentals": "Programming Fundamentals",
     "Gen AI": "Gen AI",
+    "DSA": "DSA",
   };
 
   // Map announcement types to display names
