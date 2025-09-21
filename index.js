@@ -1510,7 +1510,7 @@ app.use("/api/study-materials", studyMaterialRouter);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Routes for EJS Templates
+// Routes for EJS Templates 
 const renderPage = (page) => (req, res) =>
   res.render(page, { user: req.user || null, request: req });
 
