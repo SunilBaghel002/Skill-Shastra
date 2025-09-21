@@ -260,6 +260,9 @@ const enrollmentSchema = new mongoose.Schema({
     default: "pending",
     enum: ["pending", "approved", "rejected"],
   },
+  referralCode: { type: String }, // New field
+  originalPrice: { type: Number }, // New field
+  discountedPrice: { type: Number }, // New field
   createdAt: { type: Date, default: Date.now },
 });
 const Enrollment = mongoose.model("Enrollment", enrollmentSchema);
@@ -1087,6 +1090,22 @@ app.get("/api/courses/recommended", protect, async (req, res) => {
     res.status(200).json({ courses: recommendedCourses });
   } catch (error) {
     console.error("Error fetching recommended courses:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post("/api/validate-referral", protect, async (req, res) => {
+  try {
+    const { referralCode } = req.body;
+    if (!referralCode) {
+      return res.status(400).json({ message: "Referral code is required" });
+    }
+    if (referralCode === "SKILL50") {
+      return res.status(200).json({ valid: true, discount: 0.5 });
+    }
+    return res.status(400).json({ message: "Invalid referral code" });
+  } catch (error) {
+    console.error("Referral validation error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
