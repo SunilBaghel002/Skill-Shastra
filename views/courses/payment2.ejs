@@ -807,6 +807,35 @@
             <p><strong>Country:</strong> <span id="confirm-country"></span></p>
             <p><strong>Address:</strong> <span id="confirm-address"></span></p>
           </div>
+          <div class="form-group">
+            <label for="referral-code">Referral Code (Optional)</label>
+            <div style="display: flex; gap: 0.5rem">
+              <input
+                type="text"
+                id="referral-code"
+                name="referralCode"
+                placeholder="Enter referral code (e.g., SKILL50)"
+              />
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="applyReferralCode()"
+                style="padding: 0.85rem 1.5rem"
+              >
+                Apply
+              </button>
+            </div>
+            <div class="error" id="referral-code-error" style="display: none">
+              Invalid referral code. Please enter a valid code.
+            </div>
+            <div
+              class="success-message"
+              id="referral-success"
+              style="display: none"
+            >
+              Referral code applied! 50% discount on course fee.
+            </div>
+          </div>
           <div class="button-group">
             <button
               type="button"
@@ -964,18 +993,23 @@
 
       // Course fee mapping
       const courseFees = {
-        "JavaScript Programming": "₹6,000",
-        "Full Stack Development": "₹12,000",
-        "Frontend Development": "₹6,000",
-        "Backend Development": "₹6,000",
-        "Digital Marketing": "₹6,000",
-        "Java Programming": "₹6,000",
-        "Python Programming": "₹6,000",
-        "C++ Programming": "₹6,000",
-        "Programming Fundamentals": "₹6,000",
-        "Gen AI": "₹6,000",
-        "DSA": "₹7,500",
+        "JavaScript Programming": 6000,
+        "Full Stack Development": 12000,
+        "Frontend Development": 6000,
+        "Backend Development": 6000,
+        "Digital Marketing": 6000,
+        "Java Programming": 6000,
+        "Python Programming": 6000,
+        "C++ Programming": 6000,
+        "Programming Fundamentals": 6000,
+        "Gen AI": 6000,
+        DSA: 7500,
       };
+
+      // Format currency for display
+      function formatCurrency(amount) {
+        return `₹${amount.toLocaleString("en-IN")}`;
+      }
 
       // Valid courses for validation
       const validCourses = Object.keys(courseFees);
@@ -1265,6 +1299,49 @@
         return isValid;
       }
 
+      async function applyReferralCode() {
+        const referralCode = document
+          .getElementById("referral-code")
+          .value.trim();
+        const error = document.getElementById("referral-code-error");
+        const success = document.getElementById("referral-success");
+        error.style.display = "none";
+        success.style.display = "none";
+
+        if (!referralCode) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/validate-referral", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ referralCode }),
+          });
+          const result = await response.json();
+          if (response.ok && result.valid) {
+            sessionStorage.setItem("referralCode", referralCode);
+            sessionStorage.setItem("discount", result.discount);
+            success.style.display = "block";
+          } else {
+            sessionStorage.removeItem("referralCode");
+            sessionStorage.removeItem("discount");
+            error.textContent = result.message || "Invalid referral code.";
+            error.style.display = "block";
+          }
+        } catch (error) {
+          console.error("Referral validation error:", error);
+          sessionStorage.removeItem("referralCode");
+          sessionStorage.removeItem("discount");
+          error.textContent =
+            "Error validating referral code. Please try again.";
+          error.style.display = "block";
+        }
+      }
+
       function nextStep(currentStep) {
         const form =
           currentStep === 1
@@ -1343,9 +1420,21 @@
           const studentData = JSON.parse(
             sessionStorage.getItem("studentData") || "{}"
           );
-          const courseFee = courseFees[studentData.course] || "N/A";
-          document.getElementById("course-fee").textContent = courseFee;
-          if (courseFee === "N/A") {
+          const referralCode = sessionStorage.getItem("referralCode");
+          const discount = parseFloat(
+            sessionStorage.getItem("discount") || "0"
+          );
+          const courseFee = courseFees[studentData.course] || 0;
+          const discountedFee = discount
+            ? courseFee * (1 - discount)
+            : courseFee;
+          const feeText = referralCode
+            ? `Course Fee: <s>${formatCurrency(courseFee)}</s> ${formatCurrency(
+                discountedFee
+              )} (after ${discount * 100}% discount)`
+            : `Course Fee: ${formatCurrency(courseFee)}`;
+          document.getElementById("fee-popup").innerHTML = feeText;
+          if (courseFee === 0) {
             document.getElementById("fee-popup").textContent =
               "Course fee not available.";
           }
@@ -1465,6 +1554,7 @@
           const studentData = JSON.parse(
             sessionStorage.getItem("studentData") || "{}"
           );
+          const referralCode = sessionStorage.getItem("referralCode");
           if (!studentData.course) {
             loadingOverlay.style.display = "none";
             submitButton.disabled = false;
@@ -1481,6 +1571,9 @@
             return;
           }
           formData.append("studentData", JSON.stringify(studentData));
+          if (referralCode) {
+            formData.append("referralCode", referralCode);
+          }
 
           try {
             const response = await fetch("/api/enroll", {
@@ -1496,6 +1589,8 @@
                 "Course purchased successfully! Redirecting to dashboard..."
               );
               sessionStorage.removeItem("studentData");
+              sessionStorage.removeItem("referralCode");
+              sessionStorage.removeItem("discount");
               setTimeout(() => {
                 window.location.href = "/dashboard";
               }, 2000);
