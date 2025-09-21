@@ -260,6 +260,9 @@ const enrollmentSchema = new mongoose.Schema({
     default: "pending",
     enum: ["pending", "approved", "rejected"],
   },
+  referralCode: { type: String }, // New field
+  originalPrice: { type: Number }, // New field
+  discountedPrice: { type: Number }, // New field
   createdAt: { type: Date, default: Date.now },
 });
 const Enrollment = mongoose.model("Enrollment", enrollmentSchema);
