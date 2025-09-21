@@ -1094,6 +1094,22 @@ app.get("/api/courses/recommended", protect, async (req, res) => {
   }
 });
 
+app.post("/api/validate-referral", protect, async (req, res) => {
+  try {
+    const { referralCode } = req.body;
+    if (!referralCode) {
+      return res.status(400).json({ message: "Referral code is required" });
+    }
+    if (referralCode === "SKILL50") {
+      return res.status(200).json({ valid: true, discount: 0.5 });
+    }
+    return res.status(400).json({ message: "Invalid referral code" });
+  } catch (error) {
+    console.error("Referral validation error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Enrollment Route
 app.post(
   "/api/enroll",
