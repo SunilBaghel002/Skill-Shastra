@@ -88,6 +88,7 @@ const seedCourses = async () => {
         slug: "frontend",
         facultyName: "John Doe",
         facultyEmail: "john.doe@skillshastra.com",
+        price: 6000,
       },
       {
         title: "Backend Development",
@@ -96,6 +97,7 @@ const seedCourses = async () => {
         slug: "backend",
         facultyName: "Jane Smith",
         facultyEmail: "jane.smith@skillshastra.com",
+        price: 6000,
       },
       {
         title: "Full Stack Development",
@@ -104,6 +106,7 @@ const seedCourses = async () => {
         slug: "full-stack",
         facultyName: "Alex Johnson",
         facultyEmail: "alex.johnson@skillshastra.com",
+        price: 12000,
       },
       {
         title: "Digital Marketing",
@@ -112,6 +115,7 @@ const seedCourses = async () => {
         slug: "digital-marketing",
         facultyName: "Emma Brown",
         facultyEmail: "emma.brown@skillshastra.com",
+        price: 6000,
       },
       {
         title: "JavaScript Programming",
@@ -120,6 +124,7 @@ const seedCourses = async () => {
         slug: "javascript",
         facultyName: "Michael Lee",
         facultyEmail: "michael.lee@skillshastra.com",
+        price: 6000,
       },
       {
         title: "Java Programming",
@@ -128,6 +133,7 @@ const seedCourses = async () => {
         slug: "java",
         facultyName: "Sarah Davis",
         facultyEmail: "sarah.davis@skillshastra.com",
+        price: 6000,
       },
       {
         title: "Python Programming",
@@ -136,6 +142,7 @@ const seedCourses = async () => {
         slug: "python",
         facultyName: "David Wilson",
         facultyEmail: "david.wilson@skillshastra.com",
+        price: 6000,
       },
       {
         title: "C++ Programming",
@@ -144,6 +151,7 @@ const seedCourses = async () => {
         slug: "cpp",
         facultyName: "Laura Martinez",
         facultyEmail: "laura.martinez@skillshastra.com",
+        price: 6000,
       },
       {
         title: "Programming Fundamentals",
@@ -152,6 +160,7 @@ const seedCourses = async () => {
         slug: "fundamentals",
         facultyName: "Chris Taylor",
         facultyEmail: "chris.taylor@skillshastra.com",
+        price: 6000,
       },
       {
         title: "Gen AI",
@@ -160,6 +169,16 @@ const seedCourses = async () => {
         slug: "gen-ai",
         facultyName: "Sophie Clark",
         facultyEmail: "sophie.clark@skillshastra.com",
+        price: 6000,
+      },
+      {
+        title: "DSA",
+        description: "Learn Data Structures and Algorithms.",
+        duration: "6 weeks",
+        slug: "dsa",
+        facultyName: "Robert Brown",
+        facultyEmail: "robert.brown@skillshastra.com",
+        price: 7500,
       },
     ];
 
