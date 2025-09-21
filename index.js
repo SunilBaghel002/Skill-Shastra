@@ -16,7 +16,7 @@ const http = require("http");
 const passport = require("passport");
 const session = require("express-session");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const { protect, restrictToAdmin } = require("./middleware/auth"); 
+const { protect, restrictToAdmin } = require("./middleware/auth");
 const User = require("./models/User");
 const studyMaterialRouter = require("./routes/studyMaterials");
 const Course = require("./models/Course");
@@ -512,7 +512,8 @@ const getEnrollmentConfirmationEmailTemplate = (
   fullName,
   course,
   transactionId,
-  paymentProofUrl
+  paymentProofUrl,
+  referralInfo = ""
 ) =>
   getBaseEmailTemplate(`
     <h1>Enrollment Confirmation</h1>
@@ -523,6 +524,11 @@ const getEnrollmentConfirmationEmailTemplate = (
       <tr><th>Course</th><td>${course}</td></tr>
       <tr><th>Transaction ID</th><td>${transactionId}</td></tr>
       <tr><th>Status</th><td>Pending</td></tr>
+      ${
+        referralInfo
+          ? `<tr><th>Referral Info</th><td>${referralInfo}</td></tr>`
+          : ""
+      }
     </table>
     <p><a href="${paymentProofUrl}" class="cta-button" target="_blank">View Payment Proof</a></p>
     <p>Check your dashboard for updates or contact us at <a href="mailto:support@skillshastra.com">support@skillshastra.com</a>.</p>
@@ -1129,7 +1135,7 @@ app.post(
       } catch (error) {
         return res.status(400).json({ message: "Invalid student data format" });
       }
-      const { transactionId, paymentDate } = req.body;
+      const { transactionId, paymentDate, referralCode } = req.body;
       const requiredFields = [
         "course",
         "fullName",
@@ -1154,6 +1160,29 @@ app.post(
           .status(400)
           .json({ message: "Transaction ID and payment date are required" });
       }
+
+      // Validate course
+      const course = await Course.findOne({ title: studentData.course });
+      if (!course) {
+        return res.status(400).json({ message: "Invalid course" });
+      }
+
+      // Validate referral code
+      let discount = 0;
+      if (referralCode) {
+        if (referralCode === "SKILL50") {
+          discount = 0.5;
+        } else {
+          return res.status(400).json({ message: "Invalid referral code" });
+        }
+      }
+
+      // Calculate prices
+      const originalPrice = course.price;
+      const discountedPrice = discount
+        ? originalPrice * (1 - discount)
+        : originalPrice;
+
       const uploadResult = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
@@ -1171,6 +1200,7 @@ app.post(
         stream.end(req.file.buffer);
       });
       const paymentProofUrl = uploadResult.secure_url;
+
       const enrollment = new Enrollment({
         userId: req.user._id,
         course: studentData.course,
@@ -1189,6 +1219,9 @@ app.post(
         paymentDate: new Date(paymentDate),
         paymentProof: paymentProofUrl,
         status: "pending",
+        referralCode,
+        originalPrice,
+        discountedPrice,
       });
       await enrollment.save();
       await sendEmail(
@@ -1198,7 +1231,12 @@ app.post(
           studentData.fullName,
           studentData.course,
           transactionId,
-          paymentProofUrl
+          paymentProofUrl,
+          referralCode
+            ? `Applied Referral Code: ${referralCode} (Discount: ${
+                discount * 100
+              }%)`
+            : ""
         )
       );
       res.status(201).json({ message: "Enrollment submitted successfully" });
@@ -1529,7 +1567,7 @@ app.use("/api/study-materials", studyMaterialRouter);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Routes for EJS Templates 
+// Routes for EJS Templates
 const renderPage = (page) => (req, res) =>
   res.render(page, { user: req.user || null, request: req });
 
